@@ -65,7 +65,7 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
 else
     echo -e "${YELLOW}Downloading from repository...${NC}"
 
-    BASE_URL="${REPO_URL}/raw/main"
+    BASE_URL="${REPO_URL}/raw/master"
 
     # Commands
     echo "  → bootstrap-project.md"
