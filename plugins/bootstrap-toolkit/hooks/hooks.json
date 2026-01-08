@@ -1,0 +1,17 @@
+{
+  "description": "Auto-run project setup check on session start (non-blocking)",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-setup-quiet.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
