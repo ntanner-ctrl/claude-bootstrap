@@ -2,10 +2,12 @@
 
 Automatically set up Claude Code extensibility for any project with appropriate hooks, agents, commands, and CLAUDE.md documentation.
 
+**New to Bootstrap?** See the [Getting Started Guide](GETTING_STARTED.md) for a complete walkthrough.
+
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
 ```
 
 ## What It Does
