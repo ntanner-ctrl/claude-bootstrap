@@ -1,0 +1,246 @@
+# [Project Name] - Infrastructure & Operations
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Deploy to staging | `make deploy-staging` |
+| Deploy to production | `make deploy-prod` |
+| Run tests | `make test` |
+| Check infrastructure | `terraform plan` |
+| View logs | `kubectl logs -f deploy/app -n production` |
+
+## Project Overview
+
+[Brief description of what this infrastructure/project does and who maintains it]
+
+### Architecture
+
+```
+[ASCII diagram of your infrastructure]
+
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Users     │────▶│   CDN/LB    │────▶│   API       │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                              │
+                                              ▼
+                                        ┌─────────────┐
+                                        │   Database  │
+                                        └─────────────┘
+```
+
+### Key Components
+
+| Component | Technology | Location |
+|-----------|------------|----------|
+| Infrastructure | Terraform | `terraform/` |
+| Application | [Language/Framework] | `src/` |
+| CI/CD | GitHub Actions | `.github/workflows/` |
+| Monitoring | [Tool] | `monitoring/` |
+
+## Infrastructure
+
+### Environments
+
+| Environment | Purpose | Access |
+|-------------|---------|--------|
+| Development | Local testing | Everyone |
+| Staging | Pre-production | Team |
+| Production | Customer-facing | On-call + leads |
+
+### Cloud Resources
+
+| Resource | Service | Notes |
+|----------|---------|-------|
+| Compute | [EC2/EKS/Lambda] | [sizing/scaling info] |
+| Database | [RDS/DynamoDB] | [Multi-AZ, backup schedule] |
+| Storage | [S3/EBS] | [retention policy] |
+| Networking | [VPC] | [CIDR ranges] |
+
+### Terraform Structure
+
+```
+terraform/
+├── modules/           # Reusable modules
+│   ├── vpc/
+│   ├── rds/
+│   └── ecs/
+├── envs/             # Environment-specific configs
+│   ├── dev/
+│   ├── staging/
+│   └── prod/
+└── global/           # Shared resources (IAM, Route53)
+```
+
+## Deployment
+
+### Prerequisites
+
+- AWS CLI configured with appropriate profile
+- Terraform >= 1.5
+- kubectl configured for target cluster
+- Required IAM permissions: [list roles]
+
+### Deployment Process
+
+1. **Code Change**: Create PR, get approval
+2. **CI**: Automated tests and security scan
+3. **Staging**: Auto-deploy on merge to main
+4. **Production**: Manual approval required
+
+### Production Deployment
+
+```bash
+# Pre-flight check
+/deploy-check production
+
+# Deploy
+make deploy-prod
+
+# Verify
+kubectl rollout status deployment/app -n production
+```
+
+### Rollback
+
+```bash
+# Quick rollback to previous version
+kubectl rollout undo deployment/app -n production
+
+# Rollback to specific version
+kubectl rollout undo deployment/app -n production --to-revision=N
+```
+
+## Monitoring & Alerting
+
+### Dashboards
+
+| Dashboard | Purpose | Link |
+|-----------|---------|------|
+| Overview | System health | [link] |
+| Performance | Latency/throughput | [link] |
+| Errors | Error rates | [link] |
+| Business | Key metrics | [link] |
+
+### Alerts
+
+| Alert | Severity | Response |
+|-------|----------|----------|
+| High CPU | Warning | Scale up or investigate |
+| Error rate > 1% | Critical | Check logs, recent deploys |
+| Database connections | Warning | Check connection pool |
+| Disk space < 20% | Warning | Clean up or resize |
+
+### Key Metrics
+
+- **Availability**: 99.9% SLO
+- **Latency**: p99 < 500ms
+- **Error rate**: < 0.1%
+
+## On-Call
+
+### Escalation
+
+| Level | Contact | Criteria |
+|-------|---------|----------|
+| L1 | On-call engineer | All alerts |
+| L2 | Team lead | P1 > 15 min, P2 > 30 min |
+| L3 | Platform team | Infrastructure issues |
+
+### Common Incidents
+
+| Symptom | Likely Cause | Quick Fix |
+|---------|--------------|-----------|
+| High latency | DB query slow | Check slow query log |
+| 5xx errors | App crash | Check logs, restart pods |
+| Connection timeout | Network issue | Check security groups |
+
+## Secrets Management
+
+### Secret Storage
+
+- **Production secrets**: AWS Secrets Manager / Vault
+- **Environment config**: `.env` files (gitignored)
+- **CI/CD secrets**: GitHub Secrets / GitLab Variables
+
+### Rotating Secrets
+
+```bash
+# Rotate database password
+aws secretsmanager rotate-secret --secret-id prod/db-password
+
+# Update application
+kubectl rollout restart deployment/app -n production
+```
+
+## Security
+
+### Access Control
+
+| Resource | Who | How |
+|----------|-----|-----|
+| AWS Console | Team leads | SSO + MFA |
+| Production K8s | On-call | kubeconfig + MFA |
+| Database | App only | IAM auth |
+
+### Compliance
+
+- [ ] All data encrypted at rest
+- [ ] All traffic encrypted in transit
+- [ ] Audit logging enabled
+- [ ] Access reviews quarterly
+
+## Runbooks
+
+| Runbook | Purpose |
+|---------|---------|
+| [Deployment](docs/runbooks/deployment.md) | Standard deployment process |
+| [Incident Response](docs/runbooks/incident.md) | When things break |
+| [Database Maintenance](docs/runbooks/database.md) | Backups, upgrades |
+| [Certificate Rotation](docs/runbooks/certs.md) | TLS certificate renewal |
+
+## Claude Code Integration
+
+This project uses the **Ops Starter Kit** for Claude Code. Available tools:
+
+### Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `production-safety` | Warns before editing prod files |
+| `secrets-detector` | Catches hardcoded secrets |
+| `shell-safety` | Blocks dangerous shell commands |
+| `iac-validator` | Validates infrastructure code |
+
+### Commands
+
+| Command | Usage |
+|---------|-------|
+| `/deploy-check [env]` | Pre-deployment validation |
+| `/incident-report [id]` | Generate postmortem |
+| `/runbook [topic]` | Generate operational runbook |
+
+### Agents
+
+| Agent | Usage |
+|-------|-------|
+| `incident-responder` | Systematic incident handling |
+| `infra-analyzer` | Review infrastructure code |
+| `runbook-generator` | Create detailed runbooks |
+
+## Contributing
+
+1. Create feature branch from `main`
+2. Make changes
+3. Run `/deploy-check staging`
+4. Open PR with description of changes
+5. Get approval from team member
+6. Merge and monitor
+
+## Contact
+
+| Role | Contact |
+|------|---------|
+| Team Lead | [name] - [email/slack] |
+| On-Call | [PagerDuty/Slack channel] |
+| Platform Team | #platform-support |

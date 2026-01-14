@@ -1,23 +1,43 @@
 # Claude Code Bootstrap Toolkit
 
+> Extensibility tools for Claude Code - the CLI-based AI coding assistant.
+
 Automatically set up Claude Code extensibility for any project with appropriate hooks, agents, commands, and CLAUDE.md documentation.
 
 **New to Bootstrap?** See the [Getting Started Guide](GETTING_STARTED.md) for a complete walkthrough.
+
+## What's Included
+
+| Component | Purpose | Audience |
+|-----------|---------|----------|
+| **Bootstrap Toolkit** | Meta-tool that sets up Claude Code for any project | Everyone |
+| **[Ops Starter Kit](ops-starter-kit/)** | Domain-specific extensions for infrastructure/ops work | SREs, DevOps, Platform Engineers |
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Bootstrap Toolkit                         │
+│         (Meta-tool: sets up Claude Code for any project)     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ can generate domain-specific kits
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Ops Starter Kit                          │
+│    (Example: Claude Code extensions for ops/infra work)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+The **Ops Starter Kit** demonstrates what the Bootstrap approach can produce when specialized for a domain. It serves as:
+
+1. **A working example** of hooks, agents, and commands in action
+2. **A template** for creating your own domain-specific kits
+3. **Immediately useful** for anyone doing infrastructure/ops work
 
 ## Quick Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
 ```
-
-## What It Does
-
-When you run `/bootstrap-project` in any project, it will:
-
-1. **Analyze** your project (type, maturity, existing setup)
-2. **Generate** comprehensive CLAUDE.md documentation
-3. **Install** appropriate stock hooks, agents, and commands
-4. **Track** what's installed for safe re-runs
 
 ## Commands
 
@@ -104,7 +124,7 @@ Ready-to-use hookify rules for common security patterns:
 | `surgical-rm` | block | `rm -rf /`, `~`, `..`, `/home` (allows safe targets like `node_modules`) |
 | `force-push-protection` | block | Force push to main/master/production/release/develop |
 | `chmod-777` | block | World-writable permissions (`chmod 777`, `chmod a+rwx`) |
-| `remote-exec-protection` | block | `curl \| bash` and similar patterns |
+| `remote-exec-protection` | block | `curl | bash` and similar patterns |
 | `disk-ops-protection` | block | Direct disk writes (`dd of=/dev/*`, `mkfs`) |
 | `exfiltration-protection` | block | Network transfers of `.env`, `.pem`, `.key` files |
 | `env-exposure-protection` | warn | Reading `.env` files (warns but allows) |
@@ -152,6 +172,52 @@ Structured security audit covering:
 8. **API Security** - Auth required, rate limits, CORS
 
 Severity classification: Critical (block deploy) → High (7 days) → Medium (30 days) → Low (backlog)
+
+## Philosophy
+
+### Context is Everything
+
+Claude Code is powerful, but without context about your project, it's guessing. These tools provide that context:
+
+- **CLAUDE.md** tells Claude about your conventions, architecture, and workflows
+- **Hooks** catch mistakes before they happen
+- **Agents** bring specialized expertise to complex tasks
+- **Commands** encode your team's best practices
+
+### Safety by Default
+
+Every hook exists because someone, somewhere, made that mistake:
+- Committed secrets to git
+- Edited production config by accident
+- Ran `rm -rf` in the wrong directory
+- Forgot to write tests
+
+### Evolve, Don't Prescribe
+
+The bootstrap toolkit adapts to your project's maturity:
+- New projects get a full starter kit
+- Established projects get suggestions, not overrides
+- The goal is enhancement, not enforcement
+
+## Creating Your Own Domain Kit
+
+Use the Ops Starter Kit as a template:
+
+```bash
+cp -r ops-starter-kit my-domain-kit
+```
+
+Then customize:
+1. **Hooks** - What mistakes should be caught?
+2. **Agents** - What complex tasks need guidance?
+3. **Commands** - What workflows should be encoded?
+4. **Template** - What should CLAUDE.md contain?
+
+Ideas for domain kits:
+- **Frontend Kit** - Component patterns, accessibility, performance
+- **Data Engineering Kit** - Pipeline safety, data validation, schema management
+- **ML Ops Kit** - Model versioning, experiment tracking, deployment
+- **Security Kit** - Vulnerability scanning, compliance, audit logging
 
 ## Maturity-Aware
 
@@ -203,6 +269,14 @@ This toolkit was built with inspiration and patterns from:
 
 Thanks to both projects for sharing their approaches publicly.
 
+## Contributing
+
+Found a useful hook? Built a great agent? PRs welcome!
+
 ## License
 
-MIT
+MIT - Use it, modify it, share it.
+
+---
+
+*Built by [@flawlesscowboy0](https://reddit.com/u/flawlesscowboy0) after one too many 3 AM pages.*
