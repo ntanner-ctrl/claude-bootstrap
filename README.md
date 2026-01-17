@@ -2,7 +2,7 @@
 
 > Extensibility tools for Claude Code - the CLI-based AI coding assistant.
 
-Give Claude Code the context it needs: **CLAUDE.md documentation**, **safety hooks**, **specialized agents**, and **workflow commands**.
+Give Claude Code the context it needs: **CLAUDE.md documentation**, **safety hooks**, **planning infrastructure**, and **workflow commands**.
 
 ## Quick Start
 
@@ -26,22 +26,76 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 14 workflow commands for setup, planning, security, documentation |
+| [**Commands**](commands/README.md) | 30+ workflow commands for planning, adversarial review, testing, security |
+| [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Production-ready safety guards (dangerous commands, secret scanning) |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
 | [**Ops Starter Kit**](ops-starter-kit/) | Domain-specific extensions for infrastructure work |
-| [**Bootstrap Plugin**](plugins/bootstrap-toolkit/) | Session-start drift detection |
 
 ### Commands at a Glance
 
 | Category | Commands |
 |----------|----------|
-| **Setup** | `/bootstrap-project`, `/check-project-setup`, `/assess-project` |
-| **Workflow** | `/start`, `/brainstorm`, `/delegate`, `/requirements-discovery` |
-| **Security** | `/security-checklist`, `/push-safe`, `/gpt-review`, `/setup-hooks` |
+| **Start Here** | `/start`, `/describe-change`, `/toolkit` |
+| **Workflow Wizards** | `/plan`, `/review`, `/test` |
+| **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision` |
+| **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
+| **Testing** | `/spec-to-tests`, `/security-checklist` |
+| **Status** | `/status`, `/plans`, `/overrides`, `/approve` |
+| **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
 
 See [commands/README.md](commands/README.md) for full reference.
+
+---
+
+## Planning Infrastructure
+
+The toolkit includes comprehensive planning infrastructure to catch the "unearned confidence" problem—moving faster than your understanding of consequences.
+
+### The Triage Gateway
+
+Every change starts with `/describe-change`, which determines planning depth:
+
+| Steps | Risk Flags | Path |
+|-------|------------|------|
+| 1-3   | None       | **Light** — `/preflight`, then execute |
+| 1-3   | Any        | **Standard** — `/spec-change` required |
+| 4-7   | Any        | **Full** — Complete planning protocol |
+
+### The `/plan` Wizard
+
+Guided workflow through all stages:
+
+```
+/plan feature-auth
+
+Stage 1: Describe    → Triage the change
+Stage 2: Specify     → Full specification
+Stage 3: Challenge   → Devil's advocate review
+Stage 4: Edge Cases  → Boundary probing
+Stage 5: Review      → External perspective (optional)
+Stage 6: Test        → Spec-blind test generation
+Stage 7: Execute     → Implementation
+```
+
+### Adversarial Pipeline
+
+Local-first challenge, then external validation:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    LOCAL ADVERSARIAL LAYER                  │
+│  /devils-advocate  →  /simplify-this  →  /edge-cases       │
+└─────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   EXTERNAL REVIEW LAYER                     │
+│                      /gpt-review                            │
+│   Receives local findings, finds blind spots               │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -152,6 +206,10 @@ Claude Code is powerful, but without project context it's guessing at your conve
 
 Every hook exists because someone made that mistake. The goal isn't to restrict Claude—it's to catch the 3 AM mistakes before they cause damage.
 
+### Plan Before You Build
+
+Speed without understanding leads to confident mistakes. The planning infrastructure forces understanding to catch up with speed before execution proceeds.
+
 ### Evolve, Don't Prescribe
 
 Bootstrap adapts to project maturity:
@@ -166,11 +224,11 @@ Bootstrap adapts to project maturity:
 | Document | Type | Purpose |
 |----------|------|---------|
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Tutorial | Step-by-step first-time setup |
-| [commands/README.md](commands/README.md) | Reference | All 14 commands documented |
+| [commands/README.md](commands/README.md) | Reference | All 30+ commands documented |
 | [docs/SECURITY.md](docs/SECURITY.md) | Explanation | Defense-in-depth architecture |
+| [docs/PLANNING-STORAGE.md](docs/PLANNING-STORAGE.md) | Reference | Planning state and storage schemas |
 | [docs/CREATING-DOMAIN-KITS.md](docs/CREATING-DOMAIN-KITS.md) | How-to | Build your own domain kit |
 | [ops-starter-kit/README.md](ops-starter-kit/README.md) | Reference | Ops-specific extensions |
-| [hooks/HOOK-PATTERNS-RESEARCH.md](hooks/HOOK-PATTERNS-RESEARCH.md) | Explanation | Hook pattern research |
 
 ---
 

@@ -1,6 +1,9 @@
 # Local archive
 _OLD/
 
+# Empirica session data
+.empirica/
+
 # OS files
 .DS_Store
 Thumbs.db

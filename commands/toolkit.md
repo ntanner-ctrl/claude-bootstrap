@@ -1,0 +1,96 @@
+---
+description: Quick reference for all Claude Bootstrap commands
+---
+
+# Toolkit
+
+Display a quick reference of all available commands, organized by workflow stage.
+
+## Output
+
+Present this reference card:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                     CLAUDE BOOTSTRAP TOOLKIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WORKFLOW WIZARDS (guided paths)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /plan [name]       Full planning workflow — walks through all stages
+  /review [name]     Adversarial review workflow — challenge a plan
+  /test [name]       Testing workflow — spec to tests to verification
+
+START HERE
+━━━━━━━━━━
+  /start             Assess state, recommend next task
+  /describe-change   Triage — determines planning depth
+  /toolkit           You are here
+
+PLANNING (before you build)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /spec-change       Full change specification template
+  /spec-agent        Define a new agent
+  /spec-hook         Define a new hook
+  /preflight         Pre-flight checklist (quick safety check)
+  /brainstorm        Open-ended problem exploration
+  /decision          Record a non-obvious decision
+  /requirements-discovery   Extract validated requirements
+
+ADVERSARIAL (challenge your plan)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /devils-advocate   What assumptions might be wrong?
+  /simplify-this     Is this overcomplicated?
+  /edge-cases        Probe boundaries and limits
+  /gpt-review        External model review (different perspective)
+
+TESTING (verify before ship)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /spec-to-tests     Generate tests from spec (spec-blind)
+  /security-checklist   8-point OWASP-style audit
+
+EXECUTION (when you build)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /delegate          Hand off to specialized sub-agent
+  /push-safe         Safe git push with secret scanning
+
+DOCUMENTATION
+━━━━━━━━━━━━━
+  /refresh-claude-md Update project CLAUDE.md
+  /migrate-docs      Migrate to Diataxis framework
+  /process-doc       Generate How-to Guides
+
+SETUP & STATUS
+━━━━━━━━━━━━━━
+  /bootstrap-project Initialize project with toolkit
+  /check-project-setup   Verify configuration
+  /assess-project    Generate CLAUDE.md only
+  /setup-hooks       Configure formatting hooks
+  /status            Current planning workflow state
+  /plans             List all in-progress plans
+  /overrides         Review override patterns
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Don't know where to start? Run /describe-change
+  Want guided help? Run /plan [name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Contextual Additions
+
+If `.claude/plans/` exists and contains in-progress plans, append:
+
+```
+ACTIVE PLANS
+━━━━━━━━━━━━
+  [name]    Stage [N]/7    Last: [time ago]
+  ...
+
+  Resume with: /plan [name]
+```
+
+## Notes
+
+- This is a display-only command
+- No arguments required
+- Updates automatically as new commands are added

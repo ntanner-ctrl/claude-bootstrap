@@ -6,294 +6,544 @@ Complete reference for all Claude Bootstrap commands.
 
 ## Quick Reference
 
+### Start Here
+
 | Command | One-liner |
 |---------|-----------|
 | `/start` | Assess state, recommend next task |
+| `/describe-change` | Triage a change to determine planning depth |
+| `/toolkit` | Quick reference for all commands |
+
+### Workflow Wizards (Guided Paths)
+
+| Command | One-liner |
+|---------|-----------|
+| `/plan [name]` | Full planning workflow — walks through all stages |
+| `/review [target]` | Adversarial review workflow — challenge a plan |
+| `/test [name]` | Testing workflow — spec to tests to verification |
+
+### Planning (Before You Build)
+
+| Command | One-liner |
+|---------|-----------|
+| `/spec-change` | Create complete change specification |
+| `/spec-agent` | Define a new agent |
+| `/spec-hook` | Define a new hook |
+| `/preflight` | Pre-flight safety checklist |
+| `/brainstorm` | Structured problem analysis |
+| `/decision` | Record a non-obvious decision |
+| `/requirements-discovery` | Extract validated requirements |
+
+### Adversarial (Challenge Your Plan)
+
+| Command | One-liner |
+|---------|-----------|
+| `/devils-advocate` | Challenge assumptions |
+| `/simplify-this` | Question complexity |
+| `/edge-cases` | Probe boundaries and limits |
+| `/gpt-review` | External model review (different perspective) |
+
+### Testing
+
+| Command | One-liner |
+|---------|-----------|
+| `/spec-to-tests` | Generate tests from spec (spec-blind) |
+| `/security-checklist` | 8-point OWASP-style security audit |
+
+### Execution
+
+| Command | One-liner |
+|---------|-----------|
+| `/delegate` | Hand off to specialized sub-agent |
+| `/push-safe` | Safe git push with secret scanning |
+
+### Status & Tracking
+
+| Command | One-liner |
+|---------|-----------|
+| `/status [name]` | Show current planning workflow state |
+| `/plans` | List all in-progress plans |
+| `/overrides` | Review override patterns |
+| `/approve [plan]` | Approve a planning stage |
+
+### Setup
+
+| Command | One-liner |
+|---------|-----------|
 | `/bootstrap-project` | Full project setup with CLAUDE.md + hooks + agents |
 | `/check-project-setup` | Quick drift detection |
-| `/brainstorm` | Structured problem analysis before solutioning |
-| `/delegate` | Execute tasks using best-fit subagents |
-| `/requirements-discovery` | Extract validated requirements before building |
-| `/security-checklist` | 8-point OWASP-style security audit |
-| `/push-safe` | Commit and push with secret scanning |
-| `/gpt-review` | Multi-model adversarial code review |
-| `/setup-hooks` | Configure formatting hooks for your stack |
+| `/assess-project` | CLAUDE.md generation only |
+| `/setup-hooks` | Configure formatting hooks |
+
+### Documentation
+
+| Command | One-liner |
+|---------|-----------|
 | `/refresh-claude-md` | Update CLAUDE.md with recent changes |
 | `/migrate-docs` | Migrate documentation to Diataxis framework |
 | `/process-doc` | Generate How-to Guides |
-| `/assess-project` | CLAUDE.md generation only (legacy) |
 
 ---
 
-## Project Setup
+## Workflow Wizards
 
-Commands for initializing and maintaining Claude Code configuration.
+Guided paths through the toolkit for common scenarios.
 
-### `/bootstrap-project`
+### `/plan [name]`
 
-**Full project setup.** Analyzes your project and installs appropriate CLAUDE.md documentation, hooks, agents, and commands based on your tech stack and project maturity.
+**Full planning workflow.** Walks through all stages with appropriate prompts based on change complexity.
 
 ```
-/bootstrap-project
+/plan feature-auth
 ```
 
-The bootstrap process runs through 6 phases:
-1. **Analyze** - Detect languages, frameworks, build systems
-2. **Assess Maturity** - Nascent → Growing → Mature
-3. **Generate CLAUDE.md** - Comprehensive project documentation
-4. **Install Hooks** - Safety guards appropriate to your stack
-5. **Install Agents** - Specialized subagents for complex tasks
-6. **Install Commands** - Project-specific shortcuts
+Stages:
+1. **Describe** → `/describe-change` (triage)
+2. **Specify** → `/spec-change` (full specification)
+3. **Challenge** → `/devils-advocate` (assumption check)
+4. **Edge Cases** → `/edge-cases` (boundary probing)
+5. **Review** → `/gpt-review` (external perspective) [optional]
+6. **Test** → `/spec-to-tests` (spec-blind tests)
+7. **Execute** → Implementation
 
-**When to use:** First time setting up Claude Code in a project, or after major project changes.
+The triage in Stage 1 determines path depth:
+- **Light path:** 1 → 7 (skip 2-6)
+- **Standard path:** 1 → 2 → 7 (skip 3-6)
+- **Full path:** All stages
+
+**When to use:** Any non-trivial change where you want guided planning discipline.
 
 ---
 
-### `/check-project-setup`
+### `/review [target]`
 
-**Quick drift detection.** Checks if your Claude Code setup has drifted from your project's current state.
+**Adversarial review workflow.** Focused challenge of an existing plan or implementation.
 
 ```
-/check-project-setup
+/review feature-auth
+/review --quick devils-advocate [target]
 ```
 
-Detects:
-- New directories not documented in CLAUDE.md
-- Commands that no longer work
-- Missing recommended hooks
-- Stale manifest data
+Runs through:
+1. Devil's Advocate — Challenge assumptions
+2. Simplify — Question complexity
+3. Edge Cases — Probe boundaries
+4. External Review — GPT review (optional)
 
-**When to use:** Periodically, or when things feel "off."
+**When to use:** You have a plan and want to stress-test it without full planning workflow.
 
 ---
 
-### `/assess-project`
+### `/test [name]`
 
-**CLAUDE.md generation only.** Generates project documentation without installing hooks, agents, or commands.
+**Testing workflow.** Ensures tests are derived from specification, not implementation.
 
 ```
-/assess-project
+/test feature-auth
 ```
 
-> **Note:** This command has been superseded by `/bootstrap-project`. Use this only if you specifically want documentation without extensibility setup.
+Stages:
+1. **Spec Review** — Verify spec has testable criteria
+2. **Generate** — Create tests from spec (spec-blind)
+3. **Verify** — Run tests, check for tautologies
+
+**When to use:** After specification is complete, before or during implementation.
 
 ---
 
-## Session & Workflow
+## Planning Commands
 
-Commands for starting sessions and structuring work.
+### `/describe-change`
+
+**Triage gateway.** Every change starts here. Determines how much planning infrastructure to invoke.
+
+```
+/describe-change add-user-avatars
+```
+
+Process:
+1. Describe the change (plain English)
+2. List discrete steps (actively decomposes combined actions)
+3. Quick risk scan (database, auth, deletion, external APIs, etc.)
+4. Determine path (Light / Standard / Full)
+
+**When to use:** Start of any non-trivial change.
+
+---
+
+### `/spec-change`
+
+**Complete change specification.** Forces thoroughness before implementation.
+
+```
+/spec-change
+```
+
+Sections:
+- Summary
+- What Changes (files, dependencies, database)
+- **Preservation Contract** (what must NOT change)
+- Success Criteria (testable)
+- Failure Modes (what could go wrong)
+- Rollback Plan
+- Open Questions
+
+**When to use:** Standard and Full path changes. The backbone of planning discipline.
+
+---
+
+### `/preflight`
+
+**Pre-flight safety checklist.** Quick verification before executing.
+
+```
+/preflight
+```
+
+Covers:
+- Assumptions inventory (confidence levels)
+- Blast radius assessment
+- Dependency check
+- **The 3 AM Test** — Would you be comfortable if this ran at 3 AM?
+- Go/No-Go decision
+
+**When to use:** Before any significant operation. Required for Light path, recommended for all.
+
+---
+
+### `/spec-agent` / `/spec-hook`
+
+**Meta-specifications.** Define agents and hooks before implementing them.
+
+```
+/spec-agent cache-invalidator
+/spec-hook production-db-guard
+```
+
+Forces explicit definition of:
+- Role and trigger conditions
+- Inputs and outputs
+- **Constraints** (what it must NOT do)
+- Failure states
+- Integration points
+
+**When to use:** Before creating any new agent or hook.
+
+---
+
+### `/decision`
+
+**Decision record.** Capture non-obvious choices for future reference.
+
+```
+/decision use-postgres-over-mysql
+```
+
+Sections:
+- Context
+- Options Considered (with pros/cons/risks)
+- Decision and rationale
+- Consequences (gains, losses, implications)
+- Review triggers
+
+**When to use:** When making a choice that won't be self-evident from the code.
+
+---
+
+## Adversarial Commands
+
+### `/devils-advocate`
+
+**Assumption challenger.** Systematically questions assumptions across four dimensions.
+
+```
+/devils-advocate feature-auth
+```
+
+Challenge categories:
+- **Availability** — What if services/resources are unavailable?
+- **Scale** — What if 0 items? 1M items? Backpressure?
+- **Timing** — What if during deployment? DST? Concurrent?
+- **Trust** — What if malformed? Malicious? Unexpected?
+
+**When to use:** After drafting a plan, before committing to implementation.
+
+---
+
+### `/simplify-this`
+
+**Complexity challenger.** Questions whether complexity is justified.
+
+```
+/simplify-this feature-auth
+```
+
+Challenges:
+- **Abstraction** — Do we need this layer?
+- **Build vs. Use** — Does this already exist?
+- **Necessity** — What's the MVP? What could be phase 2?
+
+**When to use:** When a plan has multiple components or abstractions.
+
+---
+
+### `/edge-cases`
+
+**Boundary explorer.** Maps specific boundaries where things break.
+
+```
+/edge-cases feature-auth
+```
+
+Probes:
+- **Input boundaries** — Empty, single, limit, over-limit, malformed
+- **State boundaries** — Transitions, repeats, reverses, cold starts
+- **Concurrency** — Simultaneous, interrupted, stale
+- **Time** — Zones, leaps, skew
+
+**When to use:** Before finalizing implementation approach.
+
+---
+
+## Testing Commands
+
+### `/spec-to-tests`
+
+**Specification-blind test generator.** Creates tests from spec WITHOUT implementation knowledge.
+
+```
+/spec-to-tests feature-auth
+```
+
+Critical constraint: This command must NOT see implementation details. Tests derived from:
+- Success criteria → Behavior tests
+- Preservation contract → Contract tests
+- Failure modes → Failure mode tests
+
+Includes anti-tautology review checklist.
+
+**When to use:** After spec is complete, before or alongside implementation.
+
+---
+
+## Status & Tracking Commands
+
+### `/status [name]`
+
+**Planning state display.** Shows detailed progress for a specific plan or overview.
+
+```
+/status                 # Overview of all plans
+/status feature-auth    # Detailed view of one plan
+```
+
+Shows: Stage progress, artifacts created, skipped stages, time since activity.
+
+---
+
+### `/plans`
+
+**List all in-progress plans.** Overview of planning state across project.
+
+```
+/plans
+```
+
+Shows: All active plans, their current stage, last activity, stale warnings.
+
+---
+
+### `/overrides`
+
+**Override pattern review.** Retrospective on planning shortcuts.
+
+```
+/overrides
+```
+
+Shows: When plans deviated from recommendations, reasons given, outcomes (if known).
+
+Enables learning: Were shortcuts justified, or did they cause problems?
+
+---
+
+### `/approve [plan]`
+
+**Stage gate approval.** Explicitly approve a stage to advance.
+
+```
+/approve feature-auth
+```
+
+Options: Clean approval, approve with concerns, not ready.
+
+**When to use:** In staged planning protocol, or when you want explicit gates.
+
+---
+
+## Existing Commands
 
 ### `/start`
 
-**Session starter.** Quickly assesses project state and recommends the optimal next task.
+**Session starter.** Assesses project state and recommends next task.
 
 ```
 /start
 ```
 
-Checks (in parallel):
-- Uncommitted changes (`git status`)
-- Recent commits (`git log`)
-- Existing to-do items
-- TODO/FIXME comments in recently modified files
-
-Returns a prioritized recommendation with complexity estimate and alternatives.
-
-**When to use:** Beginning of every session. Helps you pick up where you left off.
+**When to use:** Beginning of every session.
 
 ---
 
 ### `/brainstorm`
 
-**Structured problem analysis.** Forces thorough analysis before jumping to solutions.
+**Structured problem analysis.** Forces analysis before jumping to solutions.
 
 ```
 /brainstorm [problem description]
 ```
 
-Two-phase approach:
-1. **Analysis Phase** - Root cause analysis, context review, clarifying questions
-2. **Solution Phase** - Only after you've answered the clarifying questions
-
-This prevents the common failure mode of solving the wrong problem efficiently.
-
-**When to use:** Complex problems, unclear requirements, or when you keep solving symptoms instead of root causes.
+**When to use:** Complex problems, unclear requirements.
 
 ---
 
 ### `/delegate`
 
-**Smart task delegation.** Executes tasks using best-fit subagents, with parallel execution when possible.
+**Smart task delegation.** Routes tasks to appropriate subagents.
 
 ```
 /delegate [task]
-/delegate              # (no args: executes pending to-do items)
 ```
 
-Selects appropriate agents:
-- `Explore` - Codebase exploration, architecture understanding
-- `Plan` - Complex implementation requiring architectural decisions
-- `general-purpose` - Multi-step research and code search
-- Domain-specific agents if available
-
-**When to use:** Multiple independent tasks that can run in parallel, or when you want automatic agent selection.
-
----
-
-### `/requirements-discovery`
-
-**Extract validated requirements.** Drills past symptoms to find root problems using the "WHY detective" approach.
-
-```
-/requirements-discovery
-```
-
-Three question categories:
-1. **Job to be Done** - What outcome? What stakes? Current workarounds?
-2. **The Real Problem** - Symptom vs root cause? Why does this exist?
-3. **Success Criteria** - How will you know it's solved? MVP vs stretch?
-
-**When to use:** Before `/feature-dev` for complex features, when requirements are unclear, or when you need stakeholder alignment.
-
----
-
-## Code Quality & Security
-
-Commands for maintaining code quality and security posture.
-
-### `/security-checklist`
-
-**8-point security audit.** Comprehensive OWASP-aligned security assessment.
-
-```
-/security-checklist
-```
-
-Checks:
-1. **Secrets Exposure** - Hardcoded creds, .gitignore, git history
-2. **Dependencies** - CVEs via npm audit, pip-audit, cargo audit
-3. **Input Validation** - SQL injection, command injection, XSS
-4. **Auth & AuthZ** - Password hashing, sessions, CSRF, rate limiting
-5. **Transport Security** - HSTS, TLS 1.2+, secure cookies
-6. **Error Handling** - Stack traces, generic messages
-7. **File Uploads** - Server-side validation, size limits
-8. **API Security** - Auth required, rate limits, CORS
-
-Severity classification: Critical (block deploy) → High (7 days) → Medium (30 days) → Low (backlog)
-
-**When to use:** Before releases, during security reviews, or as part of CI/CD.
-
----
-
-### `/push-safe`
-
-**Safe push with secret scanning.** Stages, commits, and pushes with comprehensive safety checks.
-
-```
-/push-safe
-```
-
-Blocks if detected:
-- **Secrets** - `.env*`, `*.key`, `*.pem`, credentials, API keys
-- **Large files** - >10MB without Git LFS
-- **Build artifacts** - `node_modules/`, `dist/`, `__pycache__/`
-
-**When to use:** Instead of raw `git push` when you want guardrails.
+**When to use:** Multiple independent tasks, or automatic agent selection.
 
 ---
 
 ### `/gpt-review`
 
-**Multi-model adversarial review.** Collaborative review where Claude and GPT work as a surgical team.
+**Multi-model adversarial review.** External perspective via GPT.
 
 ```
-/gpt-review [--analyze <pr-url>] [--focus security|performance|architecture|all]
+/gpt-review [--focus security|performance|architecture|all]
 ```
 
-Workflow:
-1. **Diagnosis** (Claude) - Interview user, explore codebase, identify issues
-2. **Surgical Plan** (Claude) - Generate prompt with priorities for GPT
-3. **Operation** (GPT via user) - Technical precision, implementation
-4. **Post-Op Review** (Claude) - Validate, synthesize, deliver verdict
-
-**When to use:** Critical code requiring multiple perspectives, or when you want adversarial validation.
+When used after local adversarial commands, includes their findings for blind-spot detection.
 
 ---
 
-### `/setup-hooks`
+### `/security-checklist`
 
-**Configure formatting hooks.** Detects your tech stack and configures appropriate PostToolUse formatting hooks.
+**8-point security audit.** OWASP-aligned assessment.
 
 ```
-/setup-hooks
+/security-checklist
 ```
-
-Auto-detects:
-- JavaScript/TypeScript → Prettier, ESLint
-- Python → Black, Ruff
-- Rust → rustfmt
-- Go → gofmt
-- PHP → php-cs-fixer
-
-**When to use:** After project setup, or when you add a new language to your project.
 
 ---
 
-## Documentation
+### `/push-safe`
 
-Commands for creating and maintaining documentation.
+**Safe push with secret scanning.** Blocks secrets, large files, build artifacts.
+
+```
+/push-safe
+```
+
+---
+
+## Documentation Commands
+
+### `/toolkit`
+
+**Quick reference.** Displays all available commands organized by workflow stage.
+
+```
+/toolkit
+```
+
+---
 
 ### `/refresh-claude-md`
 
-**Update CLAUDE.md.** Scans for drift and suggests updates to keep project documentation current.
+**Update project documentation.** Scans for drift and suggests updates.
 
 ```
 /refresh-claude-md
 ```
 
-Checks:
-- Do documented commands still work?
-- Are there new directories or files not mentioned?
-- Have new dependencies been added?
-- Are there patterns emerging in recent code?
-
-Returns a diff-style summary of recommended changes.
-
-**When to use:** After significant project changes, or when CLAUDE.md feels stale.
-
 ---
 
 ### `/migrate-docs`
 
-**Diataxis migration.** Migrates existing documentation to the Diataxis framework (Tutorial, How-to, Reference, Explanation).
+**Diataxis migration.** Restructures docs into Tutorial/How-to/Reference/Explanation.
 
 ```
 /migrate-docs [path] [options]
 ```
 
-Options:
-- `--dry-run` - Preview without writing
-- `--scaffold` - Generate scaffolds for undocumented project
-- `--validate` - Validate existing migration
-- `--rollback` - Restore from archive
-
-**When to use:** When restructuring documentation, or starting fresh with Diataxis.
-
 ---
 
 ### `/process-doc`
 
-**Generate How-to Guides.** Creates task-oriented documentation following Diataxis How-to Guide format.
+**Generate How-to Guides.** Creates task-oriented documentation.
 
 ```
 /process-doc [topic]
 ```
 
-Examples:
-- `/process-doc device reboot`
-- `/process-doc azure-ad-setup`
+---
 
-**When to use:** When you need to document a specific procedure or workflow.
+## Setup Commands
+
+### `/bootstrap-project`
+
+**Full project setup.** Analyzes project and installs appropriate configuration.
+
+```
+/bootstrap-project
+```
+
+---
+
+### `/check-project-setup`
+
+**Drift detection.** Checks if setup has drifted from project state.
+
+```
+/check-project-setup
+```
+
+---
+
+### `/setup-hooks`
+
+**Configure formatting hooks.** Detects stack and configures PostToolUse hooks.
+
+```
+/setup-hooks
+```
+
+---
+
+## Storage Structure
+
+Plans are stored in `.claude/plans/[name]/`:
+
+```
+.claude/
+├── plans/
+│   ├── feature-auth/
+│   │   ├── state.json       # Progress tracking
+│   │   ├── describe.md      # Triage output
+│   │   ├── spec.md          # Specification
+│   │   ├── adversarial.md   # Challenge findings
+│   │   └── tests.md         # Generated tests
+│   └── ...
+├── overrides.json           # Project-level override history
+└── settings.json            # Claude Code config
+```
+
+See [docs/PLANNING-STORAGE.md](../docs/PLANNING-STORAGE.md) for schema details.
 
 ---
 
@@ -304,19 +554,7 @@ The `templates/` directory contains stock elements installed by `/bootstrap-proj
 ```
 templates/
 ├── stock-agents/           # Specialized subagents
-│   ├── architecture-explainer.md
-│   ├── code-reviewer.md
-│   └── troubleshooter.md
 ├── stock-commands/         # Project-specific commands
-│   ├── health-check.md
-│   ├── scaffold.md
-│   └── test-all.md
 ├── stock-hooks/            # Prompt-based hooks
-│   ├── documentation-standards.md
-│   ├── interface-validation.md
-│   ├── security-warning.md
-│   └── test-coverage-reminder.md
 └── INSTALL.md              # Installation guide
 ```
-
-These are selectively installed based on your project type and maturity level.
