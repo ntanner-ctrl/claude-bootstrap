@@ -57,16 +57,22 @@ fi
 if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
     echo -e "${YELLOW}Installing from local files...${NC}"
 
-    # Commands
-    echo "  → commands"
-    cp "${SCRIPT_DIR}/commands/bootstrap-project.md" "${CLAUDE_HOME}/commands/"
-    cp "${SCRIPT_DIR}/commands/check-project-setup.md" "${CLAUDE_HOME}/commands/"
-    cp "${SCRIPT_DIR}/commands/security-checklist.md" "${CLAUDE_HOME}/commands/" 2>/dev/null || true
+    # Commands (copy all .md files except README)
+    echo "  → commands ($(ls "${SCRIPT_DIR}/commands/"*.md 2>/dev/null | grep -v README.md | wc -l) files)"
+    for cmd in "${SCRIPT_DIR}/commands/"*.md; do
+        [ -f "$cmd" ] && [[ "$(basename "$cmd")" != "README.md" ]] && cp "$cmd" "${CLAUDE_HOME}/commands/"
+    done
 
     # Templates
+    echo "  → templates"
     cp -r "${SCRIPT_DIR}/commands/templates/stock-hooks/"* "${CLAUDE_HOME}/commands/templates/stock-hooks/" 2>/dev/null || true
     cp -r "${SCRIPT_DIR}/commands/templates/stock-agents/"* "${CLAUDE_HOME}/commands/templates/stock-agents/" 2>/dev/null || true
     cp -r "${SCRIPT_DIR}/commands/templates/stock-commands/"* "${CLAUDE_HOME}/commands/templates/stock-commands/" 2>/dev/null || true
+    # Documentation templates
+    if [ -d "${SCRIPT_DIR}/commands/templates/documentation" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/documentation"
+        cp -r "${SCRIPT_DIR}/commands/templates/documentation/"* "${CLAUDE_HOME}/commands/templates/documentation/" 2>/dev/null || true
+    fi
 
     # Plugin
     cp -r "${SCRIPT_DIR}/plugins/bootstrap-toolkit/"* "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/" 2>/dev/null || true
@@ -87,61 +93,62 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
 else
     echo -e "${YELLOW}Downloading from repository...${NC}"
 
-    # Use raw.githubusercontent.com for reliable raw file access
-    # github.com/.../raw/... can return 404 in some cases
-    BASE_URL="https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master"
+    # Download and extract repository tarball (self-maintaining - no file list to update)
+    TEMP_DIR=$(mktemp -d)
+    TARBALL_URL="https://github.com/ntanner-ctrl/claude-bootstrap/archive/refs/heads/main.tar.gz"
 
-    # Commands
-    echo "  → bootstrap-project.md"
-    download "${BASE_URL}/commands/bootstrap-project.md" "${CLAUDE_HOME}/commands/bootstrap-project.md"
+    echo "  → downloading repository..."
+    if command -v curl &> /dev/null; then
+        curl -fsSL "$TARBALL_URL" | tar xz -C "$TEMP_DIR"
+    else
+        wget -qO- "$TARBALL_URL" | tar xz -C "$TEMP_DIR"
+    fi
 
-    echo "  → check-project-setup.md"
-    download "${BASE_URL}/commands/check-project-setup.md" "${CLAUDE_HOME}/commands/check-project-setup.md"
+    REPO_DIR="${TEMP_DIR}/claude-bootstrap-main"
 
-    echo "  → security-checklist.md"
-    download "${BASE_URL}/commands/security-checklist.md" "${CLAUDE_HOME}/commands/security-checklist.md" || true
+    if [ ! -d "$REPO_DIR" ]; then
+        echo -e "${RED}Error: Failed to download repository${NC}"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
 
-    # Stock hooks (prompt-based, for bootstrap)
-    echo "  → stock hooks (templates)"
-    download "${BASE_URL}/commands/templates/stock-hooks/test-coverage-reminder.md" "${CLAUDE_HOME}/commands/templates/stock-hooks/test-coverage-reminder.md"
-    download "${BASE_URL}/commands/templates/stock-hooks/security-warning.md" "${CLAUDE_HOME}/commands/templates/stock-hooks/security-warning.md"
-    download "${BASE_URL}/commands/templates/stock-hooks/interface-validation.md" "${CLAUDE_HOME}/commands/templates/stock-hooks/interface-validation.md"
+    # Commands (copy all .md files except README)
+    CMD_COUNT=$(ls "${REPO_DIR}/commands/"*.md 2>/dev/null | grep -v README.md | wc -l)
+    echo "  → commands (${CMD_COUNT} files)"
+    for cmd in "${REPO_DIR}/commands/"*.md; do
+        [ -f "$cmd" ] && [[ "$(basename "$cmd")" != "README.md" ]] && cp "$cmd" "${CLAUDE_HOME}/commands/"
+    done
 
-    # Stock agents
-    echo "  → stock agents"
-    download "${BASE_URL}/commands/templates/stock-agents/troubleshooter.md" "${CLAUDE_HOME}/commands/templates/stock-agents/troubleshooter.md"
-    download "${BASE_URL}/commands/templates/stock-agents/code-reviewer.md" "${CLAUDE_HOME}/commands/templates/stock-agents/code-reviewer.md"
-    download "${BASE_URL}/commands/templates/stock-agents/architecture-explainer.md" "${CLAUDE_HOME}/commands/templates/stock-agents/architecture-explainer.md"
-
-    # Stock commands
-    echo "  → stock commands"
-    download "${BASE_URL}/commands/templates/stock-commands/test-all.md" "${CLAUDE_HOME}/commands/templates/stock-commands/test-all.md"
-    download "${BASE_URL}/commands/templates/stock-commands/health-check.md" "${CLAUDE_HOME}/commands/templates/stock-commands/health-check.md"
-    download "${BASE_URL}/commands/templates/stock-commands/scaffold.md" "${CLAUDE_HOME}/commands/templates/stock-commands/scaffold.md"
+    # Templates
+    echo "  → templates"
+    cp -r "${REPO_DIR}/commands/templates/stock-hooks/"* "${CLAUDE_HOME}/commands/templates/stock-hooks/" 2>/dev/null || true
+    cp -r "${REPO_DIR}/commands/templates/stock-agents/"* "${CLAUDE_HOME}/commands/templates/stock-agents/" 2>/dev/null || true
+    cp -r "${REPO_DIR}/commands/templates/stock-commands/"* "${CLAUDE_HOME}/commands/templates/stock-commands/" 2>/dev/null || true
+    # Documentation templates
+    if [ -d "${REPO_DIR}/commands/templates/documentation" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/documentation"
+        cp -r "${REPO_DIR}/commands/templates/documentation/"* "${CLAUDE_HOME}/commands/templates/documentation/" 2>/dev/null || true
+    fi
 
     # Plugin
     echo "  → session-start plugin"
-    download "${BASE_URL}/plugins/bootstrap-toolkit/.claude-plugin/plugin.json" "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/.claude-plugin/plugin.json"
-    download "${BASE_URL}/plugins/bootstrap-toolkit/hooks/hooks.json" "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/hooks/hooks.json"
-    download "${BASE_URL}/plugins/bootstrap-toolkit/scripts/check-setup-quiet.sh" "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/scripts/check-setup-quiet.sh"
+    cp -r "${REPO_DIR}/plugins/bootstrap-toolkit/"* "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/" 2>/dev/null || true
 
-    # Shell hooks (deterministic security)
-    echo "  → shell hooks (security)"
-    download "${BASE_URL}/hooks/notify.sh" "${CLAUDE_HOME}/hooks/notify.sh" || true
-    download "${BASE_URL}/hooks/after-edit.sh" "${CLAUDE_HOME}/hooks/after-edit.sh" || true
-    download "${BASE_URL}/hooks/dangerous-commands.sh" "${CLAUDE_HOME}/hooks/dangerous-commands.sh" || true
-    download "${BASE_URL}/hooks/secret-scanner.sh" "${CLAUDE_HOME}/hooks/secret-scanner.sh" || true
-    download "${BASE_URL}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/HOOK-PATTERNS-RESEARCH.md" || true
+    # Shell hooks
+    if [ -d "${REPO_DIR}/hooks" ]; then
+        echo "  → shell hooks"
+        cp "${REPO_DIR}/hooks/"*.sh "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
+        cp "${REPO_DIR}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
+    fi
 
     # Hookify rules
-    echo "  → hookify rules"
-    download "${BASE_URL}/hookify-rules/hookify.surgical-rm.local.md" "${CLAUDE_HOME}/hookify.surgical-rm.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.force-push-protection.local.md" "${CLAUDE_HOME}/hookify.force-push-protection.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.chmod-777.local.md" "${CLAUDE_HOME}/hookify.chmod-777.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.remote-exec-protection.local.md" "${CLAUDE_HOME}/hookify.remote-exec-protection.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.disk-ops-protection.local.md" "${CLAUDE_HOME}/hookify.disk-ops-protection.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.exfiltration-protection.local.md" "${CLAUDE_HOME}/hookify.exfiltration-protection.local.md" || true
-    download "${BASE_URL}/hookify-rules/hookify.env-exposure-protection.local.md" "${CLAUDE_HOME}/hookify.env-exposure-protection.local.md" || true
+    if [ -d "${REPO_DIR}/hookify-rules" ]; then
+        echo "  → hookify rules"
+        cp "${REPO_DIR}/hookify-rules/"*.local.md "${CLAUDE_HOME}/" 2>/dev/null || true
+    fi
+
+    # Cleanup
+    rm -rf "$TEMP_DIR"
 fi
 
 # Make scripts executable
@@ -151,10 +158,21 @@ chmod +x "${CLAUDE_HOME}/hooks/"*.sh 2>/dev/null || true
 echo ""
 echo -e "${GREEN}✓ Installation complete!${NC}"
 echo ""
-echo "Available commands:"
+echo "Core commands:"
+echo "  /toolkit               - Quick reference for ALL commands"
+echo "  /start                 - Assess state, recommend next task"
 echo "  /bootstrap-project     - Full project setup"
-echo "  /check-project-setup   - Quick drift detection"
-echo "  /security-checklist    - 8-point security audit"
+echo ""
+echo "Planning workflow:"
+echo "  /plan [name]           - Full planning workflow"
+echo "  /describe-change       - Triage change complexity"
+echo "  /spec-change           - Complete change specification"
+echo ""
+echo "Adversarial review:"
+echo "  /devils-advocate       - Challenge assumptions"
+echo "  /gpt-review            - External model review"
+echo ""
+echo "Run /toolkit for the complete list of 30+ commands."
 echo ""
 echo -e "${YELLOW}Shell hooks installed:${NC}"
 echo "  ~/.claude/hooks/notify.sh           - Desktop notifications"
