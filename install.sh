@@ -47,7 +47,12 @@ download() {
 }
 
 # If running from local install (files already present)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Handle both direct execution and piped execution (curl | bash)
+# When piped, BASH_SOURCE is empty, so fall back to empty string (triggers remote install)
+SCRIPT_DIR=""
+if [[ ${#BASH_SOURCE[@]} -gt 0 && -n "${BASH_SOURCE[0]}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 
 if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
     echo -e "${YELLOW}Installing from local files...${NC}"
@@ -82,7 +87,9 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
 else
     echo -e "${YELLOW}Downloading from repository...${NC}"
 
-    BASE_URL="${REPO_URL}/raw/master"
+    # Use raw.githubusercontent.com for reliable raw file access
+    # github.com/.../raw/... can return 404 in some cases
+    BASE_URL="https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master"
 
     # Commands
     echo "  → bootstrap-project.md"
