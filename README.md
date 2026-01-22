@@ -7,7 +7,7 @@ Give Claude Code the context it needs: **CLAUDE.md documentation**, **safety hoo
 ## Quick Start
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh | bash
 ```
 
 Then in any project:
@@ -144,7 +144,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 ### Full Install (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh | bash
 ```
 
 ### Components Only
@@ -229,8 +229,9 @@ Bootstrap adapts to project maturity:
 | Document | Type | Purpose |
 |----------|------|---------|
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Tutorial | Step-by-step first-time setup |
-| [commands/README.md](commands/README.md) | Reference | All 30+ commands documented |
+| [commands/README.md](commands/README.md) | Reference | All 35 commands documented |
 | [docs/SECURITY.md](docs/SECURITY.md) | Explanation | Defense-in-depth architecture |
+| [docs/ENFORCEMENT-PATTERNS.md](docs/ENFORCEMENT-PATTERNS.md) | Reference | Command description enforcement tiers |
 | [docs/PLANNING-STORAGE.md](docs/PLANNING-STORAGE.md) | Reference | Planning state and storage schemas |
 | [docs/CREATING-DOMAIN-KITS.md](docs/CREATING-DOMAIN-KITS.md) | How-to | Build your own domain kit |
 | [ops-starter-kit/README.md](ops-starter-kit/README.md) | Reference | Ops-specific extensions |

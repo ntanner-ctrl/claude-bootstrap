@@ -43,10 +43,12 @@ Complete reference for all Claude Bootstrap commands.
 | `/edge-cases` | Probe boundaries and limits |
 | `/gpt-review` | External model review (different perspective) |
 
-### Testing
+### Quality & Testing
 
 | Command | One-liner |
 |---------|-----------|
+| `/tdd` | TDD-enforced development with RED-GREEN-REFACTOR discipline |
+| `/quality-gate` | Quality threshold check before completing implementation |
 | `/spec-to-tests` | Generate tests from spec (spec-blind) |
 | `/security-checklist` | 8-point OWASP-style security audit |
 
@@ -54,7 +56,8 @@ Complete reference for all Claude Bootstrap commands.
 
 | Command | One-liner |
 |---------|-----------|
-| `/delegate` | Hand off to specialized sub-agent |
+| `/dispatch` | Single-task subagent dispatch with fresh context |
+| `/delegate` | Multi-task delegation with optional plan-based orchestration |
 | `/push-safe` | Safe git push with secret scanning |
 
 ### Status & Tracking
@@ -305,7 +308,43 @@ Probes:
 
 ---
 
-## Testing Commands
+## Quality & Testing Commands
+
+### `/tdd`
+
+**TDD-enforced development.** Manages RED-GREEN-REFACTOR discipline with enforcement hooks.
+
+```
+/tdd [--mode advisory|strict|aggressive] [--target path]
+```
+
+Phases:
+1. **SPEC** — Define what to test (acceptance criteria)
+2. **RED** — Write failing tests (implementation edits blocked by hook)
+3. **GREEN** — Write minimum code to pass tests
+4. **REFACTOR** — Clean up while tests stay green
+5. **VERIFY** — Run full suite, confirm no regressions
+
+Enforcement modes:
+- **advisory** — Warns on violations but allows (default)
+- **strict** — Blocks implementation edits during RED phase
+- **aggressive** — Strict + blocks non-test files in RED
+
+**When to use:** New features that need tests, or when enforcing test-first discipline.
+
+---
+
+### `/quality-gate`
+
+**Quality threshold check.** Scores implementation against quality dimensions.
+
+```
+/quality-gate [--threshold 85]
+```
+
+**When to use:** Before completing significant implementation. Blocks below-threshold work.
+
+---
 
 ### `/spec-to-tests`
 
@@ -407,15 +446,39 @@ Options: Clean approval, approve with concerns, not ready.
 
 ---
 
+### `/dispatch`
+
+**Single-task subagent dispatch.** Sends one task to a fresh subagent with clean context.
+
+```
+/dispatch "Implement login endpoint" --review
+/dispatch path/to/spec.md --model haiku
+```
+
+Features:
+- Fresh context (no session baggage)
+- Optional two-stage review (spec compliance + quality)
+- Model selection (haiku/sonnet/opus)
+- Max 3 retry attempts on review failure
+
+**When to use:** Well-defined task that benefits from isolated execution.
+
+---
+
 ### `/delegate`
 
-**Smart task delegation.** Routes tasks to appropriate subagents.
+**Smart task delegation.** Two modes: ad-hoc parallel dispatch or plan-based orchestration.
 
 ```
-/delegate [task]
+/delegate Explore auth system and Plan OAuth integration
+/delegate --plan .claude/plans/feature-auth/spec.md --review
 ```
 
-**When to use:** Multiple independent tasks, or automatic agent selection.
+Modes:
+- **Ad-hoc:** Quick parallel delegation of independent tasks
+- **Orchestrated:** Parses plan into tasks, partitions by file, dispatches in batches with approval gates
+
+**When to use:** Multiple independent tasks, or structured multi-task implementation from a plan.
 
 ---
 

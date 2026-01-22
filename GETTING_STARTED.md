@@ -64,7 +64,7 @@ Before installing, ensure you have:
 Open your terminal and run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh | bash
 ```
 
 You'll see output like:
@@ -95,7 +95,7 @@ If you prefer to review the script first:
 
 ```bash
 # Download the installer
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh -o install.sh
 
 # Review it
 cat install.sh
@@ -344,7 +344,7 @@ You can add your own hooks, agents, or commands alongside stock ones:
 The commands weren't installed correctly. Re-run the installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntanner-ctrl/claude-bootstrap/main/install.sh | bash
 ```
 
 ### "Permission denied" during install
@@ -440,7 +440,7 @@ Project-level `.claude/` directories are **not removed** - those belong to each 
 ├─────────────────────────────────────────────────────────┤
 │ INSTALL                                                 │
 │   curl -fsSL https://raw.githubusercontent.com/         │
-│   ntanner-ctrl/claude-bootstrap/master/install.sh|bash │
+│   ntanner-ctrl/claude-bootstrap/main/install.sh|bash   │
 ├─────────────────────────────────────────────────────────┤
 │ COMMANDS                                                │
 │   /bootstrap-project    Full setup / update             │
