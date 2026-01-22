@@ -202,9 +202,41 @@ echo -e "${YELLOW}Agents installed:${NC}"
 echo "  ~/.claude/agents/spec-reviewer.md     - Spec compliance verification"
 echo "  ~/.claude/agents/quality-reviewer.md  - Code quality review"
 echo ""
-echo -e "${YELLOW}To activate shell hooks, add to ~/.claude/settings.json:${NC}"
-echo '  "hooks": { ... }'
-echo "  (See settings-example.json in repo for full config)"
+echo -e "${YELLOW}⚠  Hook activation required:${NC}"
+echo ""
+echo "  Shell hooks are installed but need wiring in ~/.claude/settings.json."
+echo "  Add/merge this \"hooks\" block into your settings.json:"
+echo ""
+echo '  "hooks": {'
+echo '    "SessionStart": [{'
+echo '      "matcher": "",'
+echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/session-bootstrap.sh" }]'
+echo '    }],'
+echo '    "Notification": [{'
+echo '      "matcher": "*",'
+echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]'
+echo '    }],'
+echo '    "PostToolUse": [{'
+echo '      "matcher": "Edit|Write",'
+echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/after-edit.sh" }]'
+echo '    }],'
+echo '    "PreToolUse": [{'
+echo '      "matcher": "Bash",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/dangerous-commands.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/secret-scanner.sh" }'
+echo '      ]'
+echo '    }, {'
+echo '      "matcher": "Edit|Write",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }'
+echo '      ]'
+echo '    }]'
+echo '  }'
+echo ""
+echo "  If you already have a settings.json, merge the hooks block with your existing config."
+echo "  Full example: ${REPO_URL}/blob/main/settings-example.json"
 echo ""
 echo -e "${YELLOW}Hookify rules installed:${NC}"
 echo "  surgical-rm, force-push-protection, chmod-777,"
