@@ -26,7 +26,7 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 33 workflow commands for planning, adversarial review, testing, security |
+| [**Commands**](commands/README.md) | 34 workflow commands for planning, adversarial review, testing, security |
 | [**Agents**](agents/) | Specialized review agents (spec compliance, code quality) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
@@ -41,7 +41,7 @@ claude
 | **Workflow Wizards** | `/plan`, `/review`, `/test` |
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision` |
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
-| **Quality** | `/quality-gate`, `/spec-to-tests`, `/security-checklist` |
+| **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist` |
 | **Status** | `/status`, `/plans`, `/overrides`, `/approve` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
@@ -118,6 +118,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 |------|---------|
 | `session-bootstrap.sh` | **Inject command awareness at session start** |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
+| `tdd-guardian.sh` | Block implementation edits during TDD RED phase |
 | `dangerous-commands.sh` | Block `rm -rf /`, `chmod 777`, force push to main |
 | `secret-scanner.sh` | Scan for API keys before commits |
 | `after-edit.sh` | Auto-format files |

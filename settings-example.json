@@ -53,6 +53,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/protect-claude-md.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/tdd-guardian.sh"
           }
         ]
       }

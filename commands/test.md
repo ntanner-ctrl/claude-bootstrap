@@ -18,6 +18,16 @@ Stage 2: Generate      → Create tests from spec (spec-blind)
 Stage 3: Verify        → Run tests, check for tautologies
 ```
 
+## Pre-check: Active TDD Session
+
+Before starting, check for an active TDD session:
+```bash
+cat .claude/tdd-sessions/active.json 2>/dev/null
+```
+
+- **If active TDD session exists** → Validate phase progression (tests should already exist from RED phase). Skip to Stage 3 (Verify).
+- **If no TDD session** → Proceed normally. For NEW features, suggest: "Consider `/tdd` for test-first development."
+
 ## Process
 
 ### Stage 1: Spec Review
