@@ -34,6 +34,7 @@ mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/.claude-plugin"
 mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/hooks"
 mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/scripts"
 mkdir -p "${CLAUDE_HOME}/hooks"
+mkdir -p "${CLAUDE_HOME}/agents"
 
 # Download function
 download() {
@@ -82,6 +83,13 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
         echo "  → shell hooks"
         cp "${SCRIPT_DIR}/hooks/"*.sh "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
         cp "${SCRIPT_DIR}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
+    fi
+
+    # Agents
+    if [ -d "${SCRIPT_DIR}/agents" ]; then
+        echo "  → agents ($(ls "${SCRIPT_DIR}/agents/"*.md 2>/dev/null | wc -l) files)"
+        mkdir -p "${CLAUDE_HOME}/agents"
+        cp "${SCRIPT_DIR}/agents/"*.md "${CLAUDE_HOME}/agents/" 2>/dev/null || true
     fi
 
     # Hookify rules
@@ -141,6 +149,13 @@ else
         cp "${REPO_DIR}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
     fi
 
+    # Agents
+    if [ -d "${REPO_DIR}/agents" ]; then
+        echo "  → agents ($(ls "${REPO_DIR}/agents/"*.md 2>/dev/null | wc -l) files)"
+        mkdir -p "${CLAUDE_HOME}/agents"
+        cp "${REPO_DIR}/agents/"*.md "${CLAUDE_HOME}/agents/" 2>/dev/null || true
+    fi
+
     # Hookify rules
     if [ -d "${REPO_DIR}/hookify-rules" ]; then
         echo "  → hookify rules"
@@ -172,13 +187,19 @@ echo "Adversarial review:"
 echo "  /devils-advocate       - Challenge assumptions"
 echo "  /gpt-review            - External model review"
 echo ""
-echo "Run /toolkit for the complete list of 30+ commands."
+echo "Run /toolkit for the complete command reference."
 echo ""
 echo -e "${YELLOW}Shell hooks installed:${NC}"
-echo "  ~/.claude/hooks/notify.sh           - Desktop notifications"
-echo "  ~/.claude/hooks/after-edit.sh       - Auto-format after edits"
+echo "  ~/.claude/hooks/session-bootstrap.sh  - Session awareness injection"
+echo "  ~/.claude/hooks/notify.sh             - Desktop notifications"
+echo "  ~/.claude/hooks/after-edit.sh         - Auto-format after edits"
 echo "  ~/.claude/hooks/dangerous-commands.sh - Block dangerous commands"
-echo "  ~/.claude/hooks/secret-scanner.sh   - Scan for secrets before commits"
+echo "  ~/.claude/hooks/secret-scanner.sh     - Scan for secrets before commits"
+echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
+echo ""
+echo -e "${YELLOW}Agents installed:${NC}"
+echo "  ~/.claude/agents/spec-reviewer.md     - Spec compliance verification"
+echo "  ~/.claude/agents/quality-reviewer.md  - Code quality review"
 echo ""
 echo -e "${YELLOW}To activate shell hooks, add to ~/.claude/settings.json:${NC}"
 echo '  "hooks": { ... }'

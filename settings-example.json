@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-bootstrap.sh"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "*",
@@ -33,6 +44,15 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/secret-scanner.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/protect-claude-md.sh"
           }
         ]
       }
