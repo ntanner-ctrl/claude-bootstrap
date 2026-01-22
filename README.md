@@ -26,7 +26,7 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 34 workflow commands for planning, adversarial review, testing, security |
+| [**Commands**](commands/README.md) | 35 workflow commands for planning, adversarial review, testing, security |
 | [**Agents**](agents/) | Specialized review agents (spec compliance, code quality) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
@@ -42,6 +42,7 @@ claude
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision` |
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
 | **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist` |
+| **Execution** | `/dispatch`, `/delegate` |
 | **Status** | `/status`, `/plans`, `/overrides`, `/approve` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |

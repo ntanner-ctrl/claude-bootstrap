@@ -173,6 +173,7 @@ Ready to implement. Artifacts saved for reference.
   Implementation options:
     [1] Standard implementation
     [2] TDD-enforced implementation → invokes /tdd with spec criteria
+    [3] Subagent-dispatched → invokes /delegate --plan with spec
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
