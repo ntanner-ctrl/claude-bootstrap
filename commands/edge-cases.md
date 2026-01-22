@@ -1,5 +1,5 @@
 ---
-description: Systematically probe boundaries and edge conditions
+description: REQUIRED before implementing ANY feature with user input, boundaries, or state transitions. Edge cases cause the bugs users find first.
 arguments:
   - name: plan
     description: Plan name or path to probe (optional, uses current context)

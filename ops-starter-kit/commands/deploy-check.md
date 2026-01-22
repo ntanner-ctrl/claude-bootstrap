@@ -1,5 +1,5 @@
 ---
-description: Pre-deployment validation checklist for safe production deployments
+description: STOP. You MUST complete this before ANY production deployment. Validates safety conditions that prevent outages.
 arguments:
   - name: environment
     description: Target environment (staging, production)

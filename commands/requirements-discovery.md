@@ -1,3 +1,7 @@
+---
+description: You MUST use this when requirements are unclear or complex. Building without validated requirements causes expensive rework.
+---
+
 # Requirements Discovery
 
 Extract clear, validated requirements before solution design. Based on the "WHY detective" approach: drill past symptoms to find root problems.

@@ -1,5 +1,5 @@
 ---
-description: Run a structured 8-point security audit based on OWASP and industry best practices
+description: You MUST run this before ANY deployment, auth change, or API modification. Security gaps caught here prevent breaches.
 argument-hint: Optional focus area (e.g., "auth", "api", "deps")
 allowed-tools: ["Bash", "Read", "Grep", "Glob", "Task", "TodoWrite", "AskUserQuestion"]
 ---

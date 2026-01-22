@@ -1,5 +1,5 @@
 ---
-description: Generate new modules following project conventions and patterns
+description: You MUST use this when creating ANY new module or component. Generates files matching project conventions instead of guessing structure.
 allowed-tools:
   - Read
   - Write

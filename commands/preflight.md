@@ -1,5 +1,5 @@
 ---
-description: Pre-flight safety checklist before major operations
+description: STOP. You MUST complete this before ANY production operation, deployment, or irreversible action. Skipping has caused incidents.
 arguments:
   - name: operation
     description: What operation are you about to perform

@@ -1,5 +1,5 @@
 ---
-description: Adversarial review workflow - challenge an existing plan
+description: REQUIRED after completing a plan on the Full path. External perspective catches what familiarity blinds you to.
 arguments:
   - name: target
     description: Plan name, file path, or 'current' for active context

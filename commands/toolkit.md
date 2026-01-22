@@ -1,5 +1,5 @@
 ---
-description: Quick reference for all Claude Bootstrap commands
+description: Use when you need to find the right command for a situation. Lists all available commands with their trigger conditions.
 ---
 
 # Toolkit

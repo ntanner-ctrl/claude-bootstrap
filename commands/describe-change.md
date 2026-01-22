@@ -1,5 +1,5 @@
 ---
-description: Triage a change to determine appropriate planning depth
+description: You MUST run this as the FIRST step of ANY implementation task. Determines required planning depth before you proceed.
 arguments:
   - name: name
     description: Short name for this change (used for plan tracking)

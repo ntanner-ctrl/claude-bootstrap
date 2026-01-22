@@ -1,3 +1,7 @@
+---
+description: Use when you need to document a process or procedure. Generates Diataxis-compliant How-to Guides with proper human touchpoints.
+---
+
 # How-to Guide Generator
 
 Generate How-to Guides following the Diataxis framework.

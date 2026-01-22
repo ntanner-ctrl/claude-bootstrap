@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Reviews code for bugs, security issues, and adherence to project conventions using confidence-based filtering
+description: You MUST invoke this after implementing ANY significant changes and before committing. Catches bugs and security issues early.
 model: sonnet
 tools:
   - Glob

@@ -1,5 +1,5 @@
 ---
-description: Create a specification for a new agent before implementation
+description: You MUST create this before implementing ANY new agent. Agents without specs drift from purpose and become unreliable.
 arguments:
   - name: name
     description: Name of the agent to specify

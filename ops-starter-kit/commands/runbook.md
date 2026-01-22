@@ -1,5 +1,5 @@
 ---
-description: Generate an operational runbook for a service or procedure
+description: Use when documenting ANY operational procedure. Generates runbooks with clear steps, rollback plans, and escalation paths.
 arguments:
   - name: topic
     description: What the runbook should cover (e.g., "database failover", "certificate rotation", "service deployment")

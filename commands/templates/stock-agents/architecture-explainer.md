@@ -1,6 +1,6 @@
 ---
 name: architecture-explainer
-description: Explains how parts of the codebase work by tracing code paths and identifying patterns
+description: Use when asked to explain how ANY part of the codebase works. Traces code paths and maps architecture before answering.
 model: sonnet
 tools:
   - Glob

@@ -1,3 +1,7 @@
+---
+description: Use when a project needs auto-formatting hooks. Detects tech stack and configures PostToolUse formatting automatically.
+---
+
 # Setup Project Formatting Hooks
 
 Scan project to detect tech stack and configure appropriate PostToolUse formatting hooks.

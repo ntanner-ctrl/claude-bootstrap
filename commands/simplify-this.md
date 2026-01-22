@@ -1,5 +1,5 @@
 ---
-description: Challenge unnecessary complexity in a plan
+description: REQUIRED after ANY architecture decision or design. You MUST check for over-engineering — complexity is the enemy of reliability.
 arguments:
   - name: plan
     description: Plan name or path to simplify (optional, uses current context)

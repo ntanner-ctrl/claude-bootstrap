@@ -1,5 +1,5 @@
 ---
-description: Create a complete change specification before implementation
+description: You MUST create this for ANY change touching >3 files OR involving risk flags. No implementation without spec.
 arguments:
   - name: name
     description: Name of the change (for tracking)

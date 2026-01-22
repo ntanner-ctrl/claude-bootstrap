@@ -1,5 +1,5 @@
 ---
-description: Create a specification for a new hook before implementation
+description: You MUST create this before implementing ANY new hook. Hooks without specs have undefined failure modes.
 arguments:
   - name: name
     description: Name of the hook to specify

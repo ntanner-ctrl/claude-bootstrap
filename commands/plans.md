@@ -1,5 +1,5 @@
 ---
-description: List all in-progress plans
+description: Use when you need orientation on active work. Lists all in-progress plans with their current stage and path.
 ---
 
 # Plans

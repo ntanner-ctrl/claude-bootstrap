@@ -1,3 +1,7 @@
+---
+description: "DEPRECATED: Use /bootstrap-project instead. This command is superseded — bootstrap-project includes all assessment functionality plus extensibility setup."
+---
+
 # Project Assessment & CLAUDE.md Generator
 
 > **Note:** This command has been superseded by `/bootstrap-project`, which includes all the functionality of `/assess-project` plus automatic installation of stock hooks, agents, and commands tailored to your project type.

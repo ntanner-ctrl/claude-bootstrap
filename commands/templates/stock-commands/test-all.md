@@ -1,5 +1,5 @@
 ---
-description: Run all test suites with automatic framework detection
+description: You MUST run this after ANY implementation changes. Detects test framework and runs full suite to catch regressions.
 allowed-tools:
   - Bash
   - Read

@@ -1,5 +1,5 @@
 ---
-description: Quick drift detection and setup suggestions for Claude Code extensibility
+description: Use when project setup may have drifted or new components are available. Detects gaps between current and recommended configuration.
 argument-hint: --quiet for minimal output, --verbose for full analysis, --fix to auto-update
 allowed-tools:
   - Read

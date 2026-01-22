@@ -1,3 +1,7 @@
+---
+description: REQUIRED before proposing ANY solution to a complex problem. You MUST analyze before suggesting — jumping to solutions causes rework.
+---
+
 # Problem Analysis & Solution Design
 
 Think hard before proposing solutions. This command enforces structured analysis.

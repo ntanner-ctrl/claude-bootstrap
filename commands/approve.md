@@ -1,5 +1,5 @@
 ---
-description: Approve a planning stage to advance to the next
+description: Use to advance a planning stage after review. Marks current stage complete and unlocks the next stage.
 arguments:
   - name: plan
     description: Plan name to approve current stage

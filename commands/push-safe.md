@@ -1,3 +1,7 @@
+---
+description: STOP. You MUST run this before ANY git push. Catches secrets, large files, and unsafe patterns before they hit the remote.
+---
+
 # Safe Push with Secret Scanning
 
 Stage, commit, and push with comprehensive safety checks.

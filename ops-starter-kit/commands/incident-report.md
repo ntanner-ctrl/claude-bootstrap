@@ -1,5 +1,5 @@
 ---
-description: Generate a post-incident report/postmortem from incident notes and timeline
+description: You MUST generate this after ANY production incident is resolved. Postmortems prevent repeat failures — do this while context is fresh.
 arguments:
   - name: incident_id
     description: Incident identifier or title (optional)

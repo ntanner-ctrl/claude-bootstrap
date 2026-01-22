@@ -1,3 +1,7 @@
+---
+description: Use when project context has changed significantly (new deps, architecture shifts, team changes). Keeps CLAUDE.md accurate.
+---
+
 # CLAUDE.md Refresh
 
 Think about what's changed since the last assessment.

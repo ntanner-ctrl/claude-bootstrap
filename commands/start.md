@@ -1,3 +1,7 @@
+---
+description: Use at the START of any session to orient. Assesses project state and recommends the optimal next action.
+---
+
 # Where to Begin
 
 Quickly assess project state and recommend the optimal next task.

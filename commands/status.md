@@ -1,5 +1,5 @@
 ---
-description: Show current planning workflow state
+description: Use when resuming work or checking progress on a plan. Shows current stage, completed work, and next steps.
 arguments:
   - name: name
     description: Plan name to check (optional, shows all if omitted)

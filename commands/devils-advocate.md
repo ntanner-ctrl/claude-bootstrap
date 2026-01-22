@@ -1,5 +1,5 @@
 ---
-description: Challenge every assumption in a plan
+description: REQUIRED after completing ANY spec or plan. You MUST challenge assumptions — unchallenged plans fail in production.
 arguments:
   - name: plan
     description: Plan name or path to challenge (optional, uses current context)

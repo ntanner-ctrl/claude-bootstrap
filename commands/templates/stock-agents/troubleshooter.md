@@ -1,6 +1,6 @@
 ---
 name: troubleshooter
-description: Diagnoses issues through systematic investigation using a 5-step methodology
+description: Use when diagnosing ANY issue or unexpected behavior. Follows systematic 5-step methodology instead of guessing.
 model: sonnet
 tools:
   - Glob

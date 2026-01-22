@@ -1,5 +1,5 @@
 ---
-description: Record a non-obvious decision for future reference
+description: You MUST record decisions when the reasoning is non-obvious or context-dependent. Future sessions lose context — decisions preserve it.
 arguments:
   - name: title
     description: Short title for this decision

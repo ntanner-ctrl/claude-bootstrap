@@ -1,5 +1,5 @@
 ---
-description: Full planning workflow wizard - walks through all stages
+description: You MUST use this for ANY non-trivial implementation task. Skipping planning leads to confident mistakes that cost more to fix than to prevent.
 arguments:
   - name: name
     description: Name for this plan (required for new plans, optional to resume)

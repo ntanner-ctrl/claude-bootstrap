@@ -1,5 +1,5 @@
 ---
-description: Bootstrap Claude Code extensibility with CLAUDE.md, hooks, agents, and commands tailored to your project
+description: Use when setting up ANY new project for Claude Code. Creates CLAUDE.md, installs hooks, agents, and commands matched to your stack.
 argument-hint: --force to overwrite existing, --skip-claude-md to keep existing docs, --type python|node|docker
 allowed-tools:
   - Read

@@ -1,5 +1,5 @@
 ---
-description: Adversarial code review using ChatGPT Codex - Claude diagnoses, GPT operates, Claude validates
+description: Use for cross-model adversarial review when local challenge is insufficient. A second model catches blind spots a single model cannot.
 allowed-tools: Read, Glob, Grep, Bash, AskUserQuestion, TodoWrite, WebFetch
 argument-hint: [--analyze <pr-url>] | [--focus security|performance|architecture|all]
 ---

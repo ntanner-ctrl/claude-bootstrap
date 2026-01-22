@@ -1,5 +1,5 @@
 ---
-description: Generate tests from specification only (spec-blind)
+description: You MUST generate tests from spec BEFORE reading implementation. Spec-blind tests catch what implementation-aware tests miss.
 arguments:
   - name: spec
     description: Path to specification or plan name

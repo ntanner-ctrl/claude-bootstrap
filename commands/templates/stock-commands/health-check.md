@@ -1,5 +1,5 @@
 ---
-description: Validate project configuration, dependencies, and build status
+description: Use at session start or when something seems broken. Validates project config, deps, and build before investigating further.
 allowed-tools:
   - Bash
   - Read

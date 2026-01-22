@@ -1,5 +1,5 @@
 ---
-description: Review override patterns - when plans deviated from recommendations
+description: Use to review where plans deviated from recommendations. Surfaces patterns of skipped stages that may indicate process gaps.
 ---
 
 # Overrides

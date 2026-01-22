@@ -1,3 +1,7 @@
+---
+description: Use when you have multiple independent tasks that can run in parallel. Delegates to best-fit subagents for concurrent execution.
+---
+
 # Smart Task Delegation
 
 Execute tasks using best-fit subagents for parallel work.

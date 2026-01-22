@@ -1,5 +1,5 @@
 ---
-description: Testing workflow wizard - spec to tests to verification
+description: You MUST use this after ANY significant implementation. Untested code is unfinished code — run this before declaring work complete.
 arguments:
   - name: name
     description: Plan name or feature to test

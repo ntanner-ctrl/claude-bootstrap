@@ -1,3 +1,7 @@
+---
+description: Use when existing documentation needs restructuring into Diataxis framework (Tutorial, How-to, Reference, Explanation).
+---
+
 # Diataxis Documentation Migration
 
 Complete documentation lifecycle management: generate scaffolds for new projects, migrate existing docs to Diataxis framework, validate compliance, and rollback changes.
