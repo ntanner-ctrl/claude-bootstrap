@@ -126,10 +126,9 @@ When score < threshold:
 ```
   ✓ PASSED — Score [XX] ≥ threshold [YY]
 
-  Ready to proceed. Consider:
-  - Commit this work
-  - Move to next task
-  - Run /push-safe before pushing
+  Ready to proceed:
+    /checkpoint        — Save context if more work follows
+    /push-safe         — Commit and push safely
 ```
 
 ## Threshold Guidelines
@@ -145,9 +144,10 @@ Default threshold: 85 (override with argument)
 
 ## Integration
 
-- **Part of:** `/plan` wizard (end of Stage 7: Execute)
-- **Feeds into:** Commit decision
+- **Invoked by:** `/plan` Stage 7, `/dispatch` post-review, `/delegate` final report, `/tdd` VERIFY phase
+- **Feeds into:** Commit decision → `/push-safe`
 - **Pairs with:** `/security-checklist` for detailed security review
+- **On failure:** `/debug` if issues are unclear, fix directly if obvious
 
 ## Anti-Gaming
 

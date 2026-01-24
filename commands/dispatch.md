@@ -305,7 +305,22 @@ RESPOND WITH:
 
 - Max 3 attempts per task
 - Each retry includes the previous review feedback in the implementer prompt
-- After 3 failures: stop, display all feedback, let user fix manually
+- After 3 failures: stop, display all feedback, and suggest:
+  ```
+  Implementation failed review 3 times. Suggestions:
+    /debug [issue]     — Investigate why implementation keeps failing
+    /design-check      — Verify prerequisites are actually met
+    Manual fix         — Address review feedback directly
+  ```
+
+## Post-Dispatch (after successful review)
+
+After all reviews pass, suggest:
+```
+All reviews passed. Optional next steps:
+  /quality-gate      — Score against full rubric (functionality, tests, security, quality, docs, perf)
+  /checkpoint        — Save context if more work follows
+```
 
 ---
 

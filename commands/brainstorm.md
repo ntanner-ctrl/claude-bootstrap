@@ -46,6 +46,13 @@ Do not proceed to Phase 2 until the user has answered your clarifying questions.
 
 4. **Wait for approval** before implementing
 
+## Integration
+
+- **Pre-planning:** Use before `/plan` when the problem has multiple viable approaches
+- **After `/review` verdict "Needs rethinking":** Explore alternatives
+- **Feeds into:** `/plan` (approach becomes Stage 1 input), `/decision` (record chosen approach)
+- **After approval:** Proceed to `/plan [name]` or `/describe-change` for triage
+
 ---
 
 $ARGUMENTS

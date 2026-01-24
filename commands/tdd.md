@@ -208,6 +208,7 @@ Enforce true RED-GREEN-REFACTOR discipline. Tests MUST exist and fail before imp
 4. Validate GREEN:
    - **All tests PASS** → Correct. Proceed.
    - **Some tests FAIL** → Iterate implementation. DO NOT modify tests.
+     - If 3+ attempts fail: suggest `/debug` to investigate why tests can't pass
    - **New tests PASS that weren't failing** → Suspicious. Check if implementation is over-engineered.
 
 5. If GREEN is valid:
@@ -274,6 +275,10 @@ Display final report:
   Files:
     Test:  [test_file]
     Impl:  [target]
+
+  Next steps:
+    /quality-gate    — Score against full rubric
+    /push-safe       — Commit and push safely
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```

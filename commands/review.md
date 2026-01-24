@@ -180,8 +180,19 @@ Runs only the specified stage.
 [Ready / Needs Work / Rethink]
 ```
 
+## Post-Review Actions
+
+Based on the verdict:
+
+| Verdict | Suggested Next |
+|---------|----------------|
+| Ready to proceed | `/design-check` → implementation |
+| Address N issues | `/decision` to record trade-offs, then fix |
+| Needs rethinking | `/brainstorm` to explore alternatives |
+
 ## Integration
 
 - **Standalone:** Can be run on any plan, implementation, or idea
 - **After /plan:** Provides deeper adversarial review post-planning
 - **Before /push-safe:** Final check before shipping
+- **Findings recorded:** Appended to `.claude/plans/[name]/adversarial.md` if plan context active

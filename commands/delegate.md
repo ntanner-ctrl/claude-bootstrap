@@ -155,8 +155,14 @@ Display progress:
 
 After each task completes, run through review stages using `/dispatch`'s review logic:
 - Spec review (haiku) → Quality review (haiku)
+- If `--lenses` specified: run additional lens agents (haiku)
 - Failures get re-dispatched (max 3 attempts)
-- After 3 failures: mark task as "needs manual intervention"
+- After 3 failures: mark task as "needs manual intervention" and suggest:
+  ```
+  Task [N] failed review 3 times. Suggestions:
+    /debug [issue]     — Investigate root cause
+    /design-check      — Verify task prerequisites
+  ```
 
 ### Step 5: Human Checkpoint
 
@@ -176,6 +182,7 @@ After each BATCH completes (not each task — too noisy):
     [1] Continue to Batch 2
     [2] Fix Task 3 first, then continue
     [3] Abort remaining tasks
+    [4] /checkpoint — Save progress before continuing
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -197,7 +204,10 @@ After each BATCH completes (not each task — too noisy):
     Spec compliance: [N]/[N] passed
     Quality review:  [N]/[N] passed
 
-  Duration: [time]
+  Next steps:
+    /quality-gate      — Score against full rubric
+    /checkpoint        — Save context
+    /push-safe         — Commit and push safely
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

@@ -8,7 +8,12 @@ Quickly assess project state and recommend the optimal next task.
 
 ## Instructions
 
-1. **Assess current state** (in parallel):
+1. **Check active work** (first):
+   - If `.claude/state-index.json` exists, read it for active plans/TDD/checkpoints
+   - If active work exists, show `/dashboard`-style summary before git assessment
+   - If a checkpoint exists, surface its `next_action` as the recommended task
+
+2. **Assess current state** (in parallel):
    - `git status` - Check for uncommitted changes
    - `git log -3 --oneline` - Review recent commits
    - Check for existing to-do list items

@@ -24,6 +24,19 @@ Stage 7: Execute     → Implementation
 
 ## Process
 
+### Pre-Stage: Before Starting
+
+If the problem is complex or requirements are unclear, suggest pre-stage commands:
+
+```
+Before planning, consider:
+  /brainstorm [topic]            — If the problem has multiple viable approaches
+  /requirements-discovery [topic] — If requirements are unclear or complex
+  /design-check [topic]          — If implementation boundaries are fuzzy
+
+These are optional. Proceed to /plan when you have a clear enough picture.
+```
+
 ### Starting or Resuming
 
 **New plan:**
@@ -103,6 +116,16 @@ After Stage 1 (Describe), the triage result determines the path:
 - Stage 5 (Review) always optional
 - Other stages recommended
 
+### During Any Stage
+
+At any point during planning:
+
+- **Non-obvious choice made?** → Run `/decision [topic]` to record rationale
+- **Session getting long?** → Run `/checkpoint` to save context
+- **Requirements unclear?** → Run `/requirements-discovery` to validate
+
+These are invoked inline — they don't interrupt stage progression.
+
 ### Skip Handling
 
 When user requests skip:
@@ -170,10 +193,17 @@ Planning complete! Summary:
 
 Ready to implement. Artifacts saved for reference.
 
+  Pre-implementation:
+    /design-check [name]    — Verify prerequisites are met (recommended)
+    /preflight              — Safety check for risky operations
+
   Implementation options:
     [1] Standard implementation (manual, using plan artifacts as reference)
     [2] TDD-enforced → /tdd --plan-context [name] (pre-populates SPEC from criteria)
     [3] Subagent-dispatched → /delegate --plan .claude/plans/[name]/spec.md --plan-context [name] --review
+
+  Post-implementation:
+    /quality-gate           — Score against rubric before completing
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
