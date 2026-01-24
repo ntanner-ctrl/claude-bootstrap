@@ -211,6 +211,7 @@ echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
 echo "  ~/.claude/hooks/tdd-guardian.sh       - Block impl edits during TDD RED phase"
 echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index"
 echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
+echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
 echo "  ~/.claude/agents/spec-reviewer.md          - Spec compliance verification"
@@ -256,6 +257,13 @@ echo '        { "type": "command", "command": "~/.claude/hooks/protect-claude-md
 echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }'
 echo '      ]'
 echo '    }]'
+echo '  }'
+echo ""
+echo -e "  ${YELLOW}Status line (optional):${NC}"
+echo ""
+echo '  "statusLine": {'
+echo '    "type": "command",'
+echo '    "command": "~/.claude/hooks/statusline.sh"'
 echo '  }'
 echo ""
 echo "  If you already have a settings.json, merge the hooks block with your existing config."
