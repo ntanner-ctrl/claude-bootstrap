@@ -45,22 +45,45 @@ for cmd_file in "$COMMANDS_DIR"/*.md "$PROJECT_COMMANDS"/*.md; do
     [ -f "$cmd_file" ] || continue
     name=$(basename "$cmd_file" .md)
     case "$name" in
-        plan|spec-change|describe-change|brainstorm|preflight|decision)
+        plan|spec-change|describe-change|brainstorm|preflight|decision|design-check)
             planning_cmds="${planning_cmds}  /${name}\n"
             ;;
-        push-safe|security-checklist|setup-hooks)
+        push-safe|security-checklist|setup-hooks|checkpoint)
             safety_cmds="${safety_cmds}  /${name}\n"
             ;;
-        test|spec-to-tests|tdd)
+        test|spec-to-tests|tdd|debug)
             testing_cmds="${testing_cmds}  /${name}\n"
             ;;
-        start|toolkit|status|plans|approve)
+        start|toolkit|status|plans|approve|dashboard)
             ;; # Skip meta commands from the list
         *)
             other_cmds="${other_cmds}  /${name}\n"
             ;;
     esac
 done
+
+ACTIVE_WORK=""
+
+# Check state-index for active work context
+if [ -f ".claude/state-index.json" ]; then
+    plan=$(jq -r '.active_plan // empty' .claude/state-index.json 2>/dev/null)
+    stage=$(jq -r '.active_plan_stage // empty' .claude/state-index.json 2>/dev/null)
+    tdd_phase=$(jq -r '.active_tdd_phase // empty' .claude/state-index.json 2>/dev/null)
+    checkpoint=$(jq -r '.last_checkpoint // empty' .claude/state-index.json 2>/dev/null)
+
+    if [ -n "$plan" ] || [ -n "$tdd_phase" ]; then
+        ACTIVE_WORK="\nACTIVE WORK:"
+        if [ -n "$plan" ]; then
+            ACTIVE_WORK="${ACTIVE_WORK}\n  Plan: ${plan} (Stage ${stage}/7). Resume: /plan ${plan}"
+        fi
+        if [ -n "$tdd_phase" ]; then
+            ACTIVE_WORK="${ACTIVE_WORK}\n  TDD: Phase ${tdd_phase}. Resume: /tdd"
+        fi
+        if [ -n "$checkpoint" ]; then
+            ACTIVE_WORK="${ACTIVE_WORK}\n  Last checkpoint: ${checkpoint}"
+        fi
+    fi
+fi
 
 cat << EOF
 You have structured workflows available via claude-bootstrap (${total} commands).
@@ -81,4 +104,5 @@ Rules:
 4. Announce which command you're using before proceeding
 
 Run /toolkit for complete command reference.
+$([ -n "$ACTIVE_WORK" ] && echo -e "$ACTIVE_WORK")
 EOF

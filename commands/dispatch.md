@@ -10,6 +10,12 @@ arguments:
   - name: model
     description: "Model for implementer: haiku, sonnet (default), opus"
     required: false
+  - name: lenses
+    description: "Additional review lenses after standard review (--lenses security,perf,arch)"
+    required: false
+  - name: plan-context
+    description: "Plan name to pull context from (--plan-context feature-auth)"
+    required: false
 ---
 
 # Single-Task Subagent Dispatch
@@ -149,7 +155,41 @@ Task(
   - [2] Fix manually
   - [3] Accept as-is
 
-### Step 6: Final Report
+### Step 6: Lens Reviews (if --lenses)
+
+After standard review passes, run additional review lenses:
+
+Available lenses: `security`, `perf`, `arch`
+
+For each specified lens, dispatch the corresponding agent (haiku model):
+
+```
+Task(
+  subagent_type: "[security-reviewer|performance-reviewer|architecture-reviewer]",
+  model: "haiku",
+  max_turns: 5,
+  prompt: [agent reads files and applies its mandate]
+)
+```
+
+Lens results are **advisory** — they don't trigger re-dispatch. Display after standard review.
+
+**If `--lenses` NOT specified but `--review` was used**, print reminder:
+```
+Review complete (spec: PASS, quality: PASS).
+Tip: Additional lenses available: --lenses security,perf,arch
+```
+
+### Step 7: Plan Context (if --plan-context)
+
+When `--plan-context [name]` is provided:
+1. Read `.claude/plans/[name]/adversarial.md` — include adversarial findings summary in implementer prompt
+2. Read `.claude/plans/[name]/tests.md` — include test criteria in implementer prompt
+3. After completion, update `.claude/plans/[name]/state.json` field `execution` with results
+
+This enriches the implementer with accumulated planning intelligence without requiring the full pipeline.
+
+### Step 8: Final Report
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -159,6 +199,7 @@ Task(
   Implementation: ✓ Complete
   Spec Review:    ✓ Pass (attempt [N])
   Quality Review: ✓ Pass
+  Lenses:         [security: PASS, perf: WARNING, arch: PASS]
 
   Files modified:
     [file:lines — brief description]

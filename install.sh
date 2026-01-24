@@ -75,6 +75,12 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
         cp -r "${SCRIPT_DIR}/commands/templates/documentation/"* "${CLAUDE_HOME}/commands/templates/documentation/" 2>/dev/null || true
     fi
 
+    # Prompt templates (used by dispatch/delegate review lenses)
+    if [ -d "${SCRIPT_DIR}/commands/templates/prompts" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/prompts"
+        cp -r "${SCRIPT_DIR}/commands/templates/prompts/"* "${CLAUDE_HOME}/commands/templates/prompts/" 2>/dev/null || true
+    fi
+
     # Plugin
     cp -r "${SCRIPT_DIR}/plugins/bootstrap-toolkit/"* "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/" 2>/dev/null || true
 
@@ -138,6 +144,12 @@ else
         cp -r "${REPO_DIR}/commands/templates/documentation/"* "${CLAUDE_HOME}/commands/templates/documentation/" 2>/dev/null || true
     fi
 
+    # Prompt templates (used by dispatch/delegate review lenses)
+    if [ -d "${REPO_DIR}/commands/templates/prompts" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/prompts"
+        cp -r "${REPO_DIR}/commands/templates/prompts/"* "${CLAUDE_HOME}/commands/templates/prompts/" 2>/dev/null || true
+    fi
+
     # Plugin
     echo "  → session-start plugin"
     cp -r "${REPO_DIR}/plugins/bootstrap-toolkit/"* "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/" 2>/dev/null || true
@@ -196,11 +208,16 @@ echo "  ~/.claude/hooks/after-edit.sh         - Auto-format after edits"
 echo "  ~/.claude/hooks/dangerous-commands.sh - Block dangerous commands"
 echo "  ~/.claude/hooks/secret-scanner.sh     - Scan for secrets before commits"
 echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
-echo "  ~/.claude/hooks/tdd-guardian.sh        - Block impl edits during TDD RED phase"
+echo "  ~/.claude/hooks/tdd-guardian.sh       - Block impl edits during TDD RED phase"
+echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index"
+echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
-echo "  ~/.claude/agents/spec-reviewer.md     - Spec compliance verification"
-echo "  ~/.claude/agents/quality-reviewer.md  - Code quality review"
+echo "  ~/.claude/agents/spec-reviewer.md          - Spec compliance verification"
+echo "  ~/.claude/agents/quality-reviewer.md       - Code quality review"
+echo "  ~/.claude/agents/security-reviewer.md      - Security lens (OWASP quick-pass)"
+echo "  ~/.claude/agents/performance-reviewer.md   - Performance lens (heuristic check)"
+echo "  ~/.claude/agents/architecture-reviewer.md  - Architecture lens (structural health)"
 echo ""
 echo -e "${YELLOW}⚠  Hook activation required:${NC}"
 echo ""
@@ -210,7 +227,10 @@ echo ""
 echo '  "hooks": {'
 echo '    "SessionStart": [{'
 echo '      "matcher": "",'
-echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/session-bootstrap.sh" }]'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/session-bootstrap.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/worktree-cleanup.sh" }'
+echo '      ]'
 echo '    }],'
 echo '    "Notification": [{'
 echo '      "matcher": "*",'
@@ -218,7 +238,10 @@ echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh
 echo '    }],'
 echo '    "PostToolUse": [{'
 echo '      "matcher": "Edit|Write",'
-echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/after-edit.sh" }]'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/after-edit.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/state-index-update.sh" }'
+echo '      ]'
 echo '    }],'
 echo '    "PreToolUse": [{'
 echo '      "matcher": "Bash",'

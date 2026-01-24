@@ -7,6 +7,9 @@ arguments:
   - name: mode
     description: "Enforcement level: advisory (default), strict, or aggressive"
     required: false
+  - name: plan-context
+    description: "Plan name to pre-populate SPEC from (--plan-context feature-auth)"
+    required: false
 ---
 
 # TDD Enforcement
@@ -85,6 +88,22 @@ Enforce true RED-GREEN-REFACTOR discipline. Tests MUST exist and fail before imp
 
 **Goal:** Define behavior and acceptance criteria BEFORE writing any code.
 
+**If `--plan-context [name]` provided:**
+1. Read `.claude/plans/[name]/spec.md` for acceptance criteria
+2. Read `.claude/plans/[name]/tests.md` for test assertions (if exists)
+3. Pre-populate the spec from plan artifacts:
+   ```
+   Pre-populated from plan: [name]
+   BEHAVIOR: [extracted from spec.md]
+   CRITERIA:
+     1. [criterion from spec acceptance criteria]
+     2. [criterion]
+
+   Confirm these criteria or modify:
+   ```
+4. User confirms or edits, then proceed to RED phase
+
+**If no `--plan-context`:**
 1. Ask user to describe the behavior:
    - "What should this code DO?" (behavior, not implementation)
    - "What are the acceptance criteria?"
@@ -260,6 +279,20 @@ Display final report:
 ```
 
 Clean up: remove `.claude/tdd-sessions/active.json` (archive to `.claude/tdd-sessions/[id].json`)
+
+**If `--plan-context [name]` was used**, update `.claude/plans/[name]/state.json`:
+```json
+{
+  "execution": {
+    "method": "tdd",
+    "phase": "complete",
+    "test_file": "[test_file]",
+    "target": "[target]",
+    "criteria_met": N,
+    "timestamp": "ISO-8601"
+  }
+}
+```
 
 ---
 

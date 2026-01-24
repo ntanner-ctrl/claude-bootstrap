@@ -26,8 +26,8 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 35 workflow commands for planning, adversarial review, testing, security |
-| [**Agents**](agents/) | Specialized review agents (spec compliance, code quality) |
+| [**Commands**](commands/README.md) | 39 workflow commands for planning, review, testing, execution |
+| [**Agents**](agents/) | 5 specialized review agents (spec, quality, security, performance, architecture) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
@@ -39,11 +39,11 @@ claude
 |----------|----------|
 | **Start Here** | `/start`, `/describe-change`, `/toolkit` |
 | **Workflow Wizards** | `/plan`, `/review`, `/test` |
-| **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision` |
+| **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision`, `/design-check` |
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
-| **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist` |
-| **Execution** | `/dispatch`, `/delegate` |
-| **Status** | `/status`, `/plans`, `/overrides`, `/approve` |
+| **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist`, `/debug` |
+| **Execution** | `/dispatch`, `/delegate`, `/checkpoint` |
+| **Status** | `/status`, `/plans`, `/overrides`, `/approve`, `/dashboard` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
 
@@ -78,7 +78,7 @@ Stage 3: Challenge   → Devil's advocate review
 Stage 4: Edge Cases  → Boundary probing
 Stage 5: Review      → External perspective (optional)
 Stage 6: Test        → Spec-blind test generation
-Stage 7: Execute     → Implementation
+Stage 7: Execute     → Implementation (with --plan-context handoff)
 ```
 
 ### Adversarial Pipeline
@@ -99,6 +99,32 @@ Local-first challenge, then external validation:
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Review Lenses
+
+Opt-in additional review perspectives via `--lenses`:
+
+```bash
+/dispatch "Add login endpoint" --review --lenses security,perf,arch
+```
+
+| Lens | Agent | Focus |
+|------|-------|-------|
+| `security` | security-reviewer | OWASP top 10, injection, auth gaps |
+| `perf` | performance-reviewer | N+1 queries, blocking I/O, allocations |
+| `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
+
+Lenses run after the standard spec + quality review and are advisory (don't block).
+
+### Worktree Isolation
+
+For parallel delegation with independent review:
+
+```bash
+/delegate --plan spec.md --review --isolate
+```
+
+Each agent works in its own git worktree. After completion, review and accept/reject each task's changes independently.
+
 ---
 
 ## Defense-in-Depth Security
@@ -117,7 +143,9 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 
 | Hook | Purpose |
 |------|---------|
-| `session-bootstrap.sh` | **Inject command awareness at session start** |
+| `session-bootstrap.sh` | **Inject command awareness + active work state at session start** |
+| `state-index-update.sh` | Maintain `.claude/state-index.json` when plan/TDD state changes |
+| `worktree-cleanup.sh` | Clean orphaned worktrees from interrupted `--isolate` sessions |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
 | `tdd-guardian.sh` | Block implementation edits during TDD RED phase |
 | `dangerous-commands.sh` | Block `rm -rf /`, `chmod 777`, force push to main |
@@ -229,7 +257,7 @@ Bootstrap adapts to project maturity:
 | Document | Type | Purpose |
 |----------|------|---------|
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Tutorial | Step-by-step first-time setup |
-| [commands/README.md](commands/README.md) | Reference | All 35 commands documented |
+| [commands/README.md](commands/README.md) | Reference | All commands documented |
 | [docs/SECURITY.md](docs/SECURITY.md) | Explanation | Defense-in-depth architecture |
 | [docs/ENFORCEMENT-PATTERNS.md](docs/ENFORCEMENT-PATTERNS.md) | Reference | Command description enforcement tiers |
 | [docs/PLANNING-STORAGE.md](docs/PLANNING-STORAGE.md) | Reference | Planning state and storage schemas |
@@ -244,6 +272,10 @@ Built with patterns and inspiration from:
 
 - **[TheDecipherist/claude-code-mastery](https://github.com/TheDecipherist/claude-code-mastery)** - Shell hook patterns, exit code conventions, security research
 - **[bmad-code-org/BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD)** - Agent orchestration patterns
+- **[barkain/claude-code-workflow-orchestration](https://github.com/barkain/claude-code-workflow-orchestration)** - Enforcement-via-hook pattern
+- **[Priivacy-ai/spec-kitty](https://github.com/Priivacy-ai/spec-kitty)** - Git worktree isolation for parallel agents
+- **[ryanthedev/code-foundations](https://github.com/ryanthedev/code-foundations)** - Code Complete SE skills (debug, design-check)
+- **[cowwoc/claude-code-cat](https://github.com/cowwoc/claude-code-cat)** - Multi-perspective review lenses
 
 ---
 

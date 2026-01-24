@@ -32,6 +32,7 @@ Complete reference for all Claude Bootstrap commands.
 | `/preflight` | Pre-flight safety checklist |
 | `/brainstorm` | Structured problem analysis |
 | `/decision` | Record a non-obvious decision |
+| `/design-check` | Pre-implementation prerequisite check (6-point) |
 | `/requirements-discovery` | Extract validated requirements |
 
 ### Adversarial (Challenge Your Plan)
@@ -51,13 +52,15 @@ Complete reference for all Claude Bootstrap commands.
 | `/quality-gate` | Quality threshold check before completing implementation |
 | `/spec-to-tests` | Generate tests from spec (spec-blind) |
 | `/security-checklist` | 8-point OWASP-style security audit |
+| `/debug` | Scientific debugging (OBSERVE-HYPOTHESIZE-PREDICT-EXPERIMENT-CONCLUDE) |
 
 ### Execution
 
 | Command | One-liner |
 |---------|-----------|
-| `/dispatch` | Single-task subagent dispatch with fresh context |
-| `/delegate` | Multi-task delegation with optional plan-based orchestration |
+| `/dispatch` | Single-task subagent dispatch with fresh context and optional review lenses |
+| `/delegate` | Multi-task delegation with orchestration, lenses, and worktree isolation |
+| `/checkpoint` | Manual context-save for session continuity |
 | `/push-safe` | Safe git push with secret scanning |
 
 ### Status & Tracking
@@ -66,6 +69,7 @@ Complete reference for all Claude Bootstrap commands.
 |---------|-----------|
 | `/status [name]` | Show current planning workflow state |
 | `/plans` | List all in-progress plans |
+| `/dashboard` | Aggregated view of all active work (plans, TDD, checkpoints) |
 | `/overrides` | Review override patterns |
 | `/approve [plan]` | Approve a planning stage |
 
@@ -253,6 +257,28 @@ Sections:
 
 ---
 
+### `/design-check`
+
+**Pre-implementation prerequisites.** Verifies 6 dimensions are resolved before coding begins.
+
+```
+/design-check add-user-avatars
+```
+
+Checks:
+1. **Requirements** — Can you state testable acceptance criteria?
+2. **Architecture** — Which components are involved?
+3. **Interfaces** — Inputs, outputs, errors defined?
+4. **Error Strategy** — What happens when things fail?
+5. **Data Structures** — What represents the domain?
+6. **Algorithms** — Core logic identified?
+
+Verdict: READY or BLOCKED (with specific gaps to resolve).
+
+**When to use:** Before implementing any feature with unclear boundaries.
+
+---
+
 ## Adversarial Commands
 
 ### `/devils-advocate`
@@ -420,6 +446,45 @@ Options: Clean approval, approve with concerns, not ready.
 
 ---
 
+### `/dashboard`
+
+**Aggregated status view.** Shows all active work in one place.
+
+```
+/dashboard
+```
+
+Displays:
+- Active plan (name, stage, time since update)
+- Active TDD session (target, phase)
+- Last checkpoint timestamp
+- Delegation status (if running)
+- Suggested next action based on current state
+
+**When to use:** Resuming work, or checking progress across all active workflows.
+
+---
+
+### `/checkpoint`
+
+**Manual context-save.** Captures decision rationale for session continuity.
+
+```
+/checkpoint "Chose JWT over sessions because stateless API"
+```
+
+Saves:
+- Summary of current state
+- Key decisions and rationale
+- Next action to take when resuming
+- Active plan/TDD context
+
+Location: `.claude/plans/[name]/checkpoints/` (if plan active) or `.claude/checkpoints/`
+
+**When to use:** Before ending a session, when context is large, or after non-obvious decisions.
+
+---
+
 ## Existing Commands
 
 ### `/start`
@@ -452,12 +517,15 @@ Options: Clean approval, approve with concerns, not ready.
 
 ```
 /dispatch "Implement login endpoint" --review
-/dispatch path/to/spec.md --model haiku
+/dispatch path/to/spec.md --model haiku --lenses security,perf
+/dispatch "Add endpoint" --review --plan-context feature-auth
 ```
 
 Features:
 - Fresh context (no session baggage)
 - Optional two-stage review (spec compliance + quality)
+- Review lenses (`--lenses security,perf,arch`) for additional perspectives
+- Plan context (`--plan-context`) to enrich with planning intelligence
 - Model selection (haiku/sonnet/opus)
 - Max 3 retry attempts on review failure
 
@@ -471,12 +539,18 @@ Features:
 
 ```
 /delegate Explore auth system and Plan OAuth integration
-/delegate --plan .claude/plans/feature-auth/spec.md --review
+/delegate --plan .claude/plans/feature-auth/spec.md --review --lenses security
+/delegate --plan spec.md --review --isolate --plan-context feature-auth
 ```
 
 Modes:
 - **Ad-hoc:** Quick parallel delegation of independent tasks
 - **Orchestrated:** Parses plan into tasks, partitions by file, dispatches in batches with approval gates
+
+Features:
+- Review lenses (`--lenses security,perf,arch`) for additional review perspectives
+- Worktree isolation (`--isolate`) for independent per-task review and accept/reject
+- Plan context (`--plan-context`) to enrich implementers with planning intelligence
 
 **When to use:** Multiple independent tasks, or structured multi-task implementation from a plan.
 
@@ -501,6 +575,25 @@ When used after local adversarial commands, includes their findings for blind-sp
 ```
 /security-checklist
 ```
+
+---
+
+### `/debug`
+
+**Scientific debugging.** Structured 5-phase process that prevents random-change debugging.
+
+```
+/debug "Login fails after session timeout"
+```
+
+Phases:
+1. **OBSERVE** — Exact error, reproduction steps, expected vs actual
+2. **HYPOTHESIZE** — Generate 3+ possible causes, rank by likelihood
+3. **PREDICT** — If hypothesis X is true, what ELSE should be true?
+4. **EXPERIMENT** — Test ONE prediction, record result
+5. **CONCLUDE** — Confirmed cause, fix, and prevention
+
+**When to use:** Bug resists quick fixes, or you've already tried the obvious solution.
 
 ---
 
@@ -590,20 +683,28 @@ When used after local adversarial commands, includes their findings for blind-sp
 
 ## Storage Structure
 
-Plans are stored in `.claude/plans/[name]/`:
+Plans and state are stored in `.claude/`:
 
 ```
 .claude/
+├── state-index.json          # Active work index (maintained by hook)
+├── checkpoints/              # Global checkpoints (no active plan)
+│   └── 20260124T100000Z.json
 ├── plans/
 │   ├── feature-auth/
-│   │   ├── state.json       # Progress tracking
-│   │   ├── describe.md      # Triage output
-│   │   ├── spec.md          # Specification
-│   │   ├── adversarial.md   # Challenge findings
-│   │   └── tests.md         # Generated tests
+│   │   ├── state.json        # Progress tracking + execution results
+│   │   ├── describe.md       # Triage output
+│   │   ├── spec.md           # Specification
+│   │   ├── adversarial.md    # Challenge findings
+│   │   ├── tests.md          # Generated tests
+│   │   └── checkpoints/      # Plan-scoped checkpoints
+│   │       └── 20260124T100000Z.json
 │   └── ...
-├── overrides.json           # Project-level override history
-└── settings.json            # Claude Code config
+├── tdd-sessions/
+│   └── active.json           # Current TDD session state
+├── worktrees/                # Temporary (created by --isolate, cleaned on start)
+├── overrides.json            # Project-level override history
+└── settings.json             # Claude Code config
 ```
 
 See [docs/PLANNING-STORAGE.md](../docs/PLANNING-STORAGE.md) for schema details.
@@ -619,5 +720,12 @@ templates/
 ├── stock-agents/           # Specialized subagents
 ├── stock-commands/         # Project-specific commands
 ├── stock-hooks/            # Prompt-based hooks
+├── prompts/                # Shared prompt templates (dispatch/delegate)
+│   ├── implementer.md
+│   ├── spec-review.md
+│   ├── quality-review.md
+│   ├── security-review.md
+│   ├── performance-review.md
+│   └── architecture-review.md
 └── INSTALL.md              # Installation guide
 ```

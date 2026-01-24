@@ -13,6 +13,15 @@ arguments:
   - name: parallel
     description: "Max parallel agents (--parallel N, default 3)"
     required: false
+  - name: lenses
+    description: "Additional review lenses after standard review (--lenses security,perf,arch)"
+    required: false
+  - name: isolate
+    description: "Use git worktrees for per-task isolation (--isolate)"
+    required: false
+  - name: plan-context
+    description: "Plan name to pull context from (--plan-context feature-auth)"
+    required: false
 ---
 
 # Smart Task Delegation
@@ -241,3 +250,145 @@ Resolution: Task 4 will run AFTER Task 2 completes.
 ```
 /delegate --plan spec.md --parallel 2 --model haiku
 ```
+
+### With review lenses
+```
+/delegate --plan spec.md --review --lenses security,perf
+```
+
+### With worktree isolation
+```
+/delegate --plan spec.md --review --isolate
+```
+
+### With plan context
+```
+/delegate --plan .claude/plans/feature-auth/spec.md --plan-context feature-auth --review
+```
+
+---
+
+## Review Lenses (--lenses)
+
+After standard two-stage review (spec + quality) passes, run additional lenses:
+
+| Lens | Agent | Focus |
+|------|-------|-------|
+| `security` | security-reviewer | OWASP top 10, injection, auth gaps |
+| `perf` | performance-reviewer | N+1 queries, blocking I/O, allocations |
+| `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
+
+Lenses run on haiku model and are **advisory** — they don't trigger re-dispatch.
+
+**If `--review` used but `--lenses` NOT specified**, print after standard review:
+```
+Review complete (spec: PASS, quality: PASS).
+Tip: Additional lenses available: --lenses security,perf,arch
+```
+
+---
+
+## Worktree Isolation (--isolate)
+
+Isolates each task in a git worktree for independent review and accept/reject.
+
+### When to Auto-Suggest
+
+When the task decomposition detects file overlap AND more than 1 parallel task:
+```
+File overlap detected between tasks. Consider --isolate for independent review.
+```
+
+### How It Works
+
+**1. Before dispatch: Create worktrees**
+```bash
+git worktree add .claude/worktrees/task-1 HEAD
+git worktree add .claude/worktrees/task-2 HEAD
+```
+
+**2. Each subagent works in its worktree**
+
+Add to implementer prompt:
+```
+WORKING DIRECTORY: [worktree-path]
+All file paths are relative to this directory.
+Do NOT run git commands.
+```
+
+**3. After all agents complete: Merge review**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ISOLATED DELEGATION │ Merge Review
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Task 1 ([description]):
+    +[N] -[N] across [N] files
+    [accept] [reject] [diff]
+
+  Task 2 ([description]):
+    +[N] -[N] across [N] files
+    [accept] [reject] [diff]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**4. User accepts/rejects each independently**
+
+Accepted changes: copy modified files from worktree to main working directory.
+Rejected changes: discard.
+
+**5. Cleanup**
+```bash
+git worktree remove .claude/worktrees/task-1 --force
+git worktree remove .claude/worktrees/task-2 --force
+rmdir .claude/worktrees 2>/dev/null
+```
+
+The `worktree-cleanup.sh` SessionStart hook catches orphaned worktrees from interrupted sessions.
+
+---
+
+## Plan Context (--plan-context)
+
+When `--plan-context [name]` is provided, enriches the dispatch with accumulated planning intelligence:
+
+### What It Reads
+
+| Artifact | Used For |
+|----------|----------|
+| `.claude/plans/[name]/adversarial.md` | Warnings about assumptions, edge cases to watch |
+| `.claude/plans/[name]/tests.md` | Test criteria for verification |
+| `.claude/plans/[name]/spec.md` | Acceptance criteria (if --plan not already specified) |
+
+### What It Adds to Implementer Prompt
+
+```
+PLAN CONTEXT ([name]):
+
+ADVERSARIAL FINDINGS (from /devils-advocate):
+[summary of key warnings]
+
+TEST CRITERIA (from /spec-to-tests):
+[list of test assertions to satisfy]
+```
+
+### What It Writes Back
+
+After delegation completes, updates `.claude/plans/[name]/state.json`:
+```json
+{
+  "execution": {
+    "method": "delegate",
+    "tasks_completed": N,
+    "tasks_failed": N,
+    "review_results": { "spec": "pass", "quality": "pass" },
+    "timestamp": "ISO-8601"
+  }
+}
+```
+
+### Standalone Behavior
+
+Without `--plan-context`, delegate works exactly as before. The flag is purely additive.

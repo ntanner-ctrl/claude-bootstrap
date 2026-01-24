@@ -171,9 +171,9 @@ Planning complete! Summary:
 Ready to implement. Artifacts saved for reference.
 
   Implementation options:
-    [1] Standard implementation
-    [2] TDD-enforced implementation → invokes /tdd with spec criteria
-    [3] Subagent-dispatched → invokes /delegate --plan with spec
+    [1] Standard implementation (manual, using plan artifacts as reference)
+    [2] TDD-enforced → /tdd --plan-context [name] (pre-populates SPEC from criteria)
+    [3] Subagent-dispatched → /delegate --plan .claude/plans/[name]/spec.md --plan-context [name] --review
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
