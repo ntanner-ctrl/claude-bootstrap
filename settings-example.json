@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/session-bootstrap.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/worktree-cleanup.sh"
           }
         ]
       }
@@ -34,6 +38,14 @@
             "type": "command",
             "command": "~/.claude/hooks/cfn-lint-check.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/state-index-update.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/blueprint-stage-gate.sh"
           }
         ]
       }
@@ -66,5 +78,9 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/hooks/statusline.sh"
   }
 }

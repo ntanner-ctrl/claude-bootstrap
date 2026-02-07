@@ -86,9 +86,17 @@ fi
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `dangerous-commands.sh` | PreToolUse | Block catastrophic commands |
-| `secret-scanner.sh` | PreToolUse | Scan for secrets before commits |
-| `after-edit.sh` | PostToolUse | Auto-format files after edits |
+| `session-bootstrap.sh` | SessionStart | Inject command awareness + active work state |
+| `worktree-cleanup.sh` | SessionStart | Clean orphaned worktrees |
+| `dangerous-commands.sh` | PreToolUse (Bash) | Block catastrophic commands |
+| `secret-scanner.sh` | PreToolUse (Bash) | Scan for secrets before commits |
+| `protect-claude-md.sh` | PreToolUse (Edit\|Write) | Block accidental CLAUDE.md edits |
+| `tdd-guardian.sh` | PreToolUse (Edit\|Write) | Block impl edits during TDD RED phase |
+| `after-edit.sh` | PostToolUse (Edit\|Write) | Auto-format files after edits |
+| `cfn-lint-check.sh` | PostToolUse (Edit\|Write) | Auto-lint CloudFormation templates (fail-open) |
+| `state-index-update.sh` | PostToolUse (Edit\|Write) | Maintain active work state index |
+| `blueprint-stage-gate.sh` | PostToolUse (Edit\|Write) | Check Empirica data before stage transitions (advisory) |
+| `statusline.sh` | StatusLine | Model, cost, context, active blueprint/TDD state |
 | `notify.sh` | Notification | Desktop alerts |
 
 ### Fail-Open Pattern
@@ -184,26 +192,34 @@ Add hooks to `~/.claude/settings.json`:
 ```json
 {
   "hooks": {
-    "PreToolUse": [{
-      "matcher": "Bash",
-      "hooks": [
+    "SessionStart": [{ "matcher": "", "hooks": [
+      { "type": "command", "command": "~/.claude/hooks/session-bootstrap.sh" },
+      { "type": "command", "command": "~/.claude/hooks/worktree-cleanup.sh" }
+    ]}],
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [
         { "type": "command", "command": "~/.claude/hooks/dangerous-commands.sh" },
         { "type": "command", "command": "~/.claude/hooks/secret-scanner.sh" }
-      ]
-    }],
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{ "type": "command", "command": "~/.claude/hooks/after-edit.sh" }]
-    }],
-    "Notification": [{
-      "matcher": "*",
-      "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]
-    }]
+      ]},
+      { "matcher": "Edit|Write", "hooks": [
+        { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },
+        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }
+      ]}
+    ],
+    "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [
+      { "type": "command", "command": "~/.claude/hooks/after-edit.sh" },
+      { "type": "command", "command": "~/.claude/hooks/cfn-lint-check.sh", "timeout": 30 },
+      { "type": "command", "command": "~/.claude/hooks/state-index-update.sh" },
+      { "type": "command", "command": "~/.claude/hooks/blueprint-stage-gate.sh" }
+    ]}],
+    "Notification": [{ "matcher": "*", "hooks": [
+      { "type": "command", "command": "~/.claude/hooks/notify.sh" }
+    ]}]
   }
 }
 ```
 
-See `settings-example.json` for a complete example.
+See `settings-example.json` for complete configuration including status line.
 
 ---
 

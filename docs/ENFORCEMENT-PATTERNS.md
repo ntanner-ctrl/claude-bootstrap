@@ -28,7 +28,7 @@ Descriptions must contain ONLY trigger conditions. The actual workflow lives in 
 |------|---------|-------------|----------------|
 | **Safety-Critical** | `STOP. You MUST...` | Irreversible actions, deployments, pushes | `STOP. You MUST run this before ANY git push.` |
 | **Process-Critical** | `You MUST use this for...` | Planning, specs, testing, quality gates | `You MUST use this for ANY non-trivial implementation.` |
-| **Adversarial** | `REQUIRED after...` | Review stages, challenges, edge case probing | `REQUIRED after completing ANY spec or plan.` |
+| **Adversarial** | `REQUIRED after...` | Review stages, challenges, edge case probing | `REQUIRED after completing ANY spec or blueprint.` |
 | **Specification** | `You MUST create this before...` | Agent/hook/component specs | `You MUST create this before implementing ANY new agent.` |
 | **Utility** | `Use when...` | Tools, setup, documentation, info | `Use when setting up ANY new project.` |
 | **Deprecated** | `DEPRECATED: Use X instead.` | Superseded commands | `DEPRECATED: Use /bootstrap-project instead.` |

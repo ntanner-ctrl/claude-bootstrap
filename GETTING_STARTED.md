@@ -75,18 +75,18 @@ You'll see output like:
 
 Creating directories...
 Downloading from repository...
-  → bootstrap-project.md
-  → check-project-setup.md
-  → stock hooks
-  → stock agents
-  → stock commands
-  → session-start plugin
+  → commands (39 files)
+  → templates
+  → shell hooks
+  → agents (6 files)
+  → hookify rules
 
 ✓ Installation complete!
 
-Available commands:
+Core commands:
+  /toolkit               - Quick reference for ALL commands
+  /start                 - Assess state, recommend next task
   /bootstrap-project     - Full project setup
-  /check-project-setup   - Quick drift detection
 ```
 
 ### Option B: Inspect Before Installing
@@ -258,10 +258,18 @@ Run /check-project-setup for details or /bootstrap-project to update.
 
 ### Available Commands
 
+The toolkit includes 39 commands. Here are the most important ones:
+
 | Command | When to Use |
 |---------|-------------|
-| `/bootstrap-project` | First setup, or major project changes |
+| `/start` | Beginning of any session — orients you |
+| `/toolkit` | Find the right command for your situation |
+| `/blueprint [name]` | Full planning workflow for non-trivial changes |
+| `/describe-change` | Triage a change to determine planning depth |
+| `/bootstrap-project` | First project setup, or major project changes |
 | `/check-project-setup` | Quick health check anytime |
+
+Run `/toolkit` for the complete list of all 39 commands.
 
 ### Using Installed Agents
 
@@ -410,12 +418,29 @@ hooks:
 To remove the Bootstrap Toolkit:
 
 ```bash
-# Remove commands
-rm ~/.claude/commands/bootstrap-project.md
-rm ~/.claude/commands/check-project-setup.md
+# Remove all toolkit commands
+rm ~/.claude/commands/{blueprint,blueprints,bootstrap-project,brainstorm,checkpoint}.md
+rm ~/.claude/commands/{check-project-setup,dashboard,debug,delegate,describe-change}.md
+rm ~/.claude/commands/{design-check,devils-advocate,dispatch,edge-cases,gpt-review}.md
+rm ~/.claude/commands/{overrides,preflight,process-doc,push-safe,quality-gate}.md
+rm ~/.claude/commands/{refresh-claude-md,requirements-discovery,review,security-checklist}.md
+rm ~/.claude/commands/{setup-hooks,simplify-this,spec-agent,spec-change,spec-hook}.md
+rm ~/.claude/commands/{spec-to-tests,start,status,tdd,test,toolkit,approve,migrate-docs}.md
 
 # Remove templates
 rm -rf ~/.claude/commands/templates/
+
+# Remove hooks
+rm ~/.claude/hooks/{session-bootstrap,state-index-update,blueprint-stage-gate}.sh
+rm ~/.claude/hooks/{worktree-cleanup,protect-claude-md,tdd-guardian}.sh
+rm ~/.claude/hooks/{dangerous-commands,secret-scanner,cfn-lint-check}.sh
+rm ~/.claude/hooks/{after-edit,notify,statusline}.sh
+
+# Remove agents
+rm ~/.claude/agents/{spec,quality,security,performance,architecture,cloudformation}-reviewer.md
+
+# Remove hookify rules
+rm ~/.claude/*.local.md
 
 # Remove plugin
 rm -rf ~/.claude/plugins/local/bootstrap-toolkit/
@@ -442,15 +467,19 @@ Project-level `.claude/` directories are **not removed** - those belong to each 
 │   curl -fsSL https://raw.githubusercontent.com/         │
 │   ntanner-ctrl/claude-bootstrap/main/install.sh|bash   │
 ├─────────────────────────────────────────────────────────┤
-│ COMMANDS                                                │
-│   /bootstrap-project    Full setup / update             │
+│ KEY COMMANDS (39 total — run /toolkit for all)          │
+│   /start                Orient to current state         │
+│   /toolkit              Find the right command          │
+│   /blueprint [name]     Full planning workflow          │
+│   /describe-change      Triage change complexity        │
+│   /bootstrap-project    Full project setup              │
 │   /check-project-setup  Quick health check              │
 ├─────────────────────────────────────────────────────────┤
-│ FILES CREATED                                           │
-│   .claude/CLAUDE.md           Project docs              │
-│   .claude/hooks/*.md          Automated reminders       │
-│   .claude/agents/*.md         Specialized assistants    │
-│   .claude/bootstrap-manifest  Tracking file             │
+│ COMPONENTS                                              │
+│   39 commands     Planning, review, testing, execution  │
+│   12 shell hooks  Safety, formatting, state tracking    │
+│    6 agents       Spec, quality, security, perf, arch   │
+│    7 hookify rules  rm -rf, force-push, chmod 777, etc. │
 ├─────────────────────────────────────────────────────────┤
 │ MATURITY LEVELS                                         │
 │   Nascent  (<4)   Full starter kit installed            │

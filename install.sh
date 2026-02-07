@@ -210,6 +210,8 @@ echo "  ~/.claude/hooks/secret-scanner.sh     - Scan for secrets before commits"
 echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
 echo "  ~/.claude/hooks/tdd-guardian.sh       - Block impl edits during TDD RED phase"
 echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index"
+echo "  ~/.claude/hooks/blueprint-stage-gate.sh - Check Empirica data before blueprint stage transitions"
+echo "  ~/.claude/hooks/cfn-lint-check.sh     - Auto-lint CloudFormation templates (fail-open)"
 echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
 echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
 echo ""
@@ -219,6 +221,7 @@ echo "  ~/.claude/agents/quality-reviewer.md       - Code quality review"
 echo "  ~/.claude/agents/security-reviewer.md      - Security lens (OWASP quick-pass)"
 echo "  ~/.claude/agents/performance-reviewer.md   - Performance lens (heuristic check)"
 echo "  ~/.claude/agents/architecture-reviewer.md  - Architecture lens (structural health)"
+echo "  ~/.claude/agents/cloudformation-reviewer.md - CloudFormation lens (tagging, naming, security)"
 echo ""
 echo -e "${YELLOW}⚠  Hook activation required:${NC}"
 echo ""
@@ -241,7 +244,9 @@ echo '    "PostToolUse": [{'
 echo '      "matcher": "Edit|Write",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/after-edit.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/state-index-update.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/cfn-lint-check.sh", "timeout": 30 },'
+echo '        { "type": "command", "command": "~/.claude/hooks/state-index-update.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/blueprint-stage-gate.sh" }'
 echo '      ]'
 echo '    }],'
 echo '    "PreToolUse": [{'

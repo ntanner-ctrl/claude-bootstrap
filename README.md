@@ -168,6 +168,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 | `secret-scanner.sh` | Scan for API keys before commits |
 | `cfn-lint-check.sh` | Auto-lint CloudFormation templates after edit (fail-open) |
 | `after-edit.sh` | Auto-format files |
+| `statusline.sh` | Toolkit-aware status line (model, cost, context, active work) |
 | `notify.sh` | Desktop notifications |
 
 ### Hookify Rules
@@ -212,7 +213,7 @@ cp commands/*.md ~/.claude/commands/
 
 ### Configuration
 
-Add to `~/.claude/settings.json`:
+Merge into `~/.claude/settings.json`. Minimal example (safety hooks only):
 
 ```json
 {
@@ -228,7 +229,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-See `settings-example.json` for complete configuration.
+See `settings-example.json` for complete configuration with all 12 hooks and status line.
 
 ---
 
