@@ -258,7 +258,7 @@ Run /check-project-setup for details or /bootstrap-project to update.
 
 ### Available Commands
 
-The toolkit includes 39 commands. Here are the most important ones:
+The toolkit includes 40 commands. Here are the most important ones:
 
 | Command | When to Use |
 |---------|-------------|
@@ -269,7 +269,7 @@ The toolkit includes 39 commands. Here are the most important ones:
 | `/bootstrap-project` | First project setup, or major project changes |
 | `/check-project-setup` | Quick health check anytime |
 
-Run `/toolkit` for the complete list of all 39 commands.
+Run `/toolkit` for the complete list of all 40 commands.
 
 ### Using Installed Agents
 
@@ -476,8 +476,8 @@ Project-level `.claude/` directories are **not removed** - those belong to each 
 │   /check-project-setup  Quick health check              │
 ├─────────────────────────────────────────────────────────┤
 │ COMPONENTS                                              │
-│   39 commands     Planning, review, testing, execution  │
-│   12 shell hooks  Safety, formatting, state tracking    │
+│   40 commands     Planning, review, testing, execution  │
+│   14 shell hooks  Safety, formatting, state tracking    │
 │    6 agents       Spec, quality, security, perf, arch   │
 │    7 hookify rules  rm -rf, force-push, chmod 777, etc. │
 ├─────────────────────────────────────────────────────────┤

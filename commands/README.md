@@ -61,6 +61,7 @@ Complete reference for all Claude Bootstrap commands.
 | `/dispatch` | Single-task subagent dispatch with fresh context and optional review lenses |
 | `/delegate` | Multi-task delegation with orchestration, lenses, and worktree isolation |
 | `/checkpoint` | Manual context-save for session continuity |
+| `/end` | Graceful session close with Empirica postflight assessment |
 | `/push-safe` | Safe git push with secret scanning |
 
 ### Status & Tracking
@@ -482,6 +483,27 @@ Saves:
 Location: `.claude/plans/[name]/checkpoints/` (if blueprint active) or `.claude/checkpoints/`
 
 **When to use:** Before ending a session, when context is large, or after non-obvious decisions.
+
+---
+
+### `/end`
+
+**Graceful session close.** Runs Empirica postflight assessment while Claude is still in the loop, then prompts the user to `/exit`.
+
+```
+/end
+```
+
+Steps:
+1. Reads active Empirica session from `.empirica/active_session`
+2. Claude self-assesses current epistemic state (13 vectors)
+3. Submits postflight assessment (captures learning delta)
+4. Logs any final findings
+5. Displays confirmation and prompts `/exit`
+
+**Why not just `/exit`?** The `SessionEnd` hook closes the DB record, but can't do epistemic self-assessment (Claude is already gone). `/end` keeps Claude in the loop for meaningful postflight data.
+
+**When to use:** Before every `/exit`. The session-bootstrap hook reminds Claude to suggest it.
 
 ---
 

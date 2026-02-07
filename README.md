@@ -230,7 +230,7 @@ Merge into `~/.claude/settings.json`. Minimal example (safety hooks only):
 }
 ```
 
-See `settings-example.json` for complete configuration with all 13 hooks and status line.
+See `settings-example.json` for complete configuration with all 14 hooks and status line.
 
 ---
 

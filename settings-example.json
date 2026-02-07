@@ -77,6 +77,17 @@
           }
         ]
       }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-end-empirica.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

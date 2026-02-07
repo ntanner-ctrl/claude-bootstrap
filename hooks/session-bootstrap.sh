@@ -48,7 +48,7 @@ for cmd_file in "$COMMANDS_DIR"/*.md "$PROJECT_COMMANDS"/*.md; do
         blueprint|spec-change|describe-change|brainstorm|preflight|decision|design-check)
             planning_cmds="${planning_cmds}  /${name}\n"
             ;;
-        push-safe|security-checklist|setup-hooks|checkpoint)
+        push-safe|security-checklist|setup-hooks|checkpoint|end)
             safety_cmds="${safety_cmds}  /${name}\n"
             ;;
         test|spec-to-tests|tdd|debug)
@@ -72,7 +72,7 @@ if command -v empirica &>/dev/null || [ -f "${HOME}/.local/bin/empirica" ]; then
   You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
   Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
   Store the session_id for use throughout this conversation.
-  At session end (/checkpoint), call mcp__empirica__submit_postflight_assessment."
+  Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
 fi
 
 # Check state-index for active work context
