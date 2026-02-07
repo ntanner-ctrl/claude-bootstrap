@@ -63,6 +63,17 @@ for cmd_file in "$COMMANDS_DIR"/*.md "$PROJECT_COMMANDS"/*.md; do
 done
 
 ACTIVE_WORK=""
+EMPIRICA_INSTRUCTION=""
+
+# Check for Empirica MCP server availability
+# If empirica tools are configured, inject session creation obligation
+if command -v empirica &>/dev/null || [ -f "${HOME}/.local/bin/empirica" ]; then
+    EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
+  You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
+  Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
+  Store the session_id for use throughout this conversation.
+  At session end (/checkpoint), call mcp__empirica__submit_postflight_assessment."
+fi
 
 # Check state-index for active work context
 if [ -f ".claude/state-index.json" ]; then
@@ -104,5 +115,6 @@ Rules:
 4. Announce which command you're using before proceeding
 
 Run /toolkit for complete command reference.
+$([ -n "$EMPIRICA_INSTRUCTION" ] && echo -e "$EMPIRICA_INSTRUCTION")
 $([ -n "$ACTIVE_WORK" ] && echo -e "$ACTIVE_WORK")
 EOF

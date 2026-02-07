@@ -3,8 +3,8 @@
 # Enforces Empirica integration during blueprint workflow.
 #
 # Checks for required Empirica data before allowing stage transitions.
-# Advisory (exit 0) — outputs warnings visible to agent but does not block.
-# Future: promote to blocking (exit 2) once confidence established.
+# Blocking (exit 2) — prevents stage transitions when Empirica data is missing.
+# Promoted from advisory mode after initial confidence period.
 #
 # Fires on Write operations to state.json within .claude/plans/*/
 # Checks:
@@ -95,7 +95,7 @@ fi
 # Report if anything is missing
 if [ ${#MISSING[@]} -gt 0 ]; then
     echo ""
-    echo "⚠ Blueprint stage gate: Missing Empirica data."
+    echo "BLOCKED: Blueprint stage gate — missing Empirica data."
     for item in "${PRESENT[@]}"; do
         echo "  - [x] $item"
     done
@@ -105,7 +105,8 @@ if [ ${#MISSING[@]} -gt 0 ]; then
     echo ""
     echo "Run the required Empirica calls before advancing to the next stage."
     echo ""
+    # Exit 2 = block the tool use (promoted from advisory)
+    exit 2
 fi
 
-# Advisory only — always exit 0
 exit 0

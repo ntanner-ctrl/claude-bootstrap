@@ -158,9 +158,10 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 
 | Hook | Purpose |
 |------|---------|
-| `session-bootstrap.sh` | **Inject command awareness + active work state at session start** |
+| `session-bootstrap.sh` | **Inject command awareness, Empirica session obligation, and active work state at session start** |
 | `state-index-update.sh` | Maintain `.claude/state-index.json` when blueprint/TDD state changes |
-| `blueprint-stage-gate.sh` | Check [Empirica](https://github.com/Nubaeon/empirica) data before blueprint stage transitions |
+| `blueprint-stage-gate.sh` | Block blueprint stage transitions when [Empirica](https://github.com/Nubaeon/empirica) data is missing |
+| `empirica-commit-reminder.sh` | Remind to log findings via Empirica after successful commits |
 | `worktree-cleanup.sh` | Clean orphaned worktrees from interrupted `--isolate` sessions |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
 | `tdd-guardian.sh` | Block implementation edits during TDD RED phase |
@@ -229,7 +230,7 @@ Merge into `~/.claude/settings.json`. Minimal example (safety hooks only):
 }
 ```
 
-See `settings-example.json` for complete configuration with all 12 hooks and status line.
+See `settings-example.json` for complete configuration with all 13 hooks and status line.
 
 ---
 
@@ -295,6 +296,7 @@ Built with patterns and inspiration from:
 - **[Priivacy-ai/spec-kitty](https://github.com/Priivacy-ai/spec-kitty)** - Git worktree isolation for parallel agents
 - **[ryanthedev/code-foundations](https://github.com/ryanthedev/code-foundations)** - Code Complete SE skills (debug, design-check)
 - **[cowwoc/claude-code-cat](https://github.com/cowwoc/claude-code-cat)** - Multi-perspective review lenses
+- **[Nubaeon/empirica](https://github.com/Nubaeon/empirica)** - Epistemic self-assessment framework for AI metacognition and calibration
 
 ---
 
