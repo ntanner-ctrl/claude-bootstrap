@@ -3,6 +3,10 @@ _OLD/
 
 # Empirica session data
 .empirica/
+.empirica_reflex_logs/
+
+# Generated data
+.breadcrumbs.yaml
 
 # OS files
 .DS_Store
