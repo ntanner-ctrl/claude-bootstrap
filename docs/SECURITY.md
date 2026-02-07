@@ -90,7 +90,7 @@ fi
 | `worktree-cleanup.sh` | SessionStart | Clean orphaned worktrees |
 | `dangerous-commands.sh` | PreToolUse (Bash) | Block catastrophic commands |
 | `secret-scanner.sh` | PreToolUse (Bash) | Scan for secrets before commits |
-| `protect-claude-md.sh` | PreToolUse (Edit\|Write) | Block accidental CLAUDE.md edits |
+| `protect-claude-md.sh` | PreToolUse (Edit\|Write) | Block CLAUDE.md edits (approval file bypass for /bootstrap-project) |
 | `tdd-guardian.sh` | PreToolUse (Edit\|Write) | Block impl edits during TDD RED phase |
 | `after-edit.sh` | PostToolUse (Edit\|Write) | Auto-format files after edits |
 | `cfn-lint-check.sh` | PostToolUse (Edit\|Write) | Auto-lint CloudFormation templates (fail-open) |

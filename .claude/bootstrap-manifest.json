@@ -1,0 +1,289 @@
+{
+  "version": "1.0.0",
+  "bootstrapped_at": "2026-02-07T23:11:10Z",
+  "project_type": [
+    "shell",
+    "markdown",
+    "claude-code-extensibility"
+  ],
+  "maturity_score": 8,
+  "maturity_level": "mature",
+  "inventory": {
+    "commands": 39,
+    "agents": 6,
+    "hooks": 13,
+    "hookify_rules": 7
+  },
+  "elements": {
+    "commands/approve.md": {
+      "type": "command",
+      "hash": "sha256:8aa16012daecb049"
+    },
+    "commands/assess-project.md": {
+      "type": "command",
+      "hash": "sha256:59dc4d718d6c26ac"
+    },
+    "commands/blueprint.md": {
+      "type": "command",
+      "hash": "sha256:3b1113e1e6d0c687"
+    },
+    "commands/blueprints.md": {
+      "type": "command",
+      "hash": "sha256:dd06a1ad6586aa51"
+    },
+    "commands/bootstrap-project.md": {
+      "type": "command",
+      "hash": "sha256:905c0a94eda34a35"
+    },
+    "commands/brainstorm.md": {
+      "type": "command",
+      "hash": "sha256:38e225469215c25e"
+    },
+    "commands/check-project-setup.md": {
+      "type": "command",
+      "hash": "sha256:6a7ddaab7d98e919"
+    },
+    "commands/checkpoint.md": {
+      "type": "command",
+      "hash": "sha256:104b9bf76104a9d8"
+    },
+    "commands/dashboard.md": {
+      "type": "command",
+      "hash": "sha256:25bcb2f9392d6190"
+    },
+    "commands/debug.md": {
+      "type": "command",
+      "hash": "sha256:95a97f53e76cc601"
+    },
+    "commands/decision.md": {
+      "type": "command",
+      "hash": "sha256:944ad7467d7961d3"
+    },
+    "commands/delegate.md": {
+      "type": "command",
+      "hash": "sha256:13c2280258464dbe"
+    },
+    "commands/describe-change.md": {
+      "type": "command",
+      "hash": "sha256:9fba37a788f7ffe9"
+    },
+    "commands/design-check.md": {
+      "type": "command",
+      "hash": "sha256:b9b8275ba8e50d28"
+    },
+    "commands/devils-advocate.md": {
+      "type": "command",
+      "hash": "sha256:91a540447cf51fb6"
+    },
+    "commands/dispatch.md": {
+      "type": "command",
+      "hash": "sha256:73aa1b4cec607700"
+    },
+    "commands/edge-cases.md": {
+      "type": "command",
+      "hash": "sha256:072b71f6bb0e1830"
+    },
+    "commands/gpt-review.md": {
+      "type": "command",
+      "hash": "sha256:0450b780d6350fea"
+    },
+    "commands/migrate-docs.md": {
+      "type": "command",
+      "hash": "sha256:fb07909cafbded68"
+    },
+    "commands/overrides.md": {
+      "type": "command",
+      "hash": "sha256:c8a7afac175f44d7"
+    },
+    "commands/preflight.md": {
+      "type": "command",
+      "hash": "sha256:f46dcbbba657c0a3"
+    },
+    "commands/process-doc.md": {
+      "type": "command",
+      "hash": "sha256:6f84957d8ea6f055"
+    },
+    "commands/push-safe.md": {
+      "type": "command",
+      "hash": "sha256:73e91d4876ffd61a"
+    },
+    "commands/quality-gate.md": {
+      "type": "command",
+      "hash": "sha256:7f32146d922cd748"
+    },
+    "commands/refresh-claude-md.md": {
+      "type": "command",
+      "hash": "sha256:ef59a1d2c8680fc8"
+    },
+    "commands/requirements-discovery.md": {
+      "type": "command",
+      "hash": "sha256:767c82c2638d93a6"
+    },
+    "commands/review.md": {
+      "type": "command",
+      "hash": "sha256:ab54db6dc2602737"
+    },
+    "commands/security-checklist.md": {
+      "type": "command",
+      "hash": "sha256:45fcde9e7e01c832"
+    },
+    "commands/setup-hooks.md": {
+      "type": "command",
+      "hash": "sha256:8230b61d61202ee3"
+    },
+    "commands/simplify-this.md": {
+      "type": "command",
+      "hash": "sha256:07b3bdabf4437ead"
+    },
+    "commands/spec-agent.md": {
+      "type": "command",
+      "hash": "sha256:790147c36f713f62"
+    },
+    "commands/spec-change.md": {
+      "type": "command",
+      "hash": "sha256:7f8e709858dc4550"
+    },
+    "commands/spec-hook.md": {
+      "type": "command",
+      "hash": "sha256:41f4d679eb0b55b3"
+    },
+    "commands/spec-to-tests.md": {
+      "type": "command",
+      "hash": "sha256:e110e735be3cabcc"
+    },
+    "commands/start.md": {
+      "type": "command",
+      "hash": "sha256:21ef95ba09a4cb6b"
+    },
+    "commands/status.md": {
+      "type": "command",
+      "hash": "sha256:5985dda2760c3ea9"
+    },
+    "commands/tdd.md": {
+      "type": "command",
+      "hash": "sha256:827fe5bebcb9f52f"
+    },
+    "commands/test.md": {
+      "type": "command",
+      "hash": "sha256:68d6194516afd3b8"
+    },
+    "commands/toolkit.md": {
+      "type": "command",
+      "hash": "sha256:7243505b127d3704"
+    },
+    "agents/architecture-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:78512aad87497842"
+    },
+    "agents/cloudformation-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:9eec43785557e605"
+    },
+    "agents/performance-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:e5f3de22cbf64516"
+    },
+    "agents/quality-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:4ac9e0a10c4a49c8"
+    },
+    "agents/security-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:ef54efb48988ad5a"
+    },
+    "agents/spec-reviewer.md": {
+      "type": "agent",
+      "hash": "sha256:cf7e6bf0d0de7b4c"
+    },
+    "hooks/after-edit.sh": {
+      "type": "hook",
+      "hash": "sha256:95e1bc7ce472fbf6"
+    },
+    "hooks/blueprint-stage-gate.sh": {
+      "type": "hook",
+      "hash": "sha256:dc6becdacb5bbac2"
+    },
+    "hooks/cfn-lint-check.sh": {
+      "type": "hook",
+      "hash": "sha256:f63624a921d854dd"
+    },
+    "hooks/dangerous-commands.sh": {
+      "type": "hook",
+      "hash": "sha256:adb577eb3241a285"
+    },
+    "hooks/empirica-commit-reminder.sh": {
+      "type": "hook",
+      "hash": "sha256:45ea2351445029cf"
+    },
+    "hooks/notify.sh": {
+      "type": "hook",
+      "hash": "sha256:7802f46b9776b206"
+    },
+    "hooks/protect-claude-md.sh": {
+      "type": "hook",
+      "hash": "sha256:e631c1d6c6de11dc"
+    },
+    "hooks/secret-scanner.sh": {
+      "type": "hook",
+      "hash": "sha256:db73aa95d204a57e"
+    },
+    "hooks/session-bootstrap.sh": {
+      "type": "hook",
+      "hash": "sha256:cc36229b94f13599"
+    },
+    "hooks/state-index-update.sh": {
+      "type": "hook",
+      "hash": "sha256:3015bc8beb7fbdb2"
+    },
+    "hooks/statusline.sh": {
+      "type": "hook",
+      "hash": "sha256:01683b99bf6019e7"
+    },
+    "hooks/tdd-guardian.sh": {
+      "type": "hook",
+      "hash": "sha256:1625ebb93d9e2029"
+    },
+    "hooks/worktree-cleanup.sh": {
+      "type": "hook",
+      "hash": "sha256:bfbca171274ef3c0"
+    },
+    "hookify-rules/hookify.chmod-777.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:86eeba0dd70b83ba"
+    },
+    "hookify-rules/hookify.disk-ops-protection.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:24d2f0f7e41cf0e8"
+    },
+    "hookify-rules/hookify.env-exposure-protection.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:c189aaab0bf5c1f0"
+    },
+    "hookify-rules/hookify.exfiltration-protection.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:6b687a41532028b3"
+    },
+    "hookify-rules/hookify.force-push-protection.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:5b855be63fd9a5db"
+    },
+    "hookify-rules/hookify.remote-exec-protection.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:77ef8e746f0045d1"
+    },
+    "hookify-rules/hookify.surgical-rm.local.md": {
+      "type": "hookify-rule",
+      "hash": "sha256:4f4c7de2cbaa60cb"
+    }
+  },
+  "documentation": [
+    "README.md",
+    "GETTING_STARTED.md",
+    "commands/README.md",
+    "docs/PLANNING-STORAGE.md",
+    "docs/SECURITY.md",
+    "docs/ENFORCEMENT-PATTERNS.md",
+    "docs/BLUEPRINT-MODES.md",
+    "docs/CREATING-DOMAIN-KITS.md"
+  ]
+}
