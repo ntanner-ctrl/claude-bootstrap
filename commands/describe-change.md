@@ -2,7 +2,7 @@
 description: You MUST run this as the FIRST step of ANY implementation task. Determines required planning depth before you proceed.
 arguments:
   - name: name
-    description: Short name for this change (used for plan tracking)
+    description: Short name for this change (used for blueprint tracking)
     required: false
 ---
 
@@ -80,7 +80,22 @@ Based on step count and risk factors:
 | 4-7   | Any        | **Full** — Complete planning protocol |
 | 8+    | Any        | **Full** — Complete planning protocol |
 
-### Step 5: Present Result
+### Step 5: Execution Preference
+
+For Standard and Full paths, ask:
+
+```
+Execution preference:
+  [1] Speed — parallelize aggressively, use /delegate
+  [2] Simplicity — sequential implementation, minimal overhead
+  [3] Auto — let the work graph analysis decide (default)
+```
+
+This is advisory — it influences the parallelization recommendation at Stage 7 but doesn't constrain the user's final choice. Record in state.json as `"execution_preference": "speed" | "simplicity" | "auto"`.
+
+For Light path, default to `"simplicity"` without asking.
+
+### Step 6: Present Result
 
 ```markdown
 ## Triage Result
@@ -88,6 +103,7 @@ Based on step count and risk factors:
 **Change:** [name or summary]
 **Steps:** [count] discrete actions
 **Risk flags:** [list or "None"]
+**Execution preference:** [Speed | Simplicity | Auto]
 
 **Recommended path:** [Light | Standard | Full]
 
@@ -95,7 +111,7 @@ Based on step count and risk factors:
 Next steps:
   • Light path → `/preflight` then execute
   • Standard path → `/spec-change`
-  • Full path → `/plan [name]` for guided workflow
+  • Full path → `/blueprint [name]` for guided workflow
 
 Disagree with assessment? You can override with a reason.
 ```
@@ -110,12 +126,12 @@ If the user wants to override the recommendation:
 
 ## Output Artifacts
 
-If a plan name was provided, create:
+If a blueprint name was provided, create:
 - `.claude/plans/[name]/describe.md` — This triage output
 - `.claude/plans/[name]/state.json` — Initial state (stage 1)
 
 ## Integration
 
-- **Feeds into:** `/spec-change`, `/preflight`, `/plan`
+- **Feeds into:** `/spec-change`, `/preflight`, `/blueprint`
 - **Fed by:** `/brainstorm` (if exploration happened first)
 - **Tracks in:** `.claude/plans/[name]/` if named

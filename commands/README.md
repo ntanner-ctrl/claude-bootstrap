@@ -18,8 +18,8 @@ Complete reference for all Claude Bootstrap commands.
 
 | Command | One-liner |
 |---------|-----------|
-| `/plan [name]` | Full planning workflow — walks through all stages |
-| `/review [target]` | Adversarial review workflow — challenge a plan |
+| `/blueprint [name]` | Full planning workflow — walks through all stages |
+| `/review [target]` | Adversarial review workflow — challenge a blueprint |
 | `/test [name]` | Testing workflow — spec to tests to verification |
 
 ### Planning (Before You Build)
@@ -35,7 +35,7 @@ Complete reference for all Claude Bootstrap commands.
 | `/design-check` | Pre-implementation prerequisite check (6-point) |
 | `/requirements-discovery` | Extract validated requirements |
 
-### Adversarial (Challenge Your Plan)
+### Adversarial (Challenge Your Blueprint)
 
 | Command | One-liner |
 |---------|-----------|
@@ -67,11 +67,11 @@ Complete reference for all Claude Bootstrap commands.
 
 | Command | One-liner |
 |---------|-----------|
-| `/status [name]` | Show current planning workflow state |
-| `/plans` | List all in-progress plans |
-| `/dashboard` | Aggregated view of all active work (plans, TDD, checkpoints) |
+| `/status [name]` | Show current blueprint workflow state |
+| `/blueprints` | List all in-progress blueprints |
+| `/dashboard` | Aggregated view of all active work (blueprints, TDD, checkpoints) |
 | `/overrides` | Review override patterns |
-| `/approve [plan]` | Approve a planning stage |
+| `/approve [blueprint]` | Approve a planning stage |
 
 ### Setup
 
@@ -96,12 +96,12 @@ Complete reference for all Claude Bootstrap commands.
 
 Guided paths through the toolkit for common scenarios.
 
-### `/plan [name]`
+### `/blueprint [name]`
 
 **Full planning workflow.** Walks through all stages with appropriate prompts based on change complexity.
 
 ```
-/plan feature-auth
+/blueprint feature-auth
 ```
 
 Stages:
@@ -124,7 +124,7 @@ The triage in Stage 1 determines path depth:
 
 ### `/review [target]`
 
-**Adversarial review workflow.** Focused challenge of an existing plan or implementation.
+**Adversarial review workflow.** Focused challenge of an existing blueprint or implementation.
 
 ```
 /review feature-auth
@@ -137,7 +137,7 @@ Runs through:
 3. Edge Cases — Probe boundaries
 4. External Review — GPT review (optional)
 
-**When to use:** You have a plan and want to stress-test it without full planning workflow.
+**When to use:** You have a blueprint and want to stress-test it without full planning workflow.
 
 ---
 
@@ -295,7 +295,7 @@ Challenge categories:
 - **Timing** — What if during deployment? DST? Concurrent?
 - **Trust** — What if malformed? Malicious? Unexpected?
 
-**When to use:** After drafting a plan, before committing to implementation.
+**When to use:** After drafting a blueprint, before committing to implementation.
 
 ---
 
@@ -312,7 +312,7 @@ Challenges:
 - **Build vs. Use** — Does this already exist?
 - **Necessity** — What's the MVP? What could be phase 2?
 
-**When to use:** When a plan has multiple components or abstractions.
+**When to use:** When a blueprint has multiple components or abstractions.
 
 ---
 
@@ -395,26 +395,26 @@ Includes anti-tautology review checklist.
 
 ### `/status [name]`
 
-**Planning state display.** Shows detailed progress for a specific plan or overview.
+**Planning state display.** Shows detailed progress for a specific blueprint or overview.
 
 ```
-/status                 # Overview of all plans
-/status feature-auth    # Detailed view of one plan
+/status                 # Overview of all blueprints
+/status feature-auth    # Detailed view of one blueprint
 ```
 
 Shows: Stage progress, artifacts created, skipped stages, time since activity.
 
 ---
 
-### `/plans`
+### `/blueprints`
 
-**List all in-progress plans.** Overview of planning state across project.
+**List all in-progress blueprints.** Overview of planning state across project.
 
 ```
-/plans
+/blueprints
 ```
 
-Shows: All active plans, their current stage, last activity, stale warnings.
+Shows: All active blueprints, their current stage, last activity, stale warnings.
 
 ---
 
@@ -426,13 +426,13 @@ Shows: All active plans, their current stage, last activity, stale warnings.
 /overrides
 ```
 
-Shows: When plans deviated from recommendations, reasons given, outcomes (if known).
+Shows: When blueprints deviated from recommendations, reasons given, outcomes (if known).
 
 Enables learning: Were shortcuts justified, or did they cause problems?
 
 ---
 
-### `/approve [plan]`
+### `/approve [blueprint]`
 
 **Stage gate approval.** Explicitly approve a stage to advance.
 
@@ -455,7 +455,7 @@ Options: Clean approval, approve with concerns, not ready.
 ```
 
 Displays:
-- Active plan (name, stage, time since update)
+- Active blueprint (name, stage, time since update)
 - Active TDD session (target, phase)
 - Last checkpoint timestamp
 - Delegation status (if running)
@@ -477,9 +477,9 @@ Saves:
 - Summary of current state
 - Key decisions and rationale
 - Next action to take when resuming
-- Active plan/TDD context
+- Active blueprint/TDD context
 
-Location: `.claude/plans/[name]/checkpoints/` (if plan active) or `.claude/checkpoints/`
+Location: `.claude/plans/[name]/checkpoints/` (if blueprint active) or `.claude/checkpoints/`
 
 **When to use:** Before ending a session, when context is large, or after non-obvious decisions.
 
@@ -524,7 +524,7 @@ Location: `.claude/plans/[name]/checkpoints/` (if plan active) or `.claude/check
 Features:
 - Fresh context (no session baggage)
 - Optional two-stage review (spec compliance + quality)
-- Review lenses (`--lenses security,perf,arch`) for additional perspectives
+- Review lenses (`--lenses security,perf,arch,cfn`) for additional perspectives
 - Plan context (`--plan-context`) to enrich with planning intelligence
 - Model selection (haiku/sonnet/opus)
 - Max 3 retry attempts on review failure
@@ -548,7 +548,7 @@ Modes:
 - **Orchestrated:** Parses plan into tasks, partitions by file, dispatches in batches with approval gates
 
 Features:
-- Review lenses (`--lenses security,perf,arch`) for additional review perspectives
+- Review lenses (`--lenses security,perf,arch,cfn`) for additional review perspectives
 - Worktree isolation (`--isolate`) for independent per-task review and accept/reject
 - Plan context (`--plan-context`) to enrich implementers with planning intelligence
 
@@ -683,12 +683,12 @@ Phases:
 
 ## Storage Structure
 
-Plans and state are stored in `.claude/`:
+Blueprints and state are stored in `.claude/`:
 
 ```
 .claude/
 ├── state-index.json          # Active work index (maintained by hook)
-├── checkpoints/              # Global checkpoints (no active plan)
+├── checkpoints/              # Global checkpoints (no active blueprint)
 │   └── 20260124T100000Z.json
 ├── plans/
 │   ├── feature-auth/

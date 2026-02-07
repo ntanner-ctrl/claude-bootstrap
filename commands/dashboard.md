@@ -5,7 +5,7 @@ arguments: []
 
 # Dashboard
 
-Aggregated view of all active work. Reads state-index, plan state, and TDD state to show a unified picture.
+Aggregated view of all active work. Reads state-index, blueprint state, and TDD state to show a unified picture.
 
 ## Process
 
@@ -17,7 +17,7 @@ Check for active state sources:
 # State index (maintained by hook)
 cat .claude/state-index.json 2>/dev/null
 
-# Active plans (fallback if no state-index)
+# Active blueprints (fallback if no state-index)
 ls .claude/plans/*/state.json 2>/dev/null
 
 # Active TDD session
@@ -30,7 +30,7 @@ ls -t .claude/plans/*/checkpoints/*.json .claude/checkpoints/*.json 2>/dev/null 
 ### Step 2: Compute Status
 
 For each active item, determine:
-- **Plan**: name, current stage, time since last update
+- **Blueprint**: name, current stage, time since last update
 - **TDD**: target, current phase, mode
 - **Checkpoint**: timestamp, relative time ("20 min ago")
 - **Delegate**: whether delegation is in progress
@@ -44,16 +44,16 @@ For each active item, determine:
   DASHBOARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Active:
-  Plan: [name]  Stage [N]/7  [time] ago
+  Blueprint: [name]  Stage [N]/7  [time] ago
   TDD:  [target]  [PHASE]    [status]
 
 Context:
   Last checkpoint: [relative time]
 
 Tips:
-  /status [name]   Detail on specific plan
+  /status [name]   Detail on specific blueprint
   /checkpoint      Save current context
-  /plans           List all plans
+  /blueprints      List all blueprints
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -65,12 +65,12 @@ Tips:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   No active work detected.
 
-  Recent plans:
+  Recent blueprints:
     [name]  Stage 7/7  completed [date]
     [name]  Stage 4/7  paused [date]
 
   Start something:
-    /plan [name]     New planning workflow
+    /blueprint [name]     New planning workflow
     /tdd [target]    TDD session
     /describe-change Triage a change
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -91,11 +91,11 @@ Based on state, suggest next action:
 
 | State | Suggestion |
 |-------|------------|
-| Plan at stage 7 | "Ready to implement. Use /delegate --plan or /tdd" |
+| Blueprint at stage 7 | "Ready to implement. Use /delegate --plan or /tdd" |
 | TDD in RED phase | "Write failing tests for [target]" |
 | TDD in GREEN phase | "Implement minimal code to pass tests" |
 | No checkpoint in 1h+ | "Consider /checkpoint to save context" |
-| Multiple stale plans | "Consider closing stale plans" |
+| Multiple stale blueprints | "Consider closing stale blueprints" |
 
 ## Notes
 

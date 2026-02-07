@@ -17,8 +17,8 @@ Present this reference card:
 
 WORKFLOW WIZARDS (guided paths)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  /plan [name]       Full planning workflow — walks through all stages
-  /review [name]     Adversarial review workflow — challenge a plan
+  /blueprint [name]  Full planning workflow — walks through all stages
+  /review [name]     Adversarial review workflow — challenge a blueprint
   /test [name]       Testing workflow — spec to tests to verification
 
 START HERE
@@ -37,7 +37,7 @@ PLANNING (before you build)
   /decision          Record a non-obvious decision
   /requirements-discovery   Extract validated requirements
 
-ADVERSARIAL (challenge your plan)
+ADVERSARIAL (challenge your blueprint)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /devils-advocate   What assumptions might be wrong?
   /simplify-this     Is this overcomplicated?
@@ -66,27 +66,27 @@ SETUP & STATUS
   /check-project-setup   Verify configuration
   /assess-project    Generate CLAUDE.md only
   /setup-hooks       Configure formatting hooks
-  /status            Current planning workflow state
-  /plans             List all in-progress plans
+  /status            Current blueprint workflow state
+  /blueprints        List all in-progress blueprints
   /overrides         Review override patterns
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Don't know where to start? Run /describe-change
-  Want guided help? Run /plan [name]
+  Want guided help? Run /blueprint [name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ## Contextual Additions
 
-If `.claude/plans/` exists and contains in-progress plans, append:
+If `.claude/plans/` exists and contains in-progress blueprints, append:
 
 ```
-ACTIVE PLANS
+ACTIVE BLUEPRINTS
 ━━━━━━━━━━━━
   [name]    Stage [N]/7    Last: [time ago]
   ...
 
-  Resume with: /plan [name]
+  Resume with: /blueprint [name]
 ```
 
 ## Notes

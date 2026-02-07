@@ -11,7 +11,7 @@ arguments:
     description: "Model for implementer: haiku, sonnet (default), opus"
     required: false
   - name: lenses
-    description: "Additional review lenses after standard review (--lenses security,perf,arch)"
+    description: "Additional review lenses after standard review (--lenses security,perf,arch,cfn)"
     required: false
   - name: plan-context
     description: "Plan name to pull context from (--plan-context feature-auth)"
@@ -159,13 +159,13 @@ Task(
 
 After standard review passes, run additional review lenses:
 
-Available lenses: `security`, `perf`, `arch`
+Available lenses: `security`, `perf`, `arch`, `cfn`
 
 For each specified lens, dispatch the corresponding agent (haiku model):
 
 ```
 Task(
-  subagent_type: "[security-reviewer|performance-reviewer|architecture-reviewer]",
+  subagent_type: "[security-reviewer|performance-reviewer|architecture-reviewer|cloudformation-reviewer]",
   model: "haiku",
   max_turns: 5,
   prompt: [agent reads files and applies its mandate]
@@ -177,7 +177,7 @@ Lens results are **advisory** — they don't trigger re-dispatch. Display after 
 **If `--lenses` NOT specified but `--review` was used**, print reminder:
 ```
 Review complete (spec: PASS, quality: PASS).
-Tip: Additional lenses available: --lenses security,perf,arch
+Tip: Additional lenses available: --lenses security,perf,arch,cfn
 ```
 
 ### Step 7: Plan Context (if --plan-context)

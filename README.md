@@ -27,7 +27,7 @@ claude
 | Component | Purpose |
 |-----------|---------|
 | [**Commands**](commands/README.md) | 39 workflow commands for planning, review, testing, execution |
-| [**Agents**](agents/) | 5 specialized review agents (spec, quality, security, performance, architecture) |
+| [**Agents**](agents/) | 6 specialized review agents (spec, quality, security, performance, architecture, CloudFormation) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
@@ -38,12 +38,12 @@ claude
 | Category | Commands |
 |----------|----------|
 | **Start Here** | `/start`, `/describe-change`, `/toolkit` |
-| **Workflow Wizards** | `/plan`, `/review`, `/test` |
+| **Workflow Wizards** | `/blueprint`, `/review`, `/test` |
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision`, `/design-check` |
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
 | **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist`, `/debug` |
 | **Execution** | `/dispatch`, `/delegate`, `/checkpoint` |
-| **Status** | `/status`, `/plans`, `/overrides`, `/approve`, `/dashboard` |
+| **Status** | `/status`, `/blueprints`, `/overrides`, `/approve`, `/dashboard` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
 
@@ -65,21 +65,35 @@ Every change starts with `/describe-change`, which determines planning depth:
 | 1-3   | Any        | **Standard** — `/spec-change` required |
 | 4-7   | Any        | **Full** — Complete planning protocol |
 
-### The `/plan` Wizard
+### The `/blueprint` Wizard
 
-Guided workflow through all stages:
+Guided workflow through all stages with three challenge modes:
 
 ```
-/plan feature-auth
+/blueprint feature-auth                     # debate mode (default)
+/blueprint feature-auth --challenge=vanilla # single-agent (original)
+/blueprint feature-auth --challenge=team    # agent teams (experimental)
 
-Stage 1: Describe    → Triage the change
-Stage 2: Specify     → Full specification
-Stage 3: Challenge   → Devil's advocate review
-Stage 4: Edge Cases  → Boundary probing
-Stage 5: Review      → External perspective (optional)
-Stage 6: Test        → Spec-blind test generation
-Stage 7: Execute     → Implementation (with --plan-context handoff)
+Stage 1: Describe     → Triage the change
+Stage 2: Specify      → Full specification + work graph
+Stage 3: Challenge    → Debate chain / vanilla / agent team
+Stage 4: Edge Cases   → Debate chain / vanilla / agent team
+Stage 4.5: Pre-Mortem → Operational failure exercise (optional)
+Stage 5: Review       → External perspective (optional)
+Stage 6: Test         → Spec-blind test generation
+Stage 7: Execute      → Implementation (with manifest handoff + work graph)
 ```
+
+Features feedback loops (max 3 regressions), HALT state recovery, token-dense
+manifest storage, Empirica-backed confidence scoring, and work graph parallelization.
+
+See [docs/BLUEPRINT-MODES.md](docs/BLUEPRINT-MODES.md) for challenge mode details.
+
+> **Q: Why is the command `/blueprint` but files are in `.claude/plans/`?**
+> A: The command was renamed from `/plan` to `/blueprint` to avoid collision with
+> Claude Code's native plan mode. The storage directory was intentionally kept as
+> `.claude/plans/` for backward compatibility — it stores general planning state,
+> not just blueprints.
 
 ### Adversarial Pipeline
 
@@ -112,6 +126,7 @@ Opt-in additional review perspectives via `--lenses`:
 | `security` | security-reviewer | OWASP top 10, injection, auth gaps |
 | `perf` | performance-reviewer | N+1 queries, blocking I/O, allocations |
 | `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
+| `cfn` | cloudformation-reviewer | Tagging, naming, security posture, CF best practices |
 
 Lenses run after the standard spec + quality review and are advisory (don't block).
 
@@ -144,12 +159,14 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 | Hook | Purpose |
 |------|---------|
 | `session-bootstrap.sh` | **Inject command awareness + active work state at session start** |
-| `state-index-update.sh` | Maintain `.claude/state-index.json` when plan/TDD state changes |
+| `state-index-update.sh` | Maintain `.claude/state-index.json` when blueprint/TDD state changes |
+| `blueprint-stage-gate.sh` | Check Empirica data before blueprint stage transitions |
 | `worktree-cleanup.sh` | Clean orphaned worktrees from interrupted `--isolate` sessions |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
 | `tdd-guardian.sh` | Block implementation edits during TDD RED phase |
 | `dangerous-commands.sh` | Block `rm -rf /`, `chmod 777`, force push to main |
 | `secret-scanner.sh` | Scan for API keys before commits |
+| `cfn-lint-check.sh` | Auto-lint CloudFormation templates after edit (fail-open) |
 | `after-edit.sh` | Auto-format files |
 | `notify.sh` | Desktop notifications |
 
@@ -260,7 +277,8 @@ Bootstrap adapts to project maturity:
 | [commands/README.md](commands/README.md) | Reference | All commands documented |
 | [docs/SECURITY.md](docs/SECURITY.md) | Explanation | Defense-in-depth architecture |
 | [docs/ENFORCEMENT-PATTERNS.md](docs/ENFORCEMENT-PATTERNS.md) | Reference | Command description enforcement tiers |
-| [docs/PLANNING-STORAGE.md](docs/PLANNING-STORAGE.md) | Reference | Planning state and storage schemas |
+| [docs/PLANNING-STORAGE.md](docs/PLANNING-STORAGE.md) | Reference | Planning state and storage schemas (v2) |
+| [docs/BLUEPRINT-MODES.md](docs/BLUEPRINT-MODES.md) | Explanation | Challenge mode comparison (vanilla/debate/team) |
 | [docs/CREATING-DOMAIN-KITS.md](docs/CREATING-DOMAIN-KITS.md) | How-to | Build your own domain kit |
 | [ops-starter-kit/README.md](ops-starter-kit/README.md) | Reference | Ops-specific extensions |
 

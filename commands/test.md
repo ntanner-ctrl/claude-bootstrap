@@ -2,7 +2,7 @@
 description: You MUST use this after ANY significant implementation. Untested code is unfinished code — run this before declaring work complete.
 arguments:
   - name: name
-    description: Plan name or feature to test
+    description: Blueprint name or feature to test
     required: false
 ---
 
@@ -40,7 +40,7 @@ cat .claude/tdd-sessions/active.json 2>/dev/null
 Provide the specification to test from:
 
   [1] Existing spec file (provide path)
-  [2] Current /plan artifacts (loads from .claude/plans/[name]/)
+  [2] Current /blueprint artifacts (loads from .claude/plans/[name]/)
   [3] Describe criteria now
 
 >
@@ -207,5 +207,5 @@ Watch for these anti-patterns:
 ## Integration
 
 - **Uses:** `/spec-to-tests` (Stage 2)
-- **Part of:** `/plan` wizard (Stage 6)
+- **Part of:** `/blueprint` wizard (Stage 6)
 - **Fed by:** `/spec-change` (testable criteria)

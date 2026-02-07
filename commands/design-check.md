@@ -127,6 +127,6 @@ Display results:
 
 ## Integration
 
-- Use `/plan` for full planning workflow (includes this as a phase check)
+- Use `/blueprint` for full planning workflow (includes this as a phase check)
 - Use `/spec-change` to formalize requirements identified here
 - Use `/edge-cases` to probe boundaries identified in step 1

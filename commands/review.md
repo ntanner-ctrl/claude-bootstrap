@@ -1,14 +1,14 @@
 ---
-description: REQUIRED after completing a plan on the Full path. External perspective catches what familiarity blinds you to.
+description: REQUIRED after completing a blueprint on the Full path. External perspective catches what familiarity blinds you to.
 arguments:
   - name: target
-    description: Plan name, file path, or 'current' for active context
+    description: Blueprint name, file path, or 'current' for active context
     required: false
 ---
 
 # Review
 
-Focused adversarial review workflow. Use this when you have a plan or implementation and want to systematically challenge it without going through full planning stages.
+Focused adversarial review workflow. Use this when you have a blueprint or implementation and want to systematically challenge it without going through full planning stages.
 
 ## Overview
 
@@ -30,7 +30,7 @@ Stage 4: External (opt)    → GPT review for blind spots
 
 What are you reviewing?
 
-  [1] An existing plan (provide name or path)
+  [1] An existing blueprint (provide name or path)
   [2] Current implementation (describe scope)
   [3] An idea or approach (describe it)
 
@@ -192,7 +192,7 @@ Based on the verdict:
 
 ## Integration
 
-- **Standalone:** Can be run on any plan, implementation, or idea
-- **After /plan:** Provides deeper adversarial review post-planning
+- **Standalone:** Can be run on any blueprint, implementation, or idea
+- **After /blueprint:** Provides deeper adversarial review post-planning
 - **Before /push-safe:** Final check before shipping
-- **Findings recorded:** Appended to `.claude/plans/[name]/adversarial.md` if plan context active
+- **Findings recorded:** Appended to `.claude/plans/[name]/adversarial.md` if blueprint context active

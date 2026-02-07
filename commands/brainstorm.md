@@ -48,10 +48,10 @@ Do not proceed to Phase 2 until the user has answered your clarifying questions.
 
 ## Integration
 
-- **Pre-planning:** Use before `/plan` when the problem has multiple viable approaches
+- **Pre-planning:** Use before `/blueprint` when the problem has multiple viable approaches
 - **After `/review` verdict "Needs rethinking":** Explore alternatives
-- **Feeds into:** `/plan` (approach becomes Stage 1 input), `/decision` (record chosen approach)
-- **After approval:** Proceed to `/plan [name]` or `/describe-change` for triage
+- **Feeds into:** `/blueprint` (approach becomes Stage 1 input), `/decision` (record chosen approach)
+- **After approval:** Proceed to `/blueprint [name]` or `/describe-change` for triage
 
 ---
 

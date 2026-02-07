@@ -2,7 +2,7 @@
 description: You MUST generate tests from spec BEFORE reading implementation. Spec-blind tests catch what implementation-aware tests miss.
 arguments:
   - name: spec
-    description: Path to specification or plan name
+    description: Path to specification or blueprint name
     required: false
 ---
 
@@ -264,11 +264,11 @@ test.property("sorted output is always in order", (input) => {
 ## Output Artifacts
 
 Save to:
-- Plan tracking: `.claude/plans/[name]/tests.md`
+- Blueprint tracking: `.claude/plans/[name]/tests.md`
 - Project tests: `tests/[feature].spec.js` or equivalent
 
 ## Integration
 
 - **Fed by:** `/spec-change` (success criteria, preservation contract, failure modes)
-- **Part of:** `/plan` wizard (Stage 6), `/test` wizard
+- **Part of:** `/blueprint` wizard (Stage 6), `/test` wizard
 - **Verified by:** Running test suite

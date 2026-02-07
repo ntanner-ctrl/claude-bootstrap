@@ -29,6 +29,11 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/after-edit.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/cfn-lint-check.sh",
+            "timeout": 30
           }
         ]
       }

@@ -14,7 +14,7 @@ arguments:
     description: "Max parallel agents (--parallel N, default 3)"
     required: false
   - name: lenses
-    description: "Additional review lenses after standard review (--lenses security,perf,arch)"
+    description: "Additional review lenses after standard review (--lenses security,perf,arch,cfn)"
     required: false
   - name: isolate
     description: "Use git worktrees for per-task isolation (--isolate)"
@@ -287,13 +287,14 @@ After standard two-stage review (spec + quality) passes, run additional lenses:
 | `security` | security-reviewer | OWASP top 10, injection, auth gaps |
 | `perf` | performance-reviewer | N+1 queries, blocking I/O, allocations |
 | `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
+| `cfn` | cloudformation-reviewer | Tagging, naming, security posture, CF best practices |
 
 Lenses run on haiku model and are **advisory** — they don't trigger re-dispatch.
 
 **If `--review` used but `--lenses` NOT specified**, print after standard review:
 ```
 Review complete (spec: PASS, quality: PASS).
-Tip: Additional lenses available: --lenses security,perf,arch
+Tip: Additional lenses available: --lenses security,perf,arch,cfn,cfn
 ```
 
 ---

@@ -184,7 +184,25 @@ If tracking:
 - Save to `.claude/plans/[name]/spec.md`
 - Update `.claude/plans/[name]/state.json` stage to "specify: complete"
 
+### Work Graph Generation
+
+After the spec is written and includes a Work Units table, generate `work-graph.json`:
+
+1. **Parse Work Units table** — Extract ID, Description, Files, Dependencies, Complexity from the spec's Work Units section
+2. **Validate dependencies** — Run topological sort to detect circular dependencies. If cycles found, halt with error listing the cycle members and prompt user to fix the dependency table.
+3. **Validate work unit count** — If zero work units found, block progression: "Spec requires at least one Work Unit."
+4. **Build dependency graph** — Create nodes and edges from the parsed data
+5. **Compute batches** — Group units into parallelizable batches using topological sort
+6. **Analyze** — Calculate max parallel width, critical path length, file conflicts
+7. **Compute checksum** — SHA-256 hash of the spec.md Work Units section content
+8. **Write work-graph.json** — Save to `.claude/plans/[name]/work-graph.json`
+
+The work graph schema is defined in `docs/PLANNING-STORAGE.md`.
+
+On regression back to Stage 2, the work graph must be regenerated (old one is marked stale).
+
 ## Integration
 
 - **Fed by:** `/describe-change` (determines if spec is needed)
 - **Feeds into:** `/preflight`, `/devils-advocate`, `/edge-cases`, `/spec-to-tests`
+- **Work graph feeds into:** `/delegate` (parallel execution) and `/blueprint` Stage 7 (work graph validation)

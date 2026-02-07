@@ -1,18 +1,18 @@
 ---
-description: Use when resuming work or checking progress on a plan. Shows current stage, completed work, and next steps.
+description: Use when resuming work or checking progress on a blueprint. Shows current stage, completed work, and next steps.
 arguments:
   - name: name
-    description: Plan name to check (optional, shows all if omitted)
+    description: Blueprint name to check (optional, shows all if omitted)
     required: false
 ---
 
 # Status
 
-Display detailed status for a specific plan or overview of all plans.
+Display detailed status for a specific blueprint or overview of all blueprints.
 
-## Single Plan Status
+## Single Blueprint Status
 
-When a plan name is provided:
+When a blueprint name is provided:
 
 ```
 /status feature-auth
@@ -22,7 +22,7 @@ Output:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  PLAN STATUS: feature-auth
+  BLUEPRINT STATUS: feature-auth
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Path: Full (recommended: Full)
@@ -49,7 +49,7 @@ Artifacts:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Commands:
-  Resume:     /plan feature-auth
+  Resume:     /blueprint feature-auth
   Challenge:  /devils-advocate (current stage)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -57,7 +57,7 @@ Commands:
 
 ## Overview Status
 
-When no plan name provided:
+When no blueprint name provided:
 
 ```
 /status
@@ -67,10 +67,10 @@ Output:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  PLANNING STATUS OVERVIEW
+  BLUEPRINT STATUS OVERVIEW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Active Plans: 3
+Active Blueprints: 3
 Completed (last 30 days): 5
 Stale (>7 days inactive): 1
 
@@ -84,15 +84,15 @@ Recently Completed:
   ui-refresh       Complete                  1 week ago
 
 Override Patterns (last 30 days):
-  2 plans downgraded full → standard
-  1 plan downgraded standard → light
+  2 blueprints downgraded full → standard
+  1 blueprint downgraded standard → light
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Commands:
-  View plan:    /status [name]
-  Resume plan:  /plan [name]
-  All plans:    /plans
+  View blueprint:    /status [name]
+  Resume blueprint:  /blueprint [name]
+  All blueprints:    /blueprints
   Overrides:    /overrides
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -110,7 +110,7 @@ Commands:
 
 ## Path Display
 
-Show both recommended and chosen path:
+Show both recommended and chosen path for a blueprint:
 
 ```
 Path: Standard (recommended: Full) ⚠️ downgraded
@@ -124,5 +124,5 @@ Path: Full
 ## Integration
 
 - **Reads from:** `.claude/plans/*/state.json`, `.claude/overrides.json`
-- **Linked from:** `/toolkit`, `/plan` wizard
-- **Leads to:** `/plan [name]`, `/overrides`
+- **Linked from:** `/toolkit`, `/blueprint` wizard
+- **Leads to:** `/blueprint [name]`, `/overrides`

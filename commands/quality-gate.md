@@ -16,7 +16,7 @@ Inspired by Turkey-Build's 98/100 quality gate. This ensures every significant p
 
 - After completing a feature implementation
 - Before creating a commit for significant work
-- Before marking a `/plan` as complete
+- Before marking a `/blueprint` as complete
 - When the user asks "is this ready?"
 
 ## Rubric (100 points)
@@ -144,7 +144,7 @@ Default threshold: 85 (override with argument)
 
 ## Integration
 
-- **Invoked by:** `/plan` Stage 7, `/dispatch` post-review, `/delegate` final report, `/tdd` VERIFY phase
+- **Invoked by:** `/blueprint` Stage 7, `/dispatch` post-review, `/delegate` final report, `/tdd` VERIFY phase
 - **Feeds into:** Commit decision → `/push-safe`
 - **Pairs with:** `/security-checklist` for detailed security review
 - **On failure:** `/debug` if issues are unclear, fix directly if obvious
@@ -162,4 +162,4 @@ Watch for these attempts to inflate scores:
 
 ## Output
 
-If tracking a plan, update `.claude/plans/[name]/quality-gate.md` with full report.
+If tracking a blueprint, update `.claude/plans/[name]/quality-gate.md` with full report.

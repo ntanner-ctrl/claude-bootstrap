@@ -1,10 +1,10 @@
 ---
-description: Use to review where plans deviated from recommendations. Surfaces patterns of skipped stages that may indicate process gaps.
+description: Use to review where blueprints deviated from recommendations. Surfaces patterns of skipped stages that may indicate process gaps.
 ---
 
 # Overrides
 
-Review override history to identify patterns in how planning recommendations are being bypassed. This enables retrospective learning: were the overrides justified, or did skipped planning cause problems?
+Review override history to identify patterns in how planning recommendations are being bypassed. This enables retrospective learning: were the overrides justified, or did skipped stages cause problems?
 
 ## Purpose
 
@@ -15,7 +15,7 @@ Track when users:
 
 This isn't about enforcement—it's about learning. Patterns in overrides reveal:
 - If the triage is too aggressive (always overridden → calibrate)
-- If shortcuts cause problems (overridden plans fail more → tighten)
+- If shortcuts cause problems (overridden blueprints fail more → tighten)
 - If certain change types need different defaults
 
 ## Process
@@ -108,7 +108,7 @@ Retrospective Questions:
    → What did full planning would have caught?
    → Should similar changes stay at full?
 
-3. No plans were upgraded (light → standard/full).
+3. No blueprints were upgraded (light → standard/full).
    → Is triage too aggressive, or are upgrades just rare?
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -149,7 +149,7 @@ Update `overrides.json` with outcome.
 
 ## Override Log
 
-| Date | Plan | Override | Reason | Outcome |
+| Date | Blueprint | Override | Reason | Outcome |
 |------|------|----------|--------|---------|
 | ... | ... | ... | ... | ... |
 
@@ -187,7 +187,7 @@ If no overrides exist:
 No overrides recorded.
 
 This means either:
-  - All plans followed recommended paths
+  - All blueprints followed recommended paths
   - Override tracking isn't enabled
 
 To enable: overrides are automatically logged when you
@@ -199,5 +199,5 @@ choose a different path than /describe-change recommends.
 ## Integration
 
 - **Read from:** `.claude/overrides.json`
-- **Written by:** `/describe-change`, `/plan` (when path differs from recommended)
-- **Linked from:** `/plans`, `/status`
+- **Written by:** `/describe-change`, `/blueprint` (when path differs from recommended)
+- **Linked from:** `/blueprints`, `/status`

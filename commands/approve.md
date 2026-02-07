@@ -1,8 +1,8 @@
 ---
 description: Use to advance a planning stage after review. Marks current stage complete and unlocks the next stage.
 arguments:
-  - name: plan
-    description: Plan name to approve current stage
+  - name: blueprint
+    description: Blueprint name to approve current stage
     required: true
   - name: notes
     description: Optional notes about the approval
@@ -25,11 +25,11 @@ Creates explicit checkpoints in the planning process:
 
 ### Step 1: Identify Current Stage
 
-Load plan state and show current position:
+Load blueprint state and show current position:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  APPROVE: [plan name]
+  APPROVE: [blueprint name]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Current stage: [N]. [Stage Name]
@@ -115,7 +115,7 @@ What needs to happen before approval?
 > [user input]
 
 Noted. Run /[current-stage-command] to continue work,
-then /approve [plan] when ready.
+then /approve [blueprint] when ready.
 ```
 
 ### Step 3: Update State
@@ -124,7 +124,7 @@ Write approval to `state.json` and any artifacts.
 
 ## Approval Log
 
-All approvals are logged in the plan state:
+All approvals are logged in the blueprint state:
 
 ```json
 {
@@ -146,7 +146,7 @@ All approvals are logged in the plan state:
 ## Output Format
 
 ```markdown
-# Approval: [plan] - Stage [N]
+# Approval: [blueprint] - Stage [N]
 
 **Stage:** [stage name]
 **Status:** Approved [/ Approved with concerns]
@@ -160,6 +160,6 @@ All approvals are logged in the plan state:
 ## Integration
 
 - **Updates:** `.claude/plans/[name]/state.json`
-- **Used by:** `/plan` wizard (internally)
+- **Used by:** `/blueprint` wizard (internally)
 - **Standalone use:** For explicit gate control outside wizard
 - **Feeds into:** `/status`, approval log
