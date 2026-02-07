@@ -85,7 +85,7 @@ Stage 7: Execute      → Implementation (with manifest handoff + work graph)
 ```
 
 Features feedback loops (max 3 regressions), HALT state recovery, token-dense
-manifest storage, Empirica-backed confidence scoring, and work graph parallelization.
+manifest storage, [Empirica](https://github.com/Nubaeon/empirica)-backed confidence scoring, and work graph parallelization.
 
 See [docs/BLUEPRINT-MODES.md](docs/BLUEPRINT-MODES.md) for challenge mode details.
 
@@ -160,7 +160,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 |------|---------|
 | `session-bootstrap.sh` | **Inject command awareness + active work state at session start** |
 | `state-index-update.sh` | Maintain `.claude/state-index.json` when blueprint/TDD state changes |
-| `blueprint-stage-gate.sh` | Check Empirica data before blueprint stage transitions |
+| `blueprint-stage-gate.sh` | Check [Empirica](https://github.com/Nubaeon/empirica) data before blueprint stage transitions |
 | `worktree-cleanup.sh` | Clean orphaned worktrees from interrupted `--isolate` sessions |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
 | `tdd-guardian.sh` | Block implementation edits during TDD RED phase |
