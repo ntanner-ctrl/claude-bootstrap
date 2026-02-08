@@ -74,6 +74,12 @@ Complete reference for all Claude Bootstrap commands.
 | `/overrides` | Review override patterns |
 | `/approve [blueprint]` | Approve a planning stage |
 
+### Integration
+
+| Command | One-liner |
+|---------|-----------|
+| `plugin-enhancers` | Plugin registry — maps installed plugins to workflow enhancements (reference, not user-invoked) |
+
 ### Setup
 
 | Command | One-liner |
@@ -730,6 +736,27 @@ Blueprints and state are stored in `.claude/`:
 ```
 
 See [docs/PLANNING-STORAGE.md](../docs/PLANNING-STORAGE.md) for schema details.
+
+---
+
+## Plugin Integration
+
+### `plugin-enhancers` (reference command)
+
+**Not user-invoked.** Read by workflow commands at plugin integration seams to determine what enhancements are available.
+
+When Claude Code plugins are installed (detected via `~/.claude/plugins/installed_plugins.json`), workflow commands offer plugin-powered enhancements:
+
+| Workflow | Enhancement | Plugin Required |
+|----------|-------------|-----------------|
+| `/blueprint` Stage 5 | Deep Dive — 6 specialized review agents | pr-review-toolkit |
+| `/blueprint` Stage 5 | Multi-Model Consensus | frontend |
+| `/review` Stage 5 | Deep Analysis — specialized agents in parallel | pr-review-toolkit |
+| `/dispatch --lenses` | Extended lenses: `silent-failures`, `types`, `comments`, `simplify`, `test-coverage` | pr-review-toolkit |
+
+Plugin results are **advisory** — tagged `[plugin-review]`, they don't block workflows or trigger regressions.
+
+If no plugins are installed, all workflows behave exactly as they did before this feature was added.
 
 ---
 

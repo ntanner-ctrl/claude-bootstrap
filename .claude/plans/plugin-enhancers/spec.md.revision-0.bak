@@ -1,0 +1,444 @@
+# Specification: Plugin Enhancers
+
+## Summary
+
+Add a plugin integration layer to claude-bootstrap that allows external Claude Code plugins to augment existing workflow stages at natural decision points. The integration is opt-in at each seam, requires no hard dependencies, and degrades gracefully when plugins are absent.
+
+## Design Decisions
+
+### Opt-In with Smart Defaults
+
+Plugin capabilities are **offered as options** at workflow seams, not auto-engaged. This matches bootstrap's existing pattern (Pre-Mortem: "optional, recommended"; Review: "optional"). The most relevant option is marked `(recommended)` based on context.
+
+**Rationale**: Bootstrap workflows are interactive and ask the user at decision points. Auto-engaging plugins would violate this convention and confuse users who don't expect new steps.
+
+### Single Registry File
+
+All plugin-to-workflow mappings live in one file: `commands/plugin-enhancers.md`. Workflow commands reference this file's patterns at their integration seams. Adding a new plugin integration means updating one file, not modifying every command.
+
+**Rationale**: Bootstrap is a pure markdown/shell toolkit with no build step. A markdown file that Claude reads and follows is the most natural registry format. It keeps plugin awareness centralized and maintainable.
+
+### Detection by Agent/Command Existence
+
+Plugin availability is determined by checking whether specific agents or commands are registered in the current session. No configuration files, no install-time registration.
+
+**Rationale**: Claude Code's plugin system already handles discovery. If an agent exists, it's available. This avoids a second discovery mechanism.
+
+### No New Dependencies
+
+The plugin-enhancers system adds zero dependencies. If no plugins are installed, all workflows behave exactly as they do today. The enhancer sections in commands are effectively no-ops when no plugins are detected.
+
+---
+
+## Component 1: Plugin Capability Registry
+
+### File: `commands/plugin-enhancers.md`
+
+A new **reference command** (not a workflow command) that documents available plugin integration slots and how to activate them. Claude reads this when a workflow reaches an integration seam.
+
+```yaml
+---
+description: Use when a workflow command reaches a plugin integration seam. Maps installed plugins to workflow enhancement options.
+allowed-tools:
+  - Read
+---
+```
+
+### Registry Structure
+
+The file defines **capability slots** — abstract capabilities that plugins can fill:
+
+| Slot | What It Provides | Used At |
+|------|-----------------|---------|
+| `review:specialized` | Specialized review agents (silent failures, type design, etc.) | `/review`, `/dispatch --review`, Blueprint Stage 5 |
+| `review:multi-model` | Multi-model consensus review | `/review`, Blueprint Stage 5 |
+| `review:cross-platform` | Cross-platform adversarial review (Claude+GPT) | Blueprint Stage 5 (already exists as `/gpt-review`) |
+| `execute:frontend` | Frontend-specific guided implementation | Blueprint Stage 7, `/describe-change` routing |
+| `execute:backend` | Backend-specific guided implementation | Blueprint Stage 7, `/describe-change` routing |
+| `execute:feature` | Technology-agnostic guided feature development | Blueprint Stage 7, `/describe-change` routing |
+| `test:quality` | Enhanced test quality analysis | `/test` Stage 3 |
+| `search:semantic` | Semantic code search (claudemem) | `/bootstrap-project` setup |
+| `iterate:loop` | Self-referential iteration loops | Blueprint Stage 7 |
+
+### Plugin-to-Slot Mapping
+
+For each known plugin, the registry documents:
+
+```markdown
+### pr-review-toolkit
+
+**Fills:** `review:specialized`
+**Detection:** Check if `pr-review-toolkit:silent-failure-hunter` agent is available
+**Capabilities:**
+  - silent-failure-hunter — error handling, swallowed errors
+  - type-design-analyzer — type encapsulation, invariants (rated 1-10)
+  - pr-test-analyzer — test coverage quality, behavioral vs line coverage
+  - comment-analyzer — comment accuracy, documentation completeness
+  - code-simplifier — simplification opportunities
+  - code-reviewer — CLAUDE.md compliance, style, conventions
+
+**Invocation pattern:**
+  Dispatch as Task agents with subagent_type matching the agent name.
+  Results are advisory — they augment but don't gate workflow progression.
+```
+
+Similar entries for: `feature-dev`, `frontend`, `bun`, `code-analysis`, `ralph-wiggum`, `testing-suite`, `orchestration`.
+
+### Graceful Degradation Rules
+
+1. If a plugin is not installed, its slot is simply not offered. No error, no warning.
+2. If a plugin agent fails or times out, log via Empirica `deadend_log` and continue. Plugin results are never blocking.
+3. If multiple plugins fill the same slot, offer all of them as options (not mutually exclusive).
+
+---
+
+## Component 2: `/describe-change` Modification
+
+### Current Behavior
+Triages by step count + risk flags → Light/Standard/Full path. Offers execution preference (Speed/Simplicity/Auto).
+
+### New Behavior
+After Step 4 (Determine Path) and before Step 5 (Execution Preference), add a new **Step 4.5: Technology Context Detection**.
+
+#### Step 4.5: Technology Context Detection
+
+Inspect the current project for technology signals (reuse the detection logic from `/bootstrap-project` Phase 1.2):
+
+| Signal | Technology | Plugin Slot |
+|--------|-----------|-------------|
+| `package.json` + react/next dep | React/Next.js | `execute:frontend` |
+| `bunfig.toml` or bun.lockb | Bun | `execute:backend` |
+| `package.json` + hono dep | Hono backend | `execute:backend` |
+| General TypeScript/JavaScript | JS/TS | `execute:feature` |
+| General (any language) | — | `execute:feature` |
+
+If plugins matching the detected technology are available, note them in the triage output.
+
+#### Modified Step 6: Present Result
+
+Add a technology context section to the triage output:
+
+```
+## Triage Result
+
+**Change:** [name or summary]
+**Steps:** [count] discrete actions
+**Risk flags:** [list or "None"]
+
+**Recommended path:** [Light | Standard | Full]
+
+**Plugin-aware execution available:**
+  React project detected + frontend plugin installed
+  → At Stage 7, guided frontend execution will be offered
+
+---
+Next steps:
+  • Light path → `/preflight` then execute
+  • Standard path → `/spec-change`
+  • Full path → `/blueprint [name]` for guided workflow
+```
+
+The technology context is stored in `describe.md` and `state.json` under `"technology_context"` so downstream stages can reference it.
+
+### Success Criteria
+- [ ] Technology detection runs without errors on projects with no package.json (no crash on missing files)
+- [ ] Detected technology is recorded in state.json
+- [ ] If no plugins match, no technology section appears (clean degradation)
+
+---
+
+## Component 3: Blueprint Stage 5 Modification
+
+### Current Behavior
+Offers only `/gpt-review` as external review.
+
+### New Behavior
+Present expanded options based on available plugins:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BLUEPRINT: [name] │ Stage 5 of 7: External Review
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  External review options:
+
+    [1] GPT Surgical Review (/gpt-review)
+        Claude diagnoses → GPT implements fixes → Claude reviews PR
+
+  [If review:specialized slot filled:]
+    [2] Deep Dive — pr-review-toolkit agents
+        6 specialized lenses: silent failures, type design,
+        test coverage, comments, simplification, conventions
+
+  [If review:multi-model slot filled:]
+    [3] Multi-Model Consensus
+        Parallel assessment from multiple AI models
+
+    [N] Skip — local challenge stages were sufficient
+
+>
+```
+
+Options are numbered dynamically based on what's available. Always starts with GPT review (existing), always ends with Skip.
+
+### Invocation
+
+- **GPT Review**: Existing `/gpt-review` invocation (unchanged)
+- **Deep Dive**: Dispatch up to 6 pr-review-toolkit agents in parallel via Task tool. Pass spec.md + adversarial.md as context. Collect and present consolidated findings.
+- **Multi-Model**: Invoke `frontend:review` or equivalent multi-model command if available.
+
+### Results Handling
+
+Plugin review findings are appended to `adversarial.md` with the tag `[plugin-review]`. They are advisory — they do NOT trigger regression logic. Only the debate chain findings trigger regressions.
+
+### Success Criteria
+- [ ] Existing GPT review option works identically to current behavior
+- [ ] Plugin options only appear when plugins are installed
+- [ ] Plugin findings are appended to adversarial.md with correct tags
+- [ ] Plugin failures don't halt the blueprint workflow
+
+---
+
+## Component 4: Blueprint Stage 7 Completion Modification
+
+### Current Behavior
+Offers three implementation options: Standard sequential, TDD-enforced, Parallel dispatch.
+
+### New Behavior
+Add plugin-backed execution options based on technology context from Stage 1:
+
+```
+  Implementation options:
+    [1] Standard implementation (sequential)
+    [2] TDD-enforced → /tdd --plan-context [name]
+    [3] Parallel dispatch → /delegate --plan .claude/plans/[name]/spec.md --review
+
+  [If execute:frontend slot filled + React/TS detected:]
+    [4] Frontend-guided → /frontend:implement
+        8-phase workflow with design validation + multi-reviewer
+
+  [If execute:feature slot filled:]
+    [5] Feature-guided → /feature-dev
+        7-phase workflow with codebase exploration + 3 architecture proposals
+
+  [If iterate:loop slot filled:]
+    [6] Iteration loop → /ralph-loop with spec as completion criteria
+        Autonomous iteration until tests pass
+```
+
+**Context handoff**: When a plugin execution engine is selected, pass the blueprint's accumulated context:
+- `spec.md` → becomes the task description / acceptance criteria
+- `adversarial.md` → known risks and edge cases to address
+- `tests.md` → test specifications to satisfy
+- `work-graph.json` → task decomposition (for /delegate or /feature-dev)
+
+### Success Criteria
+- [ ] Existing 3 options work identically to current behavior
+- [ ] Plugin options only appear when both the plugin AND the technology context match
+- [ ] Blueprint context (spec, adversarial, tests) is passed to the plugin execution engine
+- [ ] state.json records which execution option was chosen
+
+---
+
+## Component 5: `/dispatch` Extended Lenses
+
+### Current Behavior
+`--lenses` accepts: `security`, `perf`, `arch`, `cfn`. Each dispatches the corresponding bootstrap review agent.
+
+### New Behavior
+Register pr-review-toolkit agents as additional lens options:
+
+| Lens Name | Agent | Source |
+|-----------|-------|--------|
+| `security` | security-reviewer | bootstrap (existing) |
+| `perf` | performance-reviewer | bootstrap (existing) |
+| `arch` | architecture-reviewer | bootstrap (existing) |
+| `cfn` | cloudformation-reviewer | bootstrap (existing) |
+| `silent-failures` | pr-review-toolkit:silent-failure-hunter | plugin (new) |
+| `types` | pr-review-toolkit:type-design-analyzer | plugin (new) |
+| `comments` | pr-review-toolkit:comment-analyzer | plugin (new) |
+| `simplify` | pr-review-toolkit:code-simplifier | plugin (new) |
+| `test-coverage` | pr-review-toolkit:pr-test-analyzer | plugin (new) |
+
+Extended lenses are only available when the corresponding plugin is installed. The `--lenses` flag accepts any mix of standard and extended lenses:
+
+```
+/dispatch --review --lenses security,silent-failures,types
+```
+
+**Tip line modification**: After standard review, if extended lenses are available:
+```
+Review complete (spec: PASS, quality: PASS).
+Tip: Extended lenses available: --lenses silent-failures,types,comments,simplify,test-coverage
+```
+
+### Success Criteria
+- [ ] Standard lenses work identically to current behavior
+- [ ] Extended lenses dispatch the correct pr-review-toolkit agents
+- [ ] If pr-review-toolkit is not installed, extended lenses are not shown
+- [ ] Mixed standard + extended lens combinations work
+
+---
+
+## Component 6: `/review` Deep Analysis Stage
+
+### Current Behavior
+4-stage adversarial review: Devil's Advocate → Simplify → Edge Cases → GPT Review (optional).
+
+### New Behavior
+After the existing 4 stages complete, add an optional **Stage 5: Plugin Deep Analysis**:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  REVIEW │ Stage 5 of 5: Deep Analysis (optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Core adversarial review complete.
+
+  Deep analysis available:
+    [1] PR Toolkit — 6 specialized agents in parallel
+        (silent failures, type design, test coverage, ...)
+    [2] Skip — core review is sufficient
+
+>
+```
+
+This stage only appears if `review:specialized` slot is filled.
+
+Results are incorporated into the Review Summary under a new "### Deep Analysis" section.
+
+### Success Criteria
+- [ ] Existing 4-stage review works identically when no plugins installed
+- [ ] Stage 5 only appears when pr-review-toolkit (or similar) is available
+- [ ] Results are added to the summary under correct heading
+- [ ] Quick mode (`/review --quick`) skips plugin stages
+
+---
+
+## Component 7: `/test` Enhanced Quality
+
+### Current Behavior
+3-stage testing: Spec Review → Generate → Verify (tautology detection + optional run).
+
+### New Behavior
+After Stage 3 (Verify), add an optional quality analysis step:
+
+```
+  Tests generated: 6
+  Tautology check: 5/6 passed
+
+  Enhanced quality analysis available (testing-suite plugin):
+    [1] Coverage gap analysis — identify untested paths
+    [2] Skip — proceed with generated tests
+
+>
+```
+
+This step only appears if `test:quality` slot is filled (testing-suite plugin installed).
+
+### Success Criteria
+- [ ] Existing 3-stage test works identically when no plugins installed
+- [ ] Quality analysis only appears when testing-suite is available
+- [ ] Analysis results don't modify generated tests (advisory only)
+
+---
+
+## Component 8: `/bootstrap-project` Plugin-Aware Setup
+
+### Current Behavior
+4 phases: Analysis → CLAUDE.md → Stock Elements → Manifest.
+
+### New Behavior
+Add a **Phase 4.5: Plugin Integration Setup** between Stock Elements and Manifest:
+
+```
+Phase 4.5: Plugin Integration
+
+  Detected plugins with project-relevant capabilities:
+    ✓ claudemem (code-analysis) — semantic search indexing
+    ✓ frontend plugin — React project detected
+
+  Suggested actions:
+    [1] Index codebase with claudemem (improves all review agents)
+    [2] Skip plugin setup
+
+>
+```
+
+If claudemem is installed and the project hasn't been indexed:
+- Suggest running `claudemem index --enrich`
+- Record in `bootstrap-manifest.json` under `"plugin_setup"` section
+
+### Success Criteria
+- [ ] Existing bootstrap works identically when no plugins installed
+- [ ] Plugin setup only suggests actions for installed + relevant plugins
+- [ ] Actions are optional — never blocks bootstrap completion
+- [ ] Manifest records what was set up for future re-runs
+
+---
+
+## Component 9: Documentation Updates
+
+### Files to Update
+
+1. **`commands/README.md`** — Add plugin-enhancers to the command reference table under a new "Integration" category
+2. **`README.md`** — Add a "Plugin Integration" section explaining the enhancer system
+3. **`.claude/CLAUDE.md`** (repo's own docs) — Add plugin-enhancers to architecture overview
+
+### Documentation Content
+
+- What plugin enhancers are (capability slots at workflow seams)
+- How to add a new plugin integration (update plugin-enhancers.md)
+- How graceful degradation works
+- List of supported plugins and their slots
+
+### Success Criteria
+- [ ] All three documentation files updated
+- [ ] New command appears in README command count
+- [ ] Plugin integration section explains the design clearly
+
+---
+
+## Preservation Contract
+
+The following MUST NOT change:
+
+1. **Workflow stage structures** — Blueprint still has 7 stages, Review still has 4 core stages, Test still has 3 core stages
+2. **Enforcement language** — No escape hatches, no softening of existing MUST-tier triggers
+3. **Defense-in-depth model** — Shell hooks, hookify rules, CLAUDE.md guidance layers unchanged
+4. **Empirica integration** — Preflight/postflight/finding/mistake logging unchanged
+5. **Existing option numbering** — Current options at each decision point keep their numbers; plugin options are appended after
+6. **No-dependency guarantee** — bootstrap installs and works with zero plugins installed
+7. **Manifest/state.json backward compatibility** — New fields are additive; old blueprints resume without migration errors
+
+---
+
+## Work Units
+
+| ID | Unit | Dependencies | Parallelizable With |
+|----|------|-------------|-------------------|
+| W1 | Create `commands/plugin-enhancers.md` registry | None | — |
+| W2 | Modify `commands/describe-change.md` | W1 | W3, W5, W6, W7 |
+| W3 | Modify `commands/blueprint.md` (Stage 5 + Stage 7) | W1 | W2, W5, W6, W7 |
+| W4 | Modify `commands/dispatch.md` (extended lenses) | W1 | W2, W3, W6, W7 |
+| W5 | Modify `commands/review.md` (deep analysis stage) | W1 | W2, W3, W4, W7 |
+| W6 | Modify `commands/test.md` (quality analysis) | W1 | W2, W3, W4, W5 |
+| W7 | Modify `commands/bootstrap-project.md` (plugin setup) | W1 | W2, W3, W4, W5, W6 |
+| W8 | Update documentation (README, commands/README, CLAUDE.md) | W1-W7 | — |
+
+**Critical path:** W1 → [W2-W7 in parallel] → W8
+
+**Work graph width:** 6 (W2-W7 can run concurrently after W1)
+
+---
+
+## Failure Modes
+
+| Failure | Impact | Mitigation |
+|---------|--------|------------|
+| Plugin agent unavailable at runtime | Enhancement not offered | Graceful degradation — slot not shown |
+| Plugin agent times out during dispatch | Workflow paused | 5-min timeout per agent, log deadend, continue |
+| Plugin produces unexpected output | Bad data in adversarial.md | Plugin results tagged `[plugin-review]`, advisory only |
+| User has conflicting plugins (2 fill same slot) | Multiple options shown | Both offered, user picks — no conflict resolution needed |
+| New bootstrap install, zero plugins | All enhancements invisible | Exact current behavior — no change detected |
+| Plugin updates break integration | Registry references stale agent names | Registry file can be updated independently of commands |

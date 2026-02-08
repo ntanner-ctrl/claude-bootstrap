@@ -1,0 +1,78 @@
+{
+  "version": 2,
+  "blueprint": "plugin-enhancers",
+  "revision": 1,
+  "scope": "phase-1",
+  "units": {
+    "W1": {
+      "description": "Create commands/plugin-enhancers.md (registry + detection protocol + format rules)",
+      "dependencies": [],
+      "estimated_complexity": "medium",
+      "files": [
+        "commands/plugin-enhancers.md"
+      ]
+    },
+    "W1-review": {
+      "description": "Validate W1: test detection against installed_plugins.json, confirm agent dispatch works, verify result format",
+      "dependencies": [
+        "W1"
+      ],
+      "estimated_complexity": "low",
+      "files": []
+    },
+    "W2": {
+      "description": "Modify commands/blueprint.md — Stage 5 expanded review options (pr-review-toolkit deep dive)",
+      "dependencies": [
+        "W1-review"
+      ],
+      "estimated_complexity": "medium",
+      "files": [
+        "commands/blueprint.md"
+      ]
+    },
+    "W3": {
+      "description": "Modify commands/review.md — optional deep analysis Stage 5 using pr-review-toolkit agents",
+      "dependencies": [
+        "W1-review"
+      ],
+      "estimated_complexity": "low",
+      "files": [
+        "commands/review.md"
+      ]
+    },
+    "W4": {
+      "description": "Modify commands/dispatch.md — extended review lenses (silent-failures, types, comments, simplify, test-coverage)",
+      "dependencies": [
+        "W1-review"
+      ],
+      "estimated_complexity": "low",
+      "files": [
+        "commands/dispatch.md"
+      ]
+    },
+    "W5": {
+      "description": "Update documentation (README.md, commands/README.md, .claude/CLAUDE.md, GETTING_STARTED.md)",
+      "dependencies": [
+        "W2",
+        "W3",
+        "W4"
+      ],
+      "estimated_complexity": "medium",
+      "files": [
+        "README.md",
+        "commands/README.md",
+        ".claude/CLAUDE.md",
+        "GETTING_STARTED.md"
+      ]
+    }
+  },
+  "critical_path": [
+    "W1",
+    "W1-review",
+    "W2",
+    "W5"
+  ],
+  "max_parallelism": 3,
+  "total_units": 6,
+  "notes": "Phase 1 only. W2/W3/W4 can run in parallel after W1-review gate. Down from 8 units in rev 0."
+}

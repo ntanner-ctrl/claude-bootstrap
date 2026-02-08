@@ -26,7 +26,7 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 39 workflow commands for planning, review, testing, execution |
+| [**Commands**](commands/README.md) | 40 workflow commands for planning, review, testing, execution + plugin integration |
 | [**Agents**](agents/) | 6 specialized review agents (spec, quality, security, performance, architecture, CloudFormation) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
@@ -128,7 +128,23 @@ Opt-in additional review perspectives via `--lenses`:
 | `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
 | `cfn` | cloudformation-reviewer | Tagging, naming, security posture, CF best practices |
 
-Lenses run after the standard spec + quality review and are advisory (don't block).
+**Extended lenses** (require plugins — availability depends on what's installed):
+
+| Lens | Agent | Plugin | Focus |
+|------|-------|--------|-------|
+| `silent-failures` | pr-review-toolkit:silent-failure-hunter | pr-review-toolkit | Silent failures, inadequate error handling |
+| `types` | pr-review-toolkit:type-design-analyzer | pr-review-toolkit | Type design, encapsulation, invariants |
+| `comments` | pr-review-toolkit:comment-analyzer | pr-review-toolkit | Comment accuracy, completeness |
+| `simplify` | pr-review-toolkit:code-simplifier | pr-review-toolkit | Simplification opportunities |
+| `test-coverage` | pr-review-toolkit:pr-test-analyzer | pr-review-toolkit | Test coverage quality, gaps |
+| `deep-security` | security-pro:security-auditor | security-pro | Deep vulnerability assessment, OWASP compliance |
+| `deep-perf` | performance-optimizer:performance-engineer | performance-optimizer | Bottleneck ID, caching, query optimization |
+| `methodology` | superpowers:code-reviewer | superpowers | Methodology-based code review |
+| `conventions` | feature-dev:code-reviewer | feature-dev | Convention-focused review |
+
+Extended lenses are available when their required plugin is installed. If missing, a clear message is shown and other lenses proceed normally.
+
+All lenses run after the standard spec + quality review and are advisory (don't block).
 
 ### Worktree Isolation
 
@@ -139,6 +155,32 @@ For parallel delegation with independent review:
 ```
 
 Each agent works in its own git worktree. After completion, review and accept/reject each task's changes independently.
+
+---
+
+## Plugin Integration
+
+If you have Claude Code plugins installed, bootstrap workflows automatically detect them and offer plugin-powered enhancements at review stages.
+
+**How it works:**
+1. Workflow commands read `~/.claude/plugins/installed_plugins.json` (maintained by Claude Code)
+2. If a recognized plugin is installed, additional options appear at workflow decision points
+3. If no plugins are installed, everything works exactly as before — zero overhead
+
+**Phase 1** (current): Review integration with 6 plugins. Adds specialized review agents to `/blueprint` Stage 5, `/review` Stage 5, and `/dispatch --lenses`:
+
+| Plugin | Review Agent | Lens |
+|--------|-------------|------|
+| pr-review-toolkit | 6 specialized agents | `silent-failures`, `types`, `comments`, `simplify`, `test-coverage` |
+| security-pro | security-auditor | `deep-security` |
+| performance-optimizer | performance-engineer | `deep-perf` |
+| superpowers | code-reviewer | `methodology` |
+| feature-dev | code-reviewer | `conventions` |
+| frontend | reviewer | (Blueprint Stage 5 only) |
+
+**Phase 2** (planned): Investigation and execution integration with code-analysis and testing-suite.
+
+Plugin results are advisory — tagged `[plugin-review]`, they don't block workflows or trigger regressions. See `commands/plugin-enhancers.md` for the full registry.
 
 ---
 

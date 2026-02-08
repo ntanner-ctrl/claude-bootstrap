@@ -11,7 +11,7 @@ arguments:
     description: "Model for implementer: haiku, sonnet (default), opus"
     required: false
   - name: lenses
-    description: "Additional review lenses after standard review (--lenses security,perf,arch,cfn)"
+    description: "Review lenses: security,perf,arch,cfn + plugin lenses if available (--lenses silent-failures,types,comments,simplify,test-coverage)"
     required: false
   - name: plan-context
     description: "Plan name to pull context from (--plan-context feature-auth)"
@@ -159,7 +159,14 @@ Task(
 
 After standard review passes, run additional review lenses:
 
-Available lenses: `security`, `perf`, `arch`, `cfn`
+Available lenses:
+  Standard: `security`, `perf`, `arch`, `cfn`
+  Extended (requires plugins — see plugin-enhancers.md Section 7):
+    pr-review-toolkit: `silent-failures`, `types`, `comments`, `simplify`, `test-coverage`
+    security-pro: `deep-security`
+    performance-optimizer: `deep-perf`
+    superpowers: `methodology`
+    feature-dev: `conventions`
 
 For each specified lens, dispatch the corresponding agent (haiku model):
 
@@ -178,7 +185,38 @@ Lens results are **advisory** — they don't trigger re-dispatch. Display after 
 ```
 Review complete (spec: PASS, quality: PASS).
 Tip: Additional lenses available: --lenses security,perf,arch,cfn
+[If plugins detected, list available extended lenses:]
+Tip: Extended lenses available: --lenses silent-failures,types,comments,simplify,test-coverage,deep-security,deep-perf,methodology,conventions
+      (availability depends on installed plugins — see /plugin-enhancers)
 ```
+
+### Step 6b: Plugin Lenses (if extended lenses requested)
+
+Before dispatching plugin lenses, check for plugin enhancements:
+
+1. Read commands/plugin-enhancers.md. If file not found, skip plugin lenses.
+2. Follow the Detection Protocol (Section 1) to check for required plugins.
+3. For each extended lens requested:
+   - Look up the required plugin in plugin-enhancers.md Section 7
+   - If the required plugin is detected: dispatch the corresponding agent
+   - If the required plugin is NOT detected: show message:
+     ```
+     Lens '<name>' requires <plugin> plugin (not installed).
+     Proceeding with available lenses only.
+     ```
+
+Extended lenses are dispatched the same way as standard lenses (haiku model, 5 max turns), but using the plugin agent:
+
+```
+Task(
+  subagent_type: "<plugin>:<agent-name>",
+  model: "haiku",
+  max_turns: 5,
+  prompt: [agent reads files and applies its mandate]
+)
+```
+
+Plugin lens results are advisory — they don't trigger re-dispatch.
 
 ### Step 7: Plan Context (if --plan-context)
 
@@ -199,7 +237,7 @@ This enriches the implementer with accumulated planning intelligence without req
   Implementation: ✓ Complete
   Spec Review:    ✓ Pass (attempt [N])
   Quality Review: ✓ Pass
-  Lenses:         [security: PASS, perf: WARNING, arch: PASS]
+  Lenses:         [security: PASS, perf: WARNING, arch: PASS, deep-security: advisory, methodology: advisory]
 
   Files modified:
     [file:lines — brief description]
@@ -332,7 +370,10 @@ All reviews passed. Optional next steps:
 | Implementation | haiku | Low (for simple tasks) |
 | Spec Review | haiku | Low |
 | Quality Review | haiku | Low |
+| Lens Review (standard) | haiku | Low (per lens) |
+| Lens Review (plugin) | haiku | Low (per lens) |
 | Full pipeline (1 task) | sonnet + 2x haiku | Moderate |
 | Full pipeline (3 retries) | 3x sonnet + 6x haiku | High |
+| Full pipeline + 5 lenses | sonnet + 7x haiku | Moderate-High |
 
 Default model is `sonnet`. Use `--model haiku` for simple/boilerplate tasks.

@@ -1,0 +1,264 @@
+{
+  "findings": [
+    {
+      "id": "EC-1",
+      "finding": "B6: Special characters in plugin names (path traversal, tag injection)",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P3",
+      "addressed": "partial",
+      "architectural_change": false,
+      "notes": "Reality check: Plugin names come from installed_plugins.json, which users control. If users add malicious plugins, they've already compromised themselves. Claude uses plugin names in: (1) string matching in_plugins.values(), (2) Task tool 'skill' parameter. Task tool validates agent names server-side. No shell execution, no file path construction from plugin names. Worst case: malformed tag like [plugin-review:../../etc/passwd] is cosmetic. NOT a security vulnerability in the traditional sense. However, spec should note: 'Plugin names are user-controlled; system assumes trusted plugin sources.'"
+    },
+    {
+      "id": "EC-2",
+      "finding": "B12: Concurrent adversarial.md writes (file corruption)",
+      "severity": "low",
+      "likelihood": "theoretical",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Architecture reality: Claude cannot write two files simultaneously within a single session. Cross-session concurrent writes require: (1) User opens two separate Claude sessions, (2) Both sessions run /review simultaneously, (3) Both append to adversarial.md at exactly the same time. This is a general Write tool limitation, not specific to plugin-enhancers. Mitigation: blueprints.json is already session-scoped (includes timestamp+counter). Adversarial.md corruption would require deliberate user action to trigger. Does NOT warrant Phase 1 design change. Note in spec: 'Adversarial blueprints are session-scoped; cross-session conflicts possible but rare.'"
+    },
+    {
+      "id": "EC-3",
+      "finding": "B10: Schema versioning (state file unreadable after upgrade)",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P3",
+      "addressed": "yes",
+      "architectural_change": false,
+      "notes": "Spec already defines: 'All state.json fields are optional and default to null.' Phase 1 state.json has 4 fields: plugin_name (string), agents (object), checks_passed (array), issues_detected (array). All are additive-only. Backward compat: Old files missing new fields → default to null/empty. Forward compat: New readers encountering old files → all fields present. No breaking changes planned. Stress Tester over-indexed on traditional DB migration risks. Addressed in spec Section 5.1."
+    },
+    {
+      "id": "EC-4",
+      "finding": "B20: Plugin installed but not in registry (silently skipped)",
+      "severity": "medium",
+      "likelihood": "uncommon",
+      "priority": "P2",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Real UX issue: User installs pr-review-toolkit via /install, but registry.json outdated/missing. Detection step: 'pr-review-toolkit' in installed_plugins.json, but not in _plugins → silently skipped. User sees no review, no error. FIX: Detection logic should log when plugin is installed but not in registry. Add to Phase 1 spec: 'If plugin in installed_plugins but not in registry, log: [plugin-enhancers] Plugin {name} installed but not in registry; skipping review dispatch.'"
+    },
+    {
+      "id": "EC-5",
+      "finding": "B16: Stale detection data (no cache freshness threshold)",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Context: Detection reads installed_plugins.json at execution time. 'Staleness' means: User installed plugin weeks ago, registry.json hasn't been updated since. But detection is deterministic: plugin either exists in both files or doesn't. No 'cache' in traditional sense. Real issue: Registry falls out of sync with ecosystem. Solution: Out of scope for Phase 1 (plugin-enhancers doesn't own registry updates). User can manually run plugin registry refresh if available. Note in spec: 'Detection uses installed_plugins.json as source of truth; assumes registry.json is periodically updated by ecosystem tooling.'"
+    },
+    {
+      "id": "EC-6",
+      "finding": "B21: tested_with version mismatch (no compatibility check)",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Phase 1 doesn't use tested_with field. Agents declare compatibility via registry metadata. If pr-review-toolkit:code-reviewer doesn't support the user's codebase, agent will fail gracefully (Task tool returns error/empty result). Already handled by existing error path: 'If agent returns no results, append: [plugin-review] Agent {name} completed with no findings.' Version checking is future enhancement (Phase 2+ if needed). No action for Phase 1."
+    },
+    {
+      "id": "EC-7",
+      "finding": "B2: Large installed_plugins.json (OOM risk)",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Reality check: installed_plugins.json is a single JSON file. Read tool can handle files up to Claude's context limit (~200k tokens). A plugin entry is ~50-200 tokens. User would need 1000+ plugins to approach limits. This is not a realistic Phase 1 concern. If it occurs, Read tool will fail with clear error, and user will need to clean up plugins. No mitigation needed. Note in spec: 'Detection assumes installed_plugins.json is within Read tool limits (~200k tokens). Users with 1000+ plugins may exceed limits.'"
+    },
+    {
+      "id": "EC-8",
+      "finding": "B5: Prefix collision (duplicate/conflicting reviews)",
+      "severity": "medium",
+      "likelihood": "uncommon",
+      "priority": "P2",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Real scenario: User has both 'code-review-pro' and 'code-review' plugins, both matching 'code-review' in _plugins. Phase 1 detection uses 'X in _plugins.values()', which matches first occurrence. FIX: Detection should use exact key match, not substring search. Update spec: 'Detection checks if plugin name exists as exact key in _plugins, not substring match.' This prevents false positives without architectural change."
+    },
+    {
+      "id": "EC-9",
+      "finding": "B18: Empty agent results (unclear if success or malfunction)",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "yes",
+      "architectural_change": false,
+      "notes": "Spec Section 4.3 already defines: 'If agent returns no results, append: [plugin-review] Agent {name} completed with no findings.' This is correct behavior: agent ran successfully but found no issues. Task tool will return error if agent fails (timeout, invalid name, etc.), which triggers error path. No ambiguity. Addressed."
+    },
+    {
+      "id": "EC-10",
+      "finding": "B7: Excessive plugin count (slow detection)",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Detection is O(n*m) where n=installed plugins, m=registry plugins. For n=100, m=50, that's 5000 string comparisons — trivial for Claude. Even at n=1000, m=100 (100k comparisons), execution time is <1 second. Not a Phase 1 concern. If it becomes an issue, optimization is straightforward (convert _plugins to set). No action needed."
+    },
+    {
+      "id": "EC-11",
+      "finding": "B4: Empty plugin name",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "If installed_plugins.json contains {\"name\": \"\", ...}, detection will check if '' in _plugins. This will never match (registry won't have empty-string keys). Plugin will be skipped silently. Same as EC-4 (missing plugin). Already logged by EC-4 fix. No separate action needed."
+    },
+    {
+      "id": "EC-12",
+      "finding": "B9: Mid-execution plugin changes",
+      "severity": "low",
+      "likelihood": "theoretical",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Scenario: User runs /review, then in another terminal installs new plugin, then /review dispatch happens. Detection snapshot is taken at execution start (when installed_plugins.json is read). Changes after that don't affect current execution. Next /review will see updated state. This is correct behavior — atomic snapshot semantics. No action needed."
+    },
+    {
+      "id": "EC-13",
+      "finding": "B1: Multiple dispatches in single session (blueprint ID collision)",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "yes",
+      "architectural_change": false,
+      "notes": "Spec Section 5.1 defines blueprint ID format: 'review-{timestamp}-{counter}' where counter increments per session. This explicitly prevents collisions. Addressed."
+    },
+    {
+      "id": "EC-14",
+      "finding": "B3: Plugin removal between detection and dispatch",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Detection creates dispatch list, then user uninstalls plugin, then dispatch runs. Task tool will fail gracefully (agent no longer exists). Error path already defined: log error and continue. This is correct recovery behavior. No action needed."
+    },
+    {
+      "id": "EC-15",
+      "finding": "B8: Malformed installed_plugins.json (JSON parse error)",
+      "severity": "medium",
+      "likelihood": "uncommon",
+      "priority": "P2",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Read tool returns file contents as string. If JSON is malformed, detection will fail when trying to parse. Current spec doesn't define error handling for parse failures. FIX: Add to spec: 'If installed_plugins.json is not valid JSON, log error: [plugin-enhancers] Failed to parse installed_plugins.json; skipping detection. Ensure file is valid JSON.' Detection returns empty list, workflow continues without review dispatch."
+    },
+    {
+      "id": "EC-16",
+      "finding": "B11: Agent returns invalid JSON state",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Task tool wraps agent execution. If agent returns malformed output, Task tool will handle error. Workflow already defines: 'Parse agent results and append to response.' If parse fails, treat as empty results (log 'no findings'). This is graceful degradation. No spec change needed — already implied by error handling."
+    },
+    {
+      "id": "EC-17",
+      "finding": "B13: Registry.json missing agents field",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "If _plugins object is missing or null, detection step will fail when trying to iterate. FIX: Add defensive check to spec: 'If _plugins is null/missing, treat as empty object. Log: [plugin-enhancers] Registry missing _plugins field; no review plugins available.'"
+    },
+    {
+      "id": "EC-18",
+      "finding": "B14: Agent name mismatch (registry vs actual)",
+      "severity": "medium",
+      "likelihood": "uncommon",
+      "priority": "P2",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Registry says 'pr-review-toolkit:code-reviewer', but actual agent is 'pr-review-toolkit:reviewer'. Task tool dispatch will fail (agent not found). Error path triggers: log error and continue. But user sees cryptic failure. FIX: Add to spec: 'If Task tool returns agent_not_found error, log: [plugin-review] Agent {name} not found; check plugin installation and registry accuracy.' This gives user actionable feedback."
+    },
+    {
+      "id": "EC-19",
+      "finding": "B15: Circular dispatch (review triggers review)",
+      "severity": "low",
+      "likelihood": "theoretical",
+      "priority": "P4",
+      "addressed": "yes",
+      "architectural_change": false,
+      "notes": "Spec Section 3 explicitly states detection is manual in Phase 1: 'Detection is invoked explicitly by /review command.' Agents don't auto-trigger /review. No recursion possible. Addressed."
+    },
+    {
+      "id": "EC-20",
+      "finding": "B17: Agent timeout/hang",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Task tool has built-in timeout (default 2 minutes per claude-bootstrap docs). If agent hangs, Task tool will terminate and return timeout error. Workflow error path handles this: log error and continue to next agent. Spec should note: 'Agents subject to Task tool timeout (default 2 min). Timeout treated as agent failure; logged and workflow continues.'"
+    },
+    {
+      "id": "EC-21",
+      "finding": "B19: Plugin declares no review agents",
+      "severity": "low",
+      "likelihood": "uncommon",
+      "priority": "P3",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "Plugin exists in installed_plugins.json but has no agents in registry _plugins. Detection finds plugin but discovers empty agent list. Result: No dispatch occurs for that plugin. This is correct behavior — not all plugins provide review agents. No error needed. Spec should clarify: 'Detection only dispatches to plugins with agents in _plugins. Plugins without review agents are silently skipped.'"
+    },
+    {
+      "id": "EC-22",
+      "finding": "B22: Adversarial.md file permissions",
+      "severity": "low",
+      "likelihood": "rare",
+      "priority": "P4",
+      "addressed": "no",
+      "architectural_change": false,
+      "notes": "If adversarial.md is read-only or in unwritable directory, Write tool will fail. This is a general filesystem issue, not specific to plugin-enhancers. Error will surface immediately, user will fix permissions. No spec change needed — standard tool failure behavior."
+    },
+    {
+      "id": "EC-23",
+      "finding": "B23: State.json schema evolution (new fields)",
+      "severity": "low",
+      "likelihood": "common",
+      "priority": "P3",
+      "addressed": "yes",
+      "architectural_change": false,
+      "notes": "Same as EC-3. Spec defines all fields as optional with null defaults. Adding new fields in future is backward-compatible (old readers ignore, new readers default). Addressed in Section 5.1."
+    }
+  ],
+  "verdict": "PASS_WITH_NOTES",
+  "critical_count": 0,
+  "regression_target": null,
+  "summary": {
+    "total_findings": 23,
+    "severity_breakdown": {
+      "critical": 0,
+      "high": 0,
+      "medium": 4,
+      "low": 19
+    },
+    "addressed": {
+      "yes": 5,
+      "partial": 1,
+      "no": 17
+    },
+    "architectural_changes_required": 0,
+    "must_fix_before_phase_1": [
+      "EC-4: Plugin installed but not in registry (logging)",
+      "EC-8: Prefix collision (exact key matching)",
+      "EC-15: Malformed JSON error handling",
+      "EC-18: Agent name mismatch (better error messages)"
+    ],
+    "key_insights": [
+      "Stress Tester over-indexed on traditional application security model. Markdown-command architecture eliminates most 'critical' findings (no shell execution, no actual concurrency within session, Task tool validates agent names).",
+      "Real Phase 1 risks are UX issues (silent failures, unclear errors) not security vulnerabilities.",
+      "Spec updates needed are documentation clarifications and error message improvements, not architectural changes.",
+      "No findings warrant regression to design phase. All fixable via spec additions."
+    ]
+  }
+}

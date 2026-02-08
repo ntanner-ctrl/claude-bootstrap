@@ -258,7 +258,7 @@ Run /check-project-setup for details or /bootstrap-project to update.
 
 ### Available Commands
 
-The toolkit includes 40 commands. Here are the most important ones:
+The toolkit includes 41 commands. Here are the most important ones:
 
 | Command | When to Use |
 |---------|-------------|
@@ -269,7 +269,7 @@ The toolkit includes 40 commands. Here are the most important ones:
 | `/bootstrap-project` | First project setup, or major project changes |
 | `/check-project-setup` | Quick health check anytime |
 
-Run `/toolkit` for the complete list of all 40 commands.
+Run `/toolkit` for the complete list of all 41 commands.
 
 ### Using Installed Agents
 
@@ -282,6 +282,14 @@ After bootstrapping, you can use the installed agents via Claude's Task tool:
 "Review the code I just wrote"
 → Claude uses the code-reviewer agent
 ```
+
+### Plugins
+
+If you have Claude Code plugins installed, bootstrap workflows automatically offer plugin-powered enhancements at review stages. No extra setup needed — detection happens automatically via `~/.claude/plugins/installed_plugins.json`.
+
+Currently supported plugins: `pr-review-toolkit`, `security-pro`, `performance-optimizer`, `superpowers`, `feature-dev`, `frontend`. Each adds specialized review agents and `/dispatch` lenses.
+
+If you don't have any plugins, nothing changes — all workflows work exactly as before.
 
 ### Using Installed Hooks
 
@@ -364,6 +372,10 @@ mkdir -p ~/.claude/commands
 chmod 755 ~/.claude ~/.claude/commands
 # Then re-run the installer
 ```
+
+### Re-running the installer overwrites my customizations
+
+The installer (`install.sh`) uses `tar --overwrite` to copy files. If you have manually customized toolkit commands (like `blueprint.md` or `review.md`), re-running the installer will replace those changes. Back up any customized files before upgrading.
 
 ### Bootstrap runs but nothing happens
 
@@ -467,7 +479,7 @@ Project-level `.claude/` directories are **not removed** - those belong to each 
 │   curl -fsSL https://raw.githubusercontent.com/         │
 │   ntanner-ctrl/claude-bootstrap/main/install.sh|bash   │
 ├─────────────────────────────────────────────────────────┤
-│ KEY COMMANDS (39 total — run /toolkit for all)          │
+│ KEY COMMANDS (40 total — run /toolkit for all)          │
 │   /start                Orient to current state         │
 │   /toolkit              Find the right command          │
 │   /blueprint [name]     Full planning workflow          │

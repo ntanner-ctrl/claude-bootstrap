@@ -1,0 +1,108 @@
+{
+  "blueprint": "plugin-enhancers",
+  "blueprint_version": 2,
+  "revision": 1,
+  "empirica_session_id": "34bf9bfe-ae32-465b-9e29-cc76f1d318a6",
+  "current_stage": "execute",
+  "path": "full",
+  "challenge_mode": "debate",
+  "regression_count": 1,
+  "summary": "Plugin integration layer for claude-bootstrap. Phase 1: review integration with pr-review-toolkit. Detection via installed_plugins.json. 6 work units.",
+  "spec_digest": {
+    "components": 5,
+    "work_units": 6,
+    "phases": 3,
+    "critical_path": [
+      "W1",
+      "W1-review",
+      "W2",
+      "W5"
+    ],
+    "max_parallelism": 3,
+    "preservation_items": 8,
+    "failure_modes": 15
+  },
+  "adversarial_digest": {
+    "total_findings": 30,
+    "critical_resolved": 2,
+    "high_resolved": 3,
+    "medium": 10,
+    "low": 8,
+    "deferred_phase2": 5,
+    "revalidation_verdict": "PASS_WITH_NOTES",
+    "edge_case_verdict": "PASS_WITH_NOTES",
+    "premortem_new_findings": 6,
+    "premortem_overlap": "low"
+  },
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "confidence": 0.85,
+      "artifact": "describe.md",
+      "key_output": "9 steps, 1 risk flag, Full path, Auto execution"
+    },
+    "specify": {
+      "status": "complete",
+      "confidence": 0.82,
+      "artifact": "spec.md",
+      "key_output": "5 components, 6 work units, phased rollout, detection protocol defined"
+    },
+    "challenge": {
+      "status": "complete",
+      "confidence": 0.88,
+      "artifact": "adversarial.md",
+      "key_output": "PASS_WITH_NOTES. 0 critical. 2 debate chains (6 rounds). Circuit breaker + messaging format added."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "confidence": 0.85,
+      "artifact": "adversarial.md",
+      "key_output": "PASS_WITH_NOTES. 23 boundaries, 4 medium (logging, prefix, parse, agent name). Architecture recalibrated for markdown-command system."
+    },
+    "premortem": {
+      "status": "complete",
+      "confidence": 0.82,
+      "artifact": "premortem.md",
+      "key_output": "6 NEW operational findings, 0 overlap. PM-1 (fast-fail probe) and PM-4 (existence check) highest impact."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Local challenge stages comprehensive: 2 debate chains, 23 boundaries, 6 operational findings, 0 critical."
+    },
+    "test": {
+      "status": "complete",
+      "confidence": 0.80,
+      "artifact": "tests.md",
+      "key_output": "68 spec-blind tests: 14 P0 blockers, 12 P1 critical, 12 P2 important, 30 P3 edge cases."
+    },
+    "execute": {
+      "status": "pending"
+    }
+  },
+  "implementation_notes": [
+    "Circuit breaker: 3 consecutive failures → abort (NEW-4)",
+    "Unavailability messages: standardized formats (M-NEW-1)",
+    "Installation reference: add to docs (M-NEW-2)",
+    "Unregistered plugin logging (EC-4)",
+    "Exact prefix match, not substring (EC-8)",
+    "Parse error specific message (EC-15)",
+    "Agent name mismatch handling (EC-18)",
+    "Fast-fail probe before full dispatch (PM-1)",
+    "Registry existence check in each command (PM-4)",
+    "Document circuit breaker as session-scoped (PM-3)",
+    "Document install.sh overwrite behavior (PM-2)"
+  ],
+  "files": [
+    "state.json",
+    "manifest.json",
+    "describe.md",
+    "spec.md",
+    "spec.md.revision-0.bak",
+    "spec.diff.md",
+    "adversarial.md",
+    "debate-log.md",
+    "premortem.md",
+    "tests.md",
+    "work-graph.json"
+  ]
+}

@@ -484,6 +484,236 @@ Standard path, not shown on Light path.
 
 ---
 
+## Stage 5: External Review
+
+### Overview
+
+Stage 5 (Review) provides an external perspective on the specification and adversarial findings. It is always optional on all paths.
+
+### Plugin Integration
+
+Before presenting Stage 5 options, check for plugin enhancements:
+
+1. **Read plugin registry:** Read `commands/plugin-enhancers.md`. If file not found, skip to standard options.
+2. **Follow detection protocol:** Use Section 1 of plugin-enhancers.md to check installed plugins.
+3. **Build dynamic options:** Construct the options list based on detected plugins.
+
+### Stage 5 Options Presentation
+
+Present options in this order:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BLUEPRINT: [name] │ Stage 5 of 7: External Review
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  External review options:
+
+    [1] GPT Surgical Review (/gpt-review)
+        Claude diagnoses → GPT implements fixes → Claude reviews PR
+
+  [If pr-review-toolkit detected:]
+    [2] Deep Dive — pr-review-toolkit agents (recommended)
+        6 specialized lenses: silent failures, type design,
+        test coverage, comments, simplification, conventions
+
+  [If frontend detected:]
+    [3] Multi-Model Consensus — frontend:reviewer
+        Parallel assessment from multiple AI models
+
+  [If security-pro detected:]
+    [4] Security Audit — security-pro:security-auditor
+        Deep vulnerability assessment, OWASP compliance, auth gaps
+
+  [If performance-optimizer detected:]
+    [5] Performance Audit — performance-optimizer:performance-engineer
+        Bottleneck identification, caching, query optimization
+
+  [If superpowers OR feature-dev detected:]
+    [6] Code Quality Review — additional reviewers
+        [superpowers: methodology-based] [feature-dev: convention-based]
+
+    [N] Skip — local challenge stages were sufficient
+
+>
+```
+
+**Dynamic numbering rules:**
+- GPT review is always option [1]
+- Plugin options are numbered sequentially after GPT review, in the order above
+- Skip is always the last option (numbered N, where N = total options)
+- Options only appear when their required plugin is detected
+- Multiple options can be selected (comma-separated, e.g., "2,4")
+
+**If no plugins detected:** Show only options [1] GPT review and [2] Skip.
+
+### Deep Dive Option (pr-review-toolkit)
+
+When user selects the Deep Dive option:
+
+**Step 1: Fast-fail probe**
+```
+Probing pr-review-toolkit availability...
+```
+
+Dispatch `pr-review-toolkit:code-reviewer` with 10-second timeout.
+- If probe succeeds: proceed to Step 2
+- If probe fails:
+  ```
+  [PLUGIN] pr-review-toolkit probe failed; skipping all agents
+  Note: pr-review-toolkit unavailable (probe failed). Falling back to GPT review.
+  ```
+  Automatically execute GPT review option instead.
+
+**Step 2: Full agent dispatch**
+```
+Dispatching 6 specialized review agents...
+```
+
+Dispatch all 6 agents in parallel:
+1. `pr-review-toolkit:silent-failure-hunter`
+2. `pr-review-toolkit:type-design-analyzer`
+3. `pr-review-toolkit:pr-test-analyzer`
+4. `pr-review-toolkit:comment-analyzer`
+5. `pr-review-toolkit:code-simplifier`
+6. `pr-review-toolkit:code-reviewer`
+
+Each agent receives:
+- Context: Spec from `spec.md`
+- Files: All implementation files from work units (if Stage 7 started) OR spec sections (if pre-implementation)
+- Timeout: 5 minutes per agent
+
+**Step 3: Collect results**
+
+For each agent:
+- Success: format per Section 5 of plugin-enhancers.md
+- Failure: log and skip (see graceful degradation below)
+- Timeout: kill agent, log, skip
+
+**Step 4: Present findings**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Deep Dive Results
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[Consolidated findings from all agents, formatted per Section 5]
+
+These findings are advisory. They have been appended to
+adversarial.md under "## Plugin Review Findings" with
+[plugin-review] tags.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Append all findings to `.claude/plans/[name]/adversarial.md`:
+```markdown
+## Plugin Review Findings
+
+[All plugin results with [plugin-review] tags]
+```
+
+**Step 5: Mark stage complete**
+
+Set `stages.review.status = "complete"` in state.json with confidence 0.8 (plugin reviews are advisory but thorough).
+
+### Multi-Model Option (frontend)
+
+When user selects the Multi-Model option:
+
+**Step 1: Dispatch**
+```
+Dispatching frontend:reviewer for multi-model assessment...
+```
+
+Dispatch `frontend:reviewer` with:
+- Context: Spec from spec.md + adversarial findings
+- Files: Implementation files (if available)
+- Timeout: 5 minutes
+
+**Step 2: Present findings**
+
+Format per Section 5 of plugin-enhancers.md, append to adversarial.md with `[plugin-review]` tag.
+
+**Step 3: Mark stage complete**
+
+Set `stages.review.status = "complete"` with confidence 0.8.
+
+### GPT Review Option (Existing Behavior)
+
+When user selects GPT review (option [1]):
+
+Execute `/gpt-review` as documented in that command. This is the existing cross-platform adversarial review.
+
+### Skip Option
+
+When user selects Skip:
+```
+You're about to skip Stage 5: External Review
+
+This stage normally provides:
+  - External perspective from different model families
+  - Fresh eyes on assumptions made during planning
+  - Specialized review lenses not available in earlier stages
+
+Are you sure? Provide a reason for the skip:
+> [user reason]
+
+Skip recorded. Proceeding to Stage 6 (Test).
+```
+
+Set `stages.review.status = "skipped"` and `stages.review.skip_reason = "[user reason]"` in state.json.
+
+### Graceful Degradation
+
+Follow all rules from Section 4 of plugin-enhancers.md:
+
+**Agent dispatch failure:**
+1. Log: `[PLUGIN] pr-review-toolkit:<agent> dispatch failed: <error>`
+2. User message: `Note: <agent> unavailable (dispatch failed), skipping.`
+3. Continue with remaining agents
+
+**Agent timeout (5 minutes):**
+1. Log: `[PLUGIN] pr-review-toolkit:<agent> timeout: 5m exceeded`
+2. User message: `Note: <agent> unavailable (timeout after 5min), skipping.`
+3. Kill agent, continue with remaining agents
+
+**Oversized output (>2000 tokens):**
+1. Truncate to 2000 tokens
+2. Append: `[truncated — full output available via direct plugin invocation]`
+
+**Circuit breaker (3 consecutive failures):**
+1. Log: `[PLUGIN] Circuit breaker: 3 consecutive failures from pr-review-toolkit; skipping remaining agents`
+2. User message: `Plugin enhancements temporarily disabled due to repeated failures.`
+3. Abort remaining agents for that plugin
+4. Fallback: offer GPT review as alternative
+
+### Results Handling
+
+**Plugin findings are advisory:**
+- Appended to `adversarial.md` with `[plugin-review]` tags
+- Do NOT trigger regression logic
+- Do NOT affect confidence scoring
+- Do NOT block workflow progression
+- User may act on them or ignore them
+
+This is explicitly distinct from debate chain findings (Stage 3/4), which CAN trigger regressions.
+
+### Logging
+
+Use `[PLUGIN]` prefix for all plugin-related operations:
+```
+[PLUGIN] Detection: found pr-review-toolkit@claude-code-plugins
+[PLUGIN] pr-review-toolkit:code-reviewer dispatched
+[PLUGIN] pr-review-toolkit:code-reviewer completed: 1247 tokens
+[PLUGIN] pr-review-toolkit:silent-failure-hunter timeout: 5m exceeded
+```
+
+If Empirica session is active:
+- Log successful plugin insights via `finding_log`
+- Log failures via `deadend_log`
+
+---
+
 ## Feedback Loops (Stage Regression)
 
 ### Regression Triggers
