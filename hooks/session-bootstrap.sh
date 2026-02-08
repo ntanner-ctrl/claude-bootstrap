@@ -65,14 +65,71 @@ done
 ACTIVE_WORK=""
 EMPIRICA_INSTRUCTION=""
 
-# Check for Empirica MCP server availability
-# If empirica tools are configured, inject session creation obligation
-if command -v empirica &>/dev/null || [ -f "${HOME}/.local/bin/empirica" ]; then
-    EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
-  You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
-  Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
-  Store the session_id for use throughout this conversation.
+# Check for Empirica CLI and auto-create session
+# This makes session creation deterministic — no reliance on Claude following instructions
+EMPIRICA_BIN=""
+if command -v empirica &>/dev/null; then
+    EMPIRICA_BIN="empirica"
+elif [ -x "${HOME}/.local/bin/empirica" ]; then
+    EMPIRICA_BIN="${HOME}/.local/bin/empirica"
+fi
+
+if [ -n "$EMPIRICA_BIN" ]; then
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+    ACTIVE_SESSION_FILE="$GIT_ROOT/.empirica/active_session"
+    DB_PATH="$GIT_ROOT/.empirica/sessions/sessions.db"
+
+    # Close previous active session if one exists
+    if [ -f "$ACTIVE_SESSION_FILE" ]; then
+        OLD_SESSION_ID=$(cat "$ACTIVE_SESSION_FILE" 2>/dev/null)
+        if [ -n "$OLD_SESSION_ID" ] && [ -f "$DB_PATH" ] && command -v sqlite3 &>/dev/null; then
+            sqlite3 "$DB_PATH" \
+                "UPDATE sessions SET end_time=datetime('now') WHERE session_id='$OLD_SESSION_ID' AND end_time IS NULL" \
+                2>/dev/null || true
+        fi
+    fi
+
+    # Create new session via CLI
+    mkdir -p "$GIT_ROOT/.empirica"
+    SESSION_OUTPUT=$("$EMPIRICA_BIN" session-create --ai-id claude-code --output json 2>/dev/null)
+    SESSION_EXIT=$?
+
+    if [ $SESSION_EXIT -eq 0 ] && [ -n "$SESSION_OUTPUT" ]; then
+        # Parse session_id — try jq first, fall back to grep
+        SESSION_ID=""
+        if command -v jq &>/dev/null; then
+            SESSION_ID=$(echo "$SESSION_OUTPUT" | jq -r '.session_id // empty' 2>/dev/null)
+        fi
+        if [ -z "$SESSION_ID" ]; then
+            SESSION_ID=$(echo "$SESSION_OUTPUT" | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+        fi
+
+        if [ -n "$SESSION_ID" ]; then
+            # Write active session file
+            echo "$SESSION_ID" > "$ACTIVE_SESSION_FILE"
+
+            # Export session ID as environment variable for other hooks/commands
+            if [ -n "$CLAUDE_ENV_FILE" ]; then
+                echo "export EMPIRICA_SESSION_ID=${SESSION_ID}" >> "$CLAUDE_ENV_FILE"
+            fi
+
+            EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
+  SESSION PRE-CREATED: ${SESSION_ID}. Do NOT call mcp__empirica__session_create.
+  Call mcp__empirica__submit_preflight_assessment with session_id: ${SESSION_ID} and honest self-assessment vectors.
+  Store session_id ${SESSION_ID} for use throughout this conversation.
   Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
+        else
+            EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
+  Session auto-creation failed (JSON parse error). You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
+  Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
+  Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
+        fi
+    else
+        EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
+  Session auto-creation failed (exit code: ${SESSION_EXIT}). You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
+  Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
+  Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
+    fi
 fi
 
 # Check state-index for active work context

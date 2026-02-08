@@ -76,6 +76,15 @@
             "command": "~/.claude/hooks/tdd-guardian.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__empirica__session_create",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/empirica-session-guard.sh"
+          }
+        ]
       }
     ],
     "SessionEnd": [

@@ -477,7 +477,7 @@ Project-level `.claude/` directories are **not removed** - those belong to each 
 ├─────────────────────────────────────────────────────────┤
 │ COMPONENTS                                              │
 │   40 commands     Planning, review, testing, execution  │
-│   14 shell hooks  Safety, formatting, state tracking    │
+│   15 shell hooks  Safety, formatting, state tracking    │
 │    6 agents       Spec, quality, security, perf, arch   │
 │    7 hookify rules  rm -rf, force-push, chmod 777, etc. │
 ├─────────────────────────────────────────────────────────┤

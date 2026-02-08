@@ -213,6 +213,7 @@ echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index
 echo "  ~/.claude/hooks/blueprint-stage-gate.sh - Check Empirica data before blueprint stage transitions"
 echo "  ~/.claude/hooks/cfn-lint-check.sh     - Auto-lint CloudFormation templates (fail-open)"
 echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
+echo "  ~/.claude/hooks/empirica-session-guard.sh - Block duplicate Empirica sessions"
 echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
@@ -260,6 +261,11 @@ echo '      "matcher": "Edit|Write",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },'
 echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }'
+echo '      ]'
+echo '    }, {'
+echo '      "matcher": "mcp__empirica__session_create",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/empirica-session-guard.sh" }'
 echo '      ]'
 echo '    }]'
 echo '  }'

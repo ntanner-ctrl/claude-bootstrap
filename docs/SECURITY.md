@@ -86,12 +86,13 @@ fi
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `session-bootstrap.sh` | SessionStart | Inject command awareness + active work state |
+| `session-bootstrap.sh` | SessionStart | Inject command awareness, auto-create Empirica session, and active work state |
 | `worktree-cleanup.sh` | SessionStart | Clean orphaned worktrees |
 | `dangerous-commands.sh` | PreToolUse (Bash) | Block catastrophic commands |
 | `secret-scanner.sh` | PreToolUse (Bash) | Scan for secrets before commits |
 | `protect-claude-md.sh` | PreToolUse (Edit\|Write) | Block CLAUDE.md edits (approval file bypass for /bootstrap-project) |
 | `tdd-guardian.sh` | PreToolUse (Edit\|Write) | Block impl edits during TDD RED phase |
+| `empirica-session-guard.sh` | PreToolUse (mcp__empirica__session_create) | Block duplicate Empirica sessions (redirect to preflight) |
 | `after-edit.sh` | PostToolUse (Edit\|Write) | Auto-format files after edits |
 | `cfn-lint-check.sh` | PostToolUse (Edit\|Write) | Auto-lint CloudFormation templates (fail-open) |
 | `state-index-update.sh` | PostToolUse (Edit\|Write) | Maintain active work state index |
@@ -204,6 +205,9 @@ Add hooks to `~/.claude/settings.json`:
       { "matcher": "Edit|Write", "hooks": [
         { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },
         { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }
+      ]},
+      { "matcher": "mcp__empirica__session_create", "hooks": [
+        { "type": "command", "command": "~/.claude/hooks/empirica-session-guard.sh" }
       ]}
     ],
     "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [

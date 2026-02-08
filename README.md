@@ -158,9 +158,10 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 
 | Hook | Purpose |
 |------|---------|
-| `session-bootstrap.sh` | **Inject command awareness, Empirica session obligation, and active work state at session start** |
+| `session-bootstrap.sh` | **Inject command awareness, auto-create Empirica session, and active work state at session start** |
 | `state-index-update.sh` | Maintain `.claude/state-index.json` when blueprint/TDD state changes |
 | `blueprint-stage-gate.sh` | Block blueprint stage transitions when [Empirica](https://github.com/Nubaeon/empirica) data is missing |
+| `empirica-session-guard.sh` | Block duplicate Empirica session creation (redirect to preflight) |
 | `empirica-commit-reminder.sh` | Remind to log findings via Empirica after successful commits |
 | `worktree-cleanup.sh` | Clean orphaned worktrees from interrupted `--isolate` sessions |
 | `protect-claude-md.sh` | Block accidental CLAUDE.md modifications |
@@ -230,7 +231,7 @@ Merge into `~/.claude/settings.json`. Minimal example (safety hooks only):
 }
 ```
 
-See `settings-example.json` for complete configuration with all 14 hooks and status line.
+See `settings-example.json` for complete configuration with all 15 hooks and status line.
 
 ---
 
