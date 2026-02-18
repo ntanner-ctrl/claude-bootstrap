@@ -30,6 +30,7 @@ echo -e "${YELLOW}Creating directories...${NC}"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-hooks"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-agents"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-commands"
+mkdir -p "${CLAUDE_HOME}/commands/templates/vault-notes"
 mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/.claude-plugin"
 mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/hooks"
 mkdir -p "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/scripts"
@@ -79,6 +80,21 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
     if [ -d "${SCRIPT_DIR}/commands/templates/prompts" ]; then
         mkdir -p "${CLAUDE_HOME}/commands/templates/prompts"
         cp -r "${SCRIPT_DIR}/commands/templates/prompts/"* "${CLAUDE_HOME}/commands/templates/prompts/" 2>/dev/null || true
+    fi
+
+    # Vault note templates (used by /vault-save and /end vault export)
+    if [ -d "${SCRIPT_DIR}/commands/templates/vault-notes" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/vault-notes"
+        cp -r "${SCRIPT_DIR}/commands/templates/vault-notes/"* "${CLAUDE_HOME}/commands/templates/vault-notes/" 2>/dev/null || true
+    fi
+
+    # Vault config (.example pattern — don't overwrite user's vault-config.sh)
+    if [ -f "${SCRIPT_DIR}/hooks/vault-config.sh.example" ]; then
+        cp "${SCRIPT_DIR}/hooks/vault-config.sh.example" "${CLAUDE_HOME}/hooks/vault-config.sh.example"
+        if [ ! -f "${CLAUDE_HOME}/hooks/vault-config.sh" ]; then
+            cp "${SCRIPT_DIR}/hooks/vault-config.sh.example" "${CLAUDE_HOME}/hooks/vault-config.sh"
+            echo "  → vault-config.sh created (set VAULT_PATH to your Obsidian vault)"
+        fi
     fi
 
     # Plugin
@@ -150,6 +166,21 @@ else
         cp -r "${REPO_DIR}/commands/templates/prompts/"* "${CLAUDE_HOME}/commands/templates/prompts/" 2>/dev/null || true
     fi
 
+    # Vault note templates (used by /vault-save and /end vault export)
+    if [ -d "${REPO_DIR}/commands/templates/vault-notes" ]; then
+        mkdir -p "${CLAUDE_HOME}/commands/templates/vault-notes"
+        cp -r "${REPO_DIR}/commands/templates/vault-notes/"* "${CLAUDE_HOME}/commands/templates/vault-notes/" 2>/dev/null || true
+    fi
+
+    # Vault config (.example pattern — don't overwrite user's vault-config.sh)
+    if [ -f "${REPO_DIR}/hooks/vault-config.sh.example" ]; then
+        cp "${REPO_DIR}/hooks/vault-config.sh.example" "${CLAUDE_HOME}/hooks/vault-config.sh.example"
+        if [ ! -f "${CLAUDE_HOME}/hooks/vault-config.sh" ]; then
+            cp "${REPO_DIR}/hooks/vault-config.sh.example" "${CLAUDE_HOME}/hooks/vault-config.sh"
+            echo "  → vault-config.sh created (set VAULT_PATH to your Obsidian vault)"
+        fi
+    fi
+
     # Plugin
     echo "  → session-start plugin"
     cp -r "${REPO_DIR}/plugins/bootstrap-toolkit/"* "${CLAUDE_HOME}/plugins/local/bootstrap-toolkit/" 2>/dev/null || true
@@ -199,6 +230,11 @@ echo "Adversarial review:"
 echo "  /devils-advocate       - Challenge assumptions"
 echo "  /gpt-review            - External model review"
 echo ""
+echo "Obsidian vault integration:"
+echo "  /vault-save             - Capture knowledge to vault"
+echo "  /vault-query            - Search vault for past knowledge"
+echo "  /end                    - Session close (now includes vault export)"
+echo ""
 echo "Run /toolkit for the complete command reference."
 echo ""
 echo -e "${YELLOW}Shell hooks installed:${NC}"
@@ -214,7 +250,12 @@ echo "  ~/.claude/hooks/blueprint-stage-gate.sh - Check Empirica data before blu
 echo "  ~/.claude/hooks/cfn-lint-check.sh     - Auto-lint CloudFormation templates (fail-open)"
 echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
 echo "  ~/.claude/hooks/empirica-session-guard.sh - Block duplicate Empirica sessions"
+echo "  ~/.claude/hooks/empirica-commit-reminder.sh - Remind to log findings after commits"
+echo "  ~/.claude/hooks/empirica-insight-capture.sh - Mirror Empirica logs to disk"
+echo "  ~/.claude/hooks/session-end-empirica.sh  - Close Empirica session on exit"
 echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
+echo "  ~/.claude/hooks/session-end-vault.sh  - Safety-net vault export on session end"
+echo "  ~/.claude/hooks/vault-config.sh       - Shared vault configuration (sourced by vault hooks)"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
 echo "  ~/.claude/agents/spec-reviewer.md          - Spec compliance verification"
@@ -266,6 +307,13 @@ echo '    }, {'
 echo '      "matcher": "mcp__empirica__session_create",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/empirica-session-guard.sh" }'
+echo '      ]'
+echo '    }],'
+echo '    "SessionEnd": [{'
+echo '      "matcher": "",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/session-end-empirica.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/session-end-vault.sh" }'
 echo '      ]'
 echo '    }]'
 echo '  }'

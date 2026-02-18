@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# vault-config.sh — Shared vault configuration
+# Sourced by vault-related hooks, not executed directly.
+# Copy this file to vault-config.sh and set your vault path.
+
+# Vault path — WSL path to Obsidian vault
+# Users MUST set this to their vault location
+VAULT_PATH=""
+
+# Feature flag — set to 0 to disable vault integration entirely
+VAULT_ENABLED=1
+
+# Export marker — session-end hook checks this to avoid double-export
+# Scoped by UID + date (NOT PID — marker must work across process boundaries)
+VAULT_EXPORT_MARKER="/tmp/.vault-exported-$(id -u)-$(date +%Y%m%d)"
+
+# --- Helper Functions ---
+
+# Check if vault is available and writable
+vault_is_available() {
+    [ "$VAULT_ENABLED" = "1" ] || return 1
+    [ -n "$VAULT_PATH" ] || return 1
+    [ -d "$VAULT_PATH" ] || return 1
+    [ -w "$VAULT_PATH" ] || return 1
+    return 0
+}
+
+# Sanitize a string for use as a filename (NTFS-safe)
+# Strips illegal chars: \ : * ? " < > |
+# Also strips leading/trailing spaces and dots (Windows restrictions)
+# Truncates to 80 chars, falls back to "unnamed" if empty
+vault_sanitize_slug() {
+    local result
+    result=$(echo "$1" | tr -cd '[:alnum:] ._-' | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | head -c 80)
+    echo "${result:-unnamed}"
+}

@@ -48,6 +48,24 @@
             "command": "~/.claude/hooks/blueprint-stage-gate.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/empirica-commit-reminder.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__empirica__finding_log|mcp__empirica__mistake_log|mcp__empirica__deadend_log",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/empirica-insight-capture.sh"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -94,10 +112,25 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/session-end-empirica.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-end-vault.sh"
           }
         ]
       }
     ]
+  },
+  "mcpServers": {
+    "obsidian": {
+      "command": "node",
+      "args": [
+        "{HOME}/.local/share/mcp-servers/obsidian-mcp/dist/index.js"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "/path/to/your/obsidian/vault"
+      }
+    }
   },
   "statusLine": {
     "type": "command",

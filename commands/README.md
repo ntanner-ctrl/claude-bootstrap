@@ -61,8 +61,15 @@ Complete reference for all Claude Bootstrap commands.
 | `/dispatch` | Single-task subagent dispatch with fresh context and optional review lenses |
 | `/delegate` | Multi-task delegation with orchestration, lenses, and worktree isolation |
 | `/checkpoint` | Manual context-save for session continuity |
-| `/end` | Graceful session close with Empirica postflight assessment |
+| `/end` | Graceful session close with Empirica postflight and vault export |
 | `/push-safe` | Safe git push with secret scanning |
+
+### Vault Integration
+
+| Command | One-liner |
+|---------|-----------|
+| `/vault-save` | Capture knowledge, ideas, or findings to Obsidian vault |
+| `/vault-query` | Search vault for past decisions, patterns, findings |
 
 ### Status & Tracking
 
@@ -494,7 +501,7 @@ Location: `.claude/plans/[name]/checkpoints/` (if blueprint active) or `.claude/
 
 ### `/end`
 
-**Graceful session close.** Runs Empirica postflight assessment while Claude is still in the loop, then prompts the user to `/exit`.
+**Graceful session close.** Runs Empirica postflight assessment and vault export while Claude is still in the loop, then prompts the user to `/exit`.
 
 ```
 /end
@@ -504,12 +511,49 @@ Steps:
 1. Reads active Empirica session from `.empirica/active_session`
 2. Claude self-assesses current epistemic state (13 vectors)
 3. Submits postflight assessment (captures learning delta)
-4. Logs any final findings
-5. Displays confirmation and prompts `/exit`
+4. Exports session artifacts to Obsidian vault (decisions, findings, blueprints, session summary)
+5. Logs any final findings
+6. Displays confirmation and prompts `/exit`
 
-**Why not just `/exit`?** The `SessionEnd` hook closes the DB record, but can't do epistemic self-assessment (Claude is already gone). `/end` keeps Claude in the loop for meaningful postflight data.
+**Why not just `/exit`?** The `SessionEnd` hook closes the DB record and writes a vault breadcrumb, but can't do epistemic self-assessment or rich vault export (Claude is already gone). `/end` keeps Claude in the loop for meaningful postflight data and detailed vault notes with wiki-links.
 
 **When to use:** Before every `/exit`. The session-bootstrap hook reminds Claude to suggest it.
+
+---
+
+## Vault Commands
+
+### `/vault-save`
+
+**Manual knowledge capture.** Saves ideas, decisions, findings, or patterns to the Obsidian vault.
+
+```
+/vault-save                              # Interactive — asks type, title, content
+/vault-save idea webhook retry logic     # Quick: type + title from args
+/vault-save finding                      # Type only, asks for details
+```
+
+Note types: idea (→ Ideas/), decision (→ Engineering/Decisions/), finding (→ Engineering/Findings/), pattern (→ Engineering/Patterns/).
+
+Wiki-links to existing vault notes only (no speculative links). All filenames NTFS-safe via slug sanitization.
+
+**When to use:** When you discover something worth preserving for future sessions.
+
+---
+
+### `/vault-query`
+
+**Vault search.** Searches the Obsidian vault for past decisions, patterns, findings, and session logs.
+
+```
+/vault-query authentication         # Keyword search
+/vault-query --type decision api    # Filter by note type
+/vault-query --project bootstrap    # Filter by project
+```
+
+Three-strategy search: frontmatter fields, content keywords, filename matching. Results ranked and deduplicated.
+
+**When to use:** When you need context from past sessions or want to avoid re-solving a solved problem.
 
 ---
 
@@ -769,6 +813,7 @@ templates/
 ├── stock-agents/           # Specialized subagents
 ├── stock-commands/         # Project-specific commands
 ├── stock-hooks/            # Prompt-based hooks
+├── vault-notes/            # Obsidian vault note templates (decision, finding, session, blueprint, idea)
 ├── prompts/                # Shared prompt templates (dispatch/delegate)
 │   ├── implementer.md
 │   ├── spec-review.md

@@ -6,9 +6,9 @@ Extensibility tools for Claude Code: commands, agents, hooks, and planning infra
 
 - **Test install locally:** `bash install.sh` (copies to `~/.claude/`)
 - **Verify install:** `ls ~/.claude/commands/blueprint.md`
-- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 41)
+- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 43)
 - **Count agents:** `ls agents/*.md | wc -l` (expect 6)
-- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 15)
+- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 17)
 - **Lint enforcement:** `grep -rn "^description:.*\(consider\|might\|optionally\)" commands/` (expect 0 matches)
 - **Run from repo:** `cd /path/to/project && claude` then `/bootstrap-project`
 
@@ -18,16 +18,17 @@ This repo is a **distribution package** — not a runtime app. `install.sh` copi
 
 ```
 claude-bootstrap/
-├── commands/          # 41 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
+├── commands/          # 43 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
 │   ├── templates/     # Stock elements installed by /bootstrap-project into target projects
 │   │   ├── stock-hooks/      # Prompt-based hooks for target projects
 │   │   ├── stock-agents/     # Agents for target projects
 │   │   ├── stock-commands/   # Commands for target projects
+│   │   ├── vault-notes/      # Obsidian vault note templates
 │   │   ├── prompts/          # Shared prompt templates (dispatch/delegate review lenses)
 │   │   └── documentation/    # Diataxis doc templates
 │   └── *.md           # The actual toolkit commands
 ├── agents/            # 6 review agents (spec, quality, security, performance, architecture, CloudFormation)
-├── hooks/             # 15 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
+├── hooks/             # 17 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
 ├── hookify-rules/     # 7 YAML-based safety rules (*.local.md)
 ├── plugins/           # Session-start plugin (bootstrap-toolkit)
 ├── ops-starter-kit/   # Domain extension example for infrastructure teams

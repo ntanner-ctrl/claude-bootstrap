@@ -153,6 +153,32 @@ if [ -f ".claude/state-index.json" ]; then
     fi
 fi
 
+# Write session-start timestamp (used by /end to scope "this session" artifacts)
+date -Iseconds > "/tmp/.claude-session-start-$(id -u)" 2>/dev/null
+
+# Check for Obsidian vault and inject recent context
+VAULT_CONTEXT=""
+if [ -f "${HOME}/.claude/hooks/vault-config.sh" ]; then
+    source "${HOME}/.claude/hooks/vault-config.sh" 2>/dev/null
+    if [ "$VAULT_ENABLED" = "1" ] && vault_is_available; then
+        # Find notes modified in last 7 days (POSIX-portable: -mtime, no -printf)
+        # Timeout after 2s to protect SessionStart <2s budget
+        # -maxdepth 3 limits traversal depth on slow WSL-to-NTFS mounts
+        RECENT_NOTES=$(timeout 2 find "$VAULT_PATH" -maxdepth 3 -name "*.md" -mtime -7 \
+            -not -path "*/.obsidian/*" -not -path "*/_Templates/*" -not -name "CLAUDE.md" \
+            2>/dev/null | head -10 | while IFS= read -r f; do echo "${f#$VAULT_PATH/}"; done)
+
+        if [ -n "$RECENT_NOTES" ]; then
+            # Build VAULT_CONTEXT with real newlines using printf (not \n literals)
+            VAULT_CONTEXT=$(printf '\nOBSIDIAN VAULT (recent knowledge):\n  Vault: %s\n  Recent notes (last 7 days):' "$VAULT_PATH")
+            while IFS= read -r note; do
+                VAULT_CONTEXT=$(printf '%s\n    %s' "$VAULT_CONTEXT" "$note")
+            done <<< "$RECENT_NOTES"
+            VAULT_CONTEXT=$(printf '%s\n  Use /vault-query to search for specific topics.\n  Use /vault-save to capture ideas or findings.' "$VAULT_CONTEXT")
+        fi
+    fi
+fi
+
 cat << EOF
 You have structured workflows available via claude-bootstrap (${total} commands).
 
@@ -174,4 +200,5 @@ Rules:
 Run /toolkit for complete command reference.
 $([ -n "$EMPIRICA_INSTRUCTION" ] && echo -e "$EMPIRICA_INSTRUCTION")
 $([ -n "$ACTIVE_WORK" ] && echo -e "$ACTIVE_WORK")
+$([ -n "$VAULT_CONTEXT" ] && echo -e "$VAULT_CONTEXT")
 EOF

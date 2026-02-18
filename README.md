@@ -26,7 +26,7 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 40 workflow commands for planning, review, testing, execution + plugin integration |
+| [**Commands**](commands/README.md) | 43 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
 | [**Agents**](agents/) | 6 specialized review agents (spec, quality, security, performance, architecture, CloudFormation) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
@@ -42,7 +42,8 @@ claude
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/decision`, `/design-check` |
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
 | **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist`, `/debug` |
-| **Execution** | `/dispatch`, `/delegate`, `/checkpoint` |
+| **Execution** | `/dispatch`, `/delegate`, `/checkpoint`, `/end` |
+| **Vault** | `/vault-save`, `/vault-query` |
 | **Status** | `/status`, `/blueprints`, `/overrides`, `/approve`, `/dashboard` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
@@ -184,6 +185,32 @@ Plugin results are advisory — tagged `[plugin-review]`, they don't block workf
 
 ---
 
+## Obsidian Vault Integration
+
+Bidirectional knowledge bridge between Claude Code sessions and an Obsidian vault:
+
+```
+SESSION LIFECYCLE                          OBSIDIAN VAULT
+═══════════════                           ══════════════
+
+SessionStart:
+  session-bootstrap.sh ──────────────────→ Reads recent vault notes
+                                           (titles injected into context)
+During Session:
+  /vault-query ──────────────────────────→ Search vault for past knowledge
+  /vault-save  ──────────────────────────→ Capture ideas, findings, patterns
+
+/end Command:
+  Vault export ──────────────────────────→ Decisions, Findings, Blueprints,
+                                           Session summary (with wiki-links)
+SessionEnd (safety net):
+  session-end-vault.sh ──────────────────→ Minimal breadcrumb if /end skipped
+```
+
+**Setup:** Copy `~/.claude/hooks/vault-config.sh.example` to `vault-config.sh` and set `VAULT_PATH` to your Obsidian vault location. All vault features gracefully skip when the vault is unavailable.
+
+---
+
 ## Defense-in-Depth Security
 
 Three layers of protection:
@@ -214,6 +241,8 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 | `after-edit.sh` | Auto-format files |
 | `statusline.sh` | Toolkit-aware status line (model, cost, context, active work) |
 | `notify.sh` | Desktop notifications |
+| `session-end-vault.sh` | Safety-net vault export when `/end` not used |
+| `vault-config.sh` | Shared vault configuration (sourced by vault hooks) |
 
 ### Hookify Rules
 
@@ -273,7 +302,7 @@ Merge into `~/.claude/settings.json`. Minimal example (safety hooks only):
 }
 ```
 
-See `settings-example.json` for complete configuration with all 15 hooks and status line.
+See `settings-example.json` for complete configuration with all hooks and status line.
 
 ---
 
