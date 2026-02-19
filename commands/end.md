@@ -218,9 +218,22 @@ After export, scan vault findings for staleness. A finding is stale if its `empi
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Step 3: Log Key Findings (if any)
+### Step 3: Collect Remaining Insights
 
-If you learned something significant during this session that wasn't already logged, call `mcp__empirica__finding_log` now. This is your last chance to capture it.
+This is your last chance to capture session knowledge. Do NOT skip this step.
+
+1. **Scan conversation for unlogged `★ Insight` blocks**: Search your own output in this session for any `★ Insight` blocks. For each one, check if a corresponding `finding_log` call followed it (look for a finding_log tool call within ~2 messages after the insight).
+
+2. **For each unlogged insight**: Call `mcp__empirica__finding_log` with `category: "insight"` and the insight text. This is the safety net for the behavioral gap where insights get generated as text but never recorded.
+
+3. **Final reflection**: Beyond `★ Insight` blocks, did you learn something significant that wasn't captured anywhere? If so, log it now.
+
+4. **Report**:
+   ```
+   Insight sweep: N ★ Insight blocks found, M already logged, K newly captured
+   ```
+
+**Why this matters**: Soft instructions to "log insights as you go" have a ~50% compliance rate in practice. This step catches the other 50% before the session closes and the knowledge is lost.
 
 ### Step 4: Confirm and Prompt Exit
 
@@ -233,7 +246,8 @@ If you learned something significant during this session that wasn't already log
   Postflight:   [completed / skipped]
   Reconciled:   [N orphaned insights (M→vault, K→Empirica) / skipped]
   Confidence:   [N findings updated / skipped]
-  Findings:     [N logged this session]
+  Insights:     [N ★ blocks found, M already logged, K swept / skipped]
+  Findings:     [N logged this session (total)]
   Vault:        [N notes exported / skipped (reason)]
   Stale:        [N findings need re-verification / none]
 
