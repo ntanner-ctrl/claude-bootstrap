@@ -206,3 +206,4 @@ On regression back to Stage 2, the work graph must be regenerated (old one is ma
 - **Fed by:** `/describe-change` (determines if spec is needed)
 - **Feeds into:** `/preflight`, `/devils-advocate`, `/edge-cases`, `/spec-to-tests`
 - **Work graph feeds into:** `/delegate` (parallel execution) and `/blueprint` Stage 7 (work graph validation)
+- **Insight capture:** Design decisions embedded in the spec are findings. Run `/collect-insights` after spec completion to flush architectural choices and trade-off rationale to vault + Empirica

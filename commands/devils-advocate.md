@@ -146,6 +146,10 @@ Adversarial review complete. Next:
   • Satisfied → /preflight then implement
 ```
 
+## Insight Capture
+
+Every successful challenge that changes the approach is a high-value finding. After the challenge session completes, run `/collect-insights` to flush discoveries to vault + Empirica — assumption violations and edge cases caught here prevent costly rework.
+
 ## Integration with /gpt-review
 
 When `/gpt-review` is called after this review, include findings:

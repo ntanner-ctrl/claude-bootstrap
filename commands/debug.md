@@ -132,3 +132,4 @@ After debugging completes, consider:
 - Should there be a test for this? (prevents regression)
 - Is this a symptom of a deeper issue? (architectural)
 - Should this be documented? (if non-obvious)
+- **Insight capture:** Root causes and fix patterns are high-value findings. Run `/collect-insights` to flush them to vault + Empirica — debugging insights prevent repeat failures across sessions

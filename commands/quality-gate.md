@@ -148,6 +148,7 @@ Default threshold: 85 (override with argument)
 - **Feeds into:** Commit decision → `/push-safe`
 - **Pairs with:** `/security-checklist` for detailed security review
 - **On failure:** `/debug` if issues are unclear, fix directly if obvious
+- **Insight capture:** If quality gate scoring surfaced unexpected gaps or patterns, run `/collect-insights` to flush them to vault + Empirica
 
 ## Anti-Gaming
 

@@ -52,6 +52,7 @@ Do not proceed to Phase 2 until the user has answered your clarifying questions.
 - **After `/review` verdict "Needs rethinking":** Explore alternatives
 - **Feeds into:** `/blueprint` (approach becomes Stage 1 input), `/decision` (record chosen approach)
 - **After approval:** Proceed to `/blueprint [name]` or `/describe-change` for triage
+- **Insight capture:** If ★ Insight blocks were generated during brainstorming (rejected alternatives, surprising constraints, architectural discoveries), run `/collect-insights` to flush them to vault + Empirica before proceeding
 
 ---
 

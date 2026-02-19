@@ -135,3 +135,4 @@ If a blueprint name was provided, create:
 - **Feeds into:** `/spec-change`, `/preflight`, `/blueprint`
 - **Fed by:** `/brainstorm` (if exploration happened first)
 - **Tracks in:** `.claude/plans/[name]/` if named
+- **Insight capture:** If triage surfaced architectural insights or risk discoveries, run `/collect-insights` to flush them to vault + Empirica
