@@ -59,6 +59,15 @@
         ]
       },
       {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/insight-nudge.sh"
+          }
+        ]
+      },
+      {
         "matcher": "mcp__empirica__finding_log|mcp__empirica__mistake_log|mcp__empirica__deadend_log",
         "hooks": [
           {

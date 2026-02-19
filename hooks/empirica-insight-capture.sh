@@ -59,5 +59,8 @@ if [ -n "$entry" ]; then
     echo "$entry" >> "$INSIGHTS_FILE" 2>/dev/null
 fi
 
+# Signal to insight-nudge.sh that a capture just happened
+touch "/tmp/.insight-last-capture-$(id -u)" 2>/dev/null
+
 # Always exit 0 — never block Empirica operations
 exit 0
