@@ -70,6 +70,8 @@ Complete reference for all Claude Bootstrap commands.
 |---------|-----------|
 | `/vault-save` | Capture knowledge, ideas, or findings to Obsidian vault |
 | `/vault-query` | Search vault for past decisions, patterns, findings |
+| `/collect-insights` | Flush pending insights to Obsidian vault and Empirica |
+| `/review-findings` | Re-assess vault findings through Empirica's calibration lens |
 
 ### Status & Tracking
 

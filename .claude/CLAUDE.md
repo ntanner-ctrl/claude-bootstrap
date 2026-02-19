@@ -6,9 +6,9 @@ Extensibility tools for Claude Code: commands, agents, hooks, and planning infra
 
 - **Test install locally:** `bash install.sh` (copies to `~/.claude/`)
 - **Verify install:** `ls ~/.claude/commands/blueprint.md`
-- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 43)
+- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 45)
 - **Count agents:** `ls agents/*.md | wc -l` (expect 6)
-- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 17)
+- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 18)
 - **Lint enforcement:** `grep -rn "^description:.*\(consider\|might\|optionally\)" commands/` (expect 0 matches)
 - **Run from repo:** `cd /path/to/project && claude` then `/bootstrap-project`
 
