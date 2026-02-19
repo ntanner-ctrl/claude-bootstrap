@@ -130,17 +130,7 @@
       }
     ]
   },
-  "mcpServers": {
-    "obsidian": {
-      "command": "node",
-      "args": [
-        "{HOME}/.local/share/mcp-servers/obsidian-mcp/dist/index.js"
-      ],
-      "env": {
-        "OBSIDIAN_VAULT_PATH": "/path/to/your/obsidian/vault"
-      }
-    }
-  },
+  "_mcpServers_note": "MCP servers belong in ~/.claude.json (managed by 'claude mcp add'), NOT here. Example: claude mcp add obsidian -- node ~/.local/share/mcp-servers/obsidian-mcp/dist/index.js",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/hooks/statusline.sh"
