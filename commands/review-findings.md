@@ -45,6 +45,26 @@ If no session, note: "No Empirica session — review will proceed without calibr
    - `date` (creation date)
    - Title and brief description
 
+### Step 3.5: Gather Cross-Project Findings (optional)
+
+If `--all` flag is set, or if this project has few findings (<3), also search for related knowledge from other projects:
+
+1. **Vault cross-search**: Use Grep tool to search ALL of `$VAULT_PATH/Engineering/Findings/` (not filtered by project). Look for findings that share tags, keywords, or domain overlap with the current project.
+
+2. **Empirica global query** (if session active):
+   ```bash
+   empirica query findings --scope global --limit 20 --output json 2>/dev/null
+   ```
+   Filter for findings from OTHER project IDs with impact >= 0.6.
+
+3. **Present cross-project findings separately**:
+   ```
+   Cross-project findings that may be relevant:
+     - [Finding from project X] (impact: 0.Y)
+     - [Finding from project Z] (impact: 0.Y)
+   ```
+   These are presented for awareness but NOT included in the interactive review walk-through unless the user requests it.
+
 ### Step 4: Triage by Review Priority
 
 Sort findings into priority buckets:

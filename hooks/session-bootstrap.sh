@@ -108,6 +108,13 @@ if [ -n "$EMPIRICA_BIN" ]; then
             # Write active session file
             echo "$SESSION_ID" > "$ACTIVE_SESSION_FILE"
 
+            # Auto-register project if not already registered
+            # This stabilizes the project ID (prevents hash fragmentation across sessions)
+            PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+            if [ -n "$PROJECT_NAME" ]; then
+                "$EMPIRICA_BIN" project-create --name "$PROJECT_NAME" --output json 2>/dev/null || true
+            fi
+
             # Export session ID as environment variable for other hooks/commands
             if [ -n "$CLAUDE_ENV_FILE" ]; then
                 echo "export EMPIRICA_SESSION_ID=${SESSION_ID}" >> "$CLAUDE_ENV_FILE"
