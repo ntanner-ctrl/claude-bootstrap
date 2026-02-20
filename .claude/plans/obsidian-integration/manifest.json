@@ -1,0 +1,298 @@
+{
+  "v": 1,
+  "name": "obsidian-integration",
+  "summary": "Bidirectional Obsidian vault integration: hook-driven artifact export, session-start context injection, ad-hoc vault commands",
+  "scope": {
+    "files_touched": [
+      "commands/end.md",
+      "commands/vault-save.md",
+      "commands/vault-query.md",
+      "hooks/session-bootstrap.sh",
+      "hooks/session-end-vault.sh",
+      "hooks/vault-config.sh",
+      "hooks/vault-config.sh.example",
+      "commands/templates/vault-notes/*.md",
+      "settings-example.json",
+      "install.sh",
+      "README.md",
+      "commands/README.md"
+    ],
+    "risk_flags": [
+      "user-facing behavior change"
+    ],
+    "path": "full",
+    "challenge_mode": "debate",
+    "execution_preference": "auto"
+  },
+  "spec_digest": {
+    "changes": [
+      {
+        "action": "modify",
+        "target": "commands/end.md",
+        "desc": "Add vault export step alongside Empirica postflight (Claude-executed, not shell)"
+      },
+      {
+        "action": "create",
+        "target": "commands/vault-save.md",
+        "desc": "Manual knowledge capture command"
+      },
+      {
+        "action": "create",
+        "target": "commands/vault-query.md",
+        "desc": "Ad-hoc vault search (MCP preferred, Grep fallback)"
+      },
+      {
+        "action": "modify",
+        "target": "hooks/session-bootstrap.sh",
+        "desc": "Add vault context injection + session-start timestamp"
+      },
+      {
+        "action": "create",
+        "target": "hooks/session-end-vault.sh",
+        "desc": "Safety net vault export on session end (shell-only, NTFS-safe)"
+      },
+      {
+        "action": "create",
+        "target": "hooks/vault-config.sh.example",
+        "desc": "Shared vault config template (user copies to vault-config.sh)"
+      },
+      {
+        "action": "create",
+        "target": "commands/templates/vault-notes/",
+        "desc": "5 note templates with deterministic wiki-link rules"
+      },
+      {
+        "action": "modify",
+        "target": "settings-example.json",
+        "desc": "Add session-end-vault.sh to SessionEnd hooks"
+      },
+      {
+        "action": "modify",
+        "target": "install.sh",
+        "desc": "Include new files, .example pattern for vault-config, update counts"
+      },
+      {
+        "action": "modify",
+        "target": "README.md",
+        "desc": "Update counts, add Obsidian section"
+      }
+    ],
+    "preserve": [
+      "All existing session-bootstrap.sh functionality",
+      "All existing /end Empirica postflight behavior",
+      "Fail-open pattern on ALL hooks",
+      "install.sh local + remote paths both work"
+    ],
+    "success_criteria": [
+      "Vault structure created with all directories",
+      "/end exports session notes with wiki-links (batch-scoped)",
+      "Session-end hook writes breadcrumb when /end not used (generated_by: safety-net)",
+      "Session-start injects vault context (POSIX-portable find, 2s timeout)",
+      "Vault disabled gracefully skips all operations",
+      "No duplicate session notes (marker file dedup)",
+      "Existing functionality unchanged"
+    ],
+    "failure_modes": [
+      "Vault path missing → skip gracefully (vault_is_available() returns 1)",
+      "WSL path resolution fails → skip gracefully",
+      "MCP not installed → fall back to Grep tool",
+      "Cross-filesystem write slow → acceptable, plain files only",
+      "NTFS illegal chars → vault_sanitize_slug() strips them"
+    ]
+  },
+  "work_units": [
+    {
+      "id": "W1",
+      "desc": "Vault structure + CLAUDE.md",
+      "files": [],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "W2",
+      "desc": "vault-config.sh.example + helpers (vault_is_available, vault_sanitize_slug)",
+      "files": [
+        "hooks/vault-config.sh.example"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "W3",
+      "desc": "Note template files with deterministic wiki-link rules",
+      "files": [
+        "commands/templates/vault-notes/*.md"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "W4",
+      "desc": "Extend /end with vault export (Claude-executed, overwrite semantics for blueprints)",
+      "files": [
+        "commands/end.md"
+      ],
+      "deps": [
+        "W1",
+        "W2",
+        "W3"
+      ],
+      "complexity": "high"
+    },
+    {
+      "id": "W5",
+      "desc": "session-end-vault.sh hook (NTFS-safe, generated_by tag)",
+      "files": [
+        "hooks/session-end-vault.sh"
+      ],
+      "deps": [
+        "W2"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W6",
+      "desc": "Extend session-bootstrap.sh (POSIX find, 2s timeout, session timestamp)",
+      "files": [
+        "hooks/session-bootstrap.sh"
+      ],
+      "deps": [
+        "W2"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W7",
+      "desc": "/vault-save command (manual only for v1, no auto pattern extraction)",
+      "files": [
+        "commands/vault-save.md"
+      ],
+      "deps": [
+        "W2",
+        "W3"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W8",
+      "desc": "/vault-query command (MCP preferred, Grep fallback)",
+      "files": [
+        "commands/vault-query.md"
+      ],
+      "deps": [
+        "W2"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W9",
+      "desc": "Update install.sh (.example pattern) + settings",
+      "files": [
+        "install.sh",
+        "settings-example.json"
+      ],
+      "deps": [
+        "W4",
+        "W5",
+        "W6",
+        "W7",
+        "W8"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "W10",
+      "desc": "Update documentation",
+      "files": [
+        "README.md",
+        "commands/README.md"
+      ],
+      "deps": [
+        "W9"
+      ],
+      "complexity": "low"
+    }
+  ],
+  "parallel_score": {
+    "width": 5,
+    "critical_path": 4,
+    "file_conflicts": []
+  },
+  "decisions": [
+    {
+      "topic": "MCP vs direct file access",
+      "chosen": "Direct file writes for all writes, MCP optional for reads only",
+      "reason": "Simpler, no plugin dependency, vault is just markdown files",
+      "alternatives_rejected": [
+        "MCP-only",
+        "Obsidian REST API"
+      ]
+    },
+    {
+      "topic": "Reuse existing seams vs new hooks",
+      "chosen": "Extend /end and session-bootstrap.sh",
+      "reason": "User feedback: proven patterns, avoid hook sprawl",
+      "alternatives_rejected": [
+        "Standalone vault hooks"
+      ]
+    },
+    {
+      "topic": "Search strategy",
+      "chosen": "Grep-based with frontmatter + content search",
+      "reason": "No dependencies, works with existing tools",
+      "alternatives_rejected": [
+        "Vector database (Chroma)",
+        "Obsidian Smart Connections plugin"
+      ]
+    },
+    {
+      "topic": "Install pattern for user config",
+      "chosen": ".example pattern — ship vault-config.sh.example, copy to vault-config.sh only if missing",
+      "reason": "Prevents reinstall from overwriting user vault path",
+      "alternatives_rejected": [
+        "Direct overwrite",
+        "ENV var override"
+      ]
+    },
+    {
+      "topic": "Pattern extraction",
+      "chosen": "Manual only for v1 (/vault-save pattern), automated deferred to future",
+      "reason": "Heuristic for automated extraction not well-defined yet",
+      "alternatives_rejected": [
+        "Both manual + automated in v1"
+      ]
+    }
+  ],
+  "confidence": {
+    "describe": 0.85,
+    "specify": 0.9,
+    "challenge": 0.88,
+    "edge_cases": 0.87,
+    "execute": 0.9
+  },
+  "revision": 2,
+  "last_regression": {
+    "from": "challenge",
+    "to": "specify",
+    "trigger": "5 high-severity debate findings",
+    "timestamp": "2026-02-18T12:00:00Z"
+  },
+  "empirica_session_id": "3582a0da-e2ec-4e0c-9aae-bb4c3fcb2737",
+  "execution": {
+    "method": "delegate",
+    "tasks_completed": 10,
+    "tasks_failed": 0,
+    "review_results": {
+      "spec": "pass",
+      "quality": "pass"
+    },
+    "timestamp": "2026-02-18T16:00:00Z"
+  },
+  "artifact_timestamps": {
+    "describe.md": "2026-02-18T11:15:00Z",
+    "spec.md": "2026-02-18T12:30:00Z",
+    "spec.diff.md": "2026-02-18T12:30:00Z",
+    "adversarial.md": "2026-02-18T12:00:00Z",
+    "work-graph.json": "2026-02-18T16:00:00Z"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "vault-data-pipeline",
+  "blueprint_version": 2,
+  "created": "2026-02-20T00:00:00Z",
+  "updated": "2026-02-20T00:12:00Z",
+  "recommended_path": "full",
+  "chosen_path": "full",
+  "current_stage": 7,
+  "challenge_mode": "debate",
+  "execution_preference": "auto",
+  "revision": 1,
+  "empirica_session_id": "d56dec89-2382-40a4-a724-c0f40696b198",
+  "empirica_preflight_complete": true,
+  "manifest_stale": true,
+  "work_graph_stale": true,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed": "2026-02-20T00:00:00Z",
+      "confidence": 0.9,
+      "confidence_note": "High clarity from brainstorm; all three workstreams well-defined"
+    },
+    "specify": {
+      "status": "complete",
+      "completed": "2026-02-20T00:06:00Z",
+      "confidence": 0.9,
+      "confidence_note": "Spec revised to address all debate findings plus edge case + user-raised concerns."
+    },
+    "challenge": {
+      "status": "complete",
+      "completed": "2026-02-20T00:05:00Z",
+      "confidence": 0.75,
+      "confidence_note": "Debate chain found 1 critical + 5 high issues. Regression triggered by F2.",
+      "debate_progress": {
+        "rounds_completed": [
+          "challenger",
+          "defender",
+          "judge"
+        ]
+      }
+    },
+    "edge_cases": {
+      "status": "complete",
+      "completed": "2026-02-20T00:10:00Z",
+      "confidence": 0.85,
+      "confidence_note": "27 boundaries mapped. 8 addressed in spec. 3 user-raised concerns resolved."
+    },
+    "premortem": {
+      "status": "skipped",
+      "skip_reason": "Distribution is file copy (install.sh), no deployment pipeline, no runtime monitoring."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Debate chain was thorough (15 + 6 + 27 findings). User confirmed sufficient coverage."
+    },
+    "test": {
+      "status": "skipped",
+      "skip_reason": "No automated test suite. Manual verification per CLAUDE.md testing section."
+    },
+    "execute": {
+      "status": "in_progress"
+    }
+  },
+  "regression_log": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "debate_judge_critical_finding",
+      "reason": "F2: WU3 overwrite destroys user annotations. Plus FA (schema_version) and FB (WSL path guard) need spec resolution.",
+      "timestamp": "2026-02-20T00:05:00Z",
+      "revision": 1
+    }
+  ]
+}

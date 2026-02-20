@@ -1,0 +1,105 @@
+{
+  "name": "obsidian-integration",
+  "blueprint_version": 2,
+  "created": "2026-02-18T11:00:00Z",
+  "updated": "2026-02-18T16:00:00Z",
+  "recommended_path": "full",
+  "chosen_path": "full",
+  "current_stage": 7,
+  "challenge_mode": "debate",
+  "execution_preference": "auto",
+  "revision": 2,
+  "empirica_session_id": "3582a0da-e2ec-4e0c-9aae-bb4c3fcb2737",
+  "empirica_preflight_complete": true,
+  "empirica_session_note": "Preflight submitted with minimal vectors (know, do, uncertainty)",
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed": "2026-02-18T11:15:00Z",
+      "skippable": false,
+      "confidence": 0.85,
+      "confidence_note": "Clear scope from brainstorm."
+    },
+    "specify": {
+      "status": "complete",
+      "completed": "2026-02-18T12:30:00Z",
+      "skippable": false,
+      "confidence": 0.9,
+      "confidence_note": "Revision 2 complete."
+    },
+    "challenge": {
+      "status": "complete",
+      "completed": "2026-02-18T13:00:00Z",
+      "skippable": true,
+      "mode": "debate",
+      "verdict": "PASS_WITH_NOTES",
+      "confidence": 0.88,
+      "confidence_note": "Revalidation passed.",
+      "debate_progress": {
+        "rounds_completed": [
+          "challenger",
+          "defender",
+          "judge"
+        ],
+        "current_round": null
+      }
+    },
+    "edge_cases": {
+      "status": "complete",
+      "completed": "2026-02-18T13:30:00Z",
+      "skippable": true,
+      "mode": "debate",
+      "verdict": "PASS_WITH_NOTES",
+      "confidence": 0.87,
+      "confidence_note": "14 edge cases. 2 fix-before-build applied."
+    },
+    "premortem": {
+      "status": "skipped",
+      "skippable": true,
+      "skip_reason": "Extensive adversarial review (50+ findings) covered operational concerns"
+    },
+    "review": {
+      "status": "skipped",
+      "skippable": true,
+      "skip_reason": "User chose to skip to execution"
+    },
+    "test": {
+      "status": "skipped",
+      "skippable": true,
+      "skip_reason": "User chose to skip to execution"
+    },
+    "execute": {
+      "status": "complete",
+      "completed": "2026-02-18T16:00:00Z",
+      "method": "delegate",
+      "tasks_completed": 10,
+      "tasks_failed": 0,
+      "review_results": {
+        "spec": "pass",
+        "quality": "pass"
+      },
+      "confidence": 0.9,
+      "confidence_note": "All 10 work units implemented. Spec + quality reviews passed after 2 minor fixes."
+    }
+  },
+  "skipped": [
+    "premortem",
+    "review",
+    "test"
+  ],
+  "regression_log": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "debate_verdict",
+      "trigger": "Judge verdict REGRESS — 5 high-severity findings",
+      "reason": "Debate chain found broken correctness properties requiring spec revision",
+      "timestamp": "2026-02-18T12:00:00Z",
+      "revision": 2
+    }
+  ],
+  "user_overrides": [],
+  "notes": "Hybrid Flywheel: Hook-driven export of bootstrap artifacts to Obsidian vault + session-start vault queries. Vault at /mnt/c/Users/nickt/Desktop/Work Stuff/Helvault"
+}

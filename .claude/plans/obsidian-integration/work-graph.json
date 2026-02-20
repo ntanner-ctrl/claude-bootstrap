@@ -1,0 +1,215 @@
+{
+  "nodes": [
+    {
+      "id": "W1",
+      "label": "Create vault directory structure and CLAUDE.md",
+      "files": [],
+      "status": "complete",
+      "complexity": "low"
+    },
+    {
+      "id": "W2",
+      "label": "Create vault-config.sh shared config",
+      "files": [
+        "hooks/vault-config.sh"
+      ],
+      "status": "complete",
+      "complexity": "low"
+    },
+    {
+      "id": "W3",
+      "label": "Create note template files",
+      "files": [
+        "commands/templates/vault-notes/decision.md",
+        "commands/templates/vault-notes/finding.md",
+        "commands/templates/vault-notes/session-log.md",
+        "commands/templates/vault-notes/blueprint-summary.md",
+        "commands/templates/vault-notes/idea.md"
+      ],
+      "status": "complete",
+      "complexity": "low"
+    },
+    {
+      "id": "W4",
+      "label": "Extend /end command with vault export",
+      "files": [
+        "commands/end.md"
+      ],
+      "status": "complete",
+      "complexity": "high"
+    },
+    {
+      "id": "W5",
+      "label": "Create session-end-vault.sh safety net hook",
+      "files": [
+        "hooks/session-end-vault.sh"
+      ],
+      "status": "complete",
+      "complexity": "medium"
+    },
+    {
+      "id": "W6",
+      "label": "Extend session-bootstrap.sh with vault context",
+      "files": [
+        "hooks/session-bootstrap.sh"
+      ],
+      "status": "complete",
+      "complexity": "medium"
+    },
+    {
+      "id": "W7",
+      "label": "Create /vault-save command",
+      "files": [
+        "commands/vault-save.md"
+      ],
+      "status": "complete",
+      "complexity": "medium"
+    },
+    {
+      "id": "W8",
+      "label": "Create /vault-query command",
+      "files": [
+        "commands/vault-query.md"
+      ],
+      "status": "complete",
+      "complexity": "medium"
+    },
+    {
+      "id": "W9",
+      "label": "Update install.sh and settings-example.json",
+      "files": [
+        "install.sh",
+        "settings-example.json"
+      ],
+      "status": "complete",
+      "complexity": "low"
+    },
+    {
+      "id": "W10",
+      "label": "Update documentation",
+      "files": [
+        "README.md",
+        "commands/README.md"
+      ],
+      "status": "complete",
+      "complexity": "low"
+    }
+  ],
+  "edges": [
+    {
+      "from": "W1",
+      "to": "W4",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W4",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W4",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W7",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W7",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W8",
+      "type": "blocks"
+    },
+    {
+      "from": "W4",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W5",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W6",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W7",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W8",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W9",
+      "to": "W10",
+      "type": "blocks"
+    }
+  ],
+  "batches": [
+    {
+      "batch": 1,
+      "units": [
+        "W1",
+        "W2",
+        "W3"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 2,
+      "units": [
+        "W4",
+        "W5",
+        "W6",
+        "W7",
+        "W8"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 3,
+      "units": [
+        "W9"
+      ],
+      "parallel": false
+    },
+    {
+      "batch": 4,
+      "units": [
+        "W10"
+      ],
+      "parallel": false
+    }
+  ],
+  "analysis": {
+    "total_units": 10,
+    "max_parallel_width": 5,
+    "critical_path_length": 4,
+    "file_conflicts": [],
+    "parallelization_recommendation": "strong"
+  },
+  "spec_work_units_checksum": "3203ad3a556c02878b6f6ac209911dd7963443262b95eaba560bf83d9bd4dd80",
+  "generated_at": "2026-02-18T12:30:00Z"
+}

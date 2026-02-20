@@ -26,10 +26,10 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 45 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
+| [**Commands**](commands/README.md) | 46 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
 | [**Agents**](agents/) | 6 specialized review agents (spec, quality, security, performance, architecture, CloudFormation) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
-| [**Shell Hooks**](hooks/) | Safety guards, session bootstrap, CLAUDE.md protection |
+| [**Shell Hooks**](hooks/) | 20 shell hooks for safety, session lifecycle, Empirica capture |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
 | [**Ops Starter Kit**](ops-starter-kit/) | Domain-specific extensions for infrastructure work |
 
@@ -43,7 +43,7 @@ claude
 | **Adversarial** | `/devils-advocate`, `/simplify-this`, `/edge-cases`, `/gpt-review` |
 | **Quality** | `/tdd`, `/quality-gate`, `/spec-to-tests`, `/security-checklist`, `/debug` |
 | **Execution** | `/dispatch`, `/delegate`, `/checkpoint`, `/end` |
-| **Vault** | `/vault-save`, `/vault-query`, `/collect-insights`, `/review-findings` |
+| **Vault** | `/vault-save`, `/vault-query`, `/vault-curate`, `/collect-insights` |
 | **Status** | `/status`, `/blueprints`, `/overrides`, `/approve`, `/dashboard` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks` |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
@@ -243,6 +243,8 @@ See [docs/SECURITY.md](docs/SECURITY.md) for architecture details.
 | `notify.sh` | Desktop notifications |
 | `session-end-vault.sh` | Safety-net vault export when `/end` not used |
 | `insight-nudge.sh` | Throttled reminder to capture insights (every 8 tool calls) |
+| `empirica-preflight-capture.sh` | Capture preflight vectors to `.empirica/preflight.jsonl` |
+| `empirica-postflight-capture.sh` | Capture postflight vectors to `.empirica/postflight.jsonl` |
 | `vault-config.sh` | Shared vault configuration (sourced by vault hooks) |
 
 ### Hookify Rules

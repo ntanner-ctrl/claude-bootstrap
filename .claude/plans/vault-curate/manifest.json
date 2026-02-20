@@ -1,0 +1,76 @@
+{
+  "blueprint_version": 2,
+  "name": "vault-curate",
+  "summary": "Interactive multi-stage knowledge triage workflow for Obsidian vault. 6 stages: Inventory → Health Check → Triage → Synthesis → Prune → Report. Subsumes /review-findings. Integrates Empirica calibration. Self-tuning frequency.",
+  "current_stage": "execute",
+  "revision": 2,
+  "challenge_mode": "debate",
+  "execution_preference": "simplicity",
+  "empirica_session_id": "ff003726-3f0f-4884-a3ae-29e1b987fffa",
+  "path": "full",
+  "work_units": [
+    {
+      "id": "WU1",
+      "name": "Create commands/vault-curate.md",
+      "status": "complete",
+      "deps": []
+    },
+    {
+      "id": "WU2",
+      "name": "Deprecate commands/review-findings.md",
+      "status": "complete",
+      "deps": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU3",
+      "name": "Update commands/README.md",
+      "status": "complete",
+      "deps": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU4",
+      "name": "Update README.md",
+      "status": "complete",
+      "deps": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU5",
+      "name": "Update .claude/CLAUDE.md",
+      "status": "complete",
+      "deps": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU6",
+      "name": "Update install.sh",
+      "status": "complete",
+      "deps": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU7",
+      "name": "Update cross-references",
+      "status": "complete",
+      "deps": [
+        "WU1",
+        "WU2"
+      ]
+    }
+  ],
+  "key_decisions": [
+    "Approach C: Tiered single command (full + --quick + --section)",
+    "/review-findings becomes deprecated alias",
+    "Archive = frontmatter flag, not file move (preserves Obsidian backlinks)",
+    "6 stages: Inventory, Health Check, Triage, Synthesis, Prune, Report",
+    "Self-tuning frequency based on decay rate"
+  ],
+  "spec_digest": "6 content types, type-specific health signals, grouped triage with batch ops, synthesis trellis, dry-run prune, decay-based frequency recommendation"
+}

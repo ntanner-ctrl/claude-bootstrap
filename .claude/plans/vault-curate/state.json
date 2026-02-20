@@ -1,0 +1,65 @@
+{
+  "blueprint_version": 2,
+  "name": "vault-curate",
+  "created": "2026-02-20T00:00:00Z",
+  "current_stage": "execute",
+  "challenge_mode": "debate",
+  "execution_preference": "simplicity",
+  "revision": 2,
+  "regressions": 1,
+  "max_regressions": 3,
+  "empirica_session_id": "ff003726-3f0f-4884-a3ae-29e1b987fffa",
+  "empirica_preflight_complete": false,
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "Clear scope from brainstorm, well-defined prior art"
+    },
+    "specify": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "Revision 2: all 24 debate findings addressed. Merge semantics fully specified, scale strategy added, health formula redesigned."
+    },
+    "challenge": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "Post-regression validation: PASS_WITH_NOTES. All 7 critical/high findings resolved. 2 low new findings addressed inline."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "42 boundaries mapped, 8 critical gaps fixed, remaining accepted as low-risk. No regression triggered."
+    },
+    "premortem": {
+      "status": "skipped",
+      "skip_reason": "User chose to skip — spec well-hardened after 2 challenge rounds + 42 boundary analysis"
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "User chose to skip to execute"
+    },
+    "test": {
+      "status": "skipped",
+      "skip_reason": "User chose to skip to execute"
+    },
+    "execute": {
+      "status": "complete",
+      "confidence": 0.9,
+      "confidence_note": "All 7 work units complete. Faithful spec translation, all counts updated, cross-references resolved."
+    }
+  },
+  "regression_log": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "debate_judge_critical_findings",
+      "reason": "2 critical findings: merge semantics unspecified (F2, F20). 5 high findings: scale strategy, health formula, project matching, checkpoint, atomicity.",
+      "timestamp": "2026-02-20T00:00:00Z",
+      "revision": 2
+    }
+  ]
+}

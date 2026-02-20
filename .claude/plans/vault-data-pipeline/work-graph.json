@@ -1,0 +1,100 @@
+{
+  "work_units": [
+    {
+      "id": "WU1",
+      "desc": "Backfill script (local)",
+      "files": [
+        "scripts/backfill-vault.sh"
+      ],
+      "deps": [],
+      "complexity": "medium"
+    },
+    {
+      "id": "WU2",
+      "desc": "Add blueprint type to /vault-save",
+      "files": [
+        "commands/vault-save.md"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU3",
+      "desc": "Auto-export at blueprint completion",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "deps": [
+        "WU2"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "WU4",
+      "desc": "Preflight vector capture hook",
+      "files": [
+        "hooks/empirica-preflight-capture.sh"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU5",
+      "desc": "Postflight vector capture hook",
+      "files": [
+        "hooks/empirica-postflight-capture.sh"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU6",
+      "desc": "Epistemic delta export in /end",
+      "files": [
+        "commands/end.md",
+        "commands/templates/vault-notes/epistemic-delta.md"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "WU7",
+      "desc": "Settings wiring for new hooks",
+      "files": [
+        "settings-example.json"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "trivial"
+    },
+    {
+      "id": "WU8",
+      "desc": "Update counts and docs",
+      "files": [
+        "install.sh",
+        "README.md",
+        "commands/README.md",
+        ".claude/CLAUDE.md"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "trivial"
+    }
+  ],
+  "parallel_score": {
+    "width": 4,
+    "critical_path": [
+      "WU4",
+      "WU6",
+      "WU8"
+    ],
+    "file_conflicts": []
+  }
+}

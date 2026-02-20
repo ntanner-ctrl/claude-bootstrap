@@ -1,0 +1,667 @@
+# Change Specification: Obsidian Integration — Hybrid Flywheel
+
+## Summary
+
+Add bidirectional Obsidian vault integration to the bootstrap toolkit: hooks automatically export engineering artifacts (decisions, findings, blueprint summaries, session logs) to linked Obsidian notes at session end, session-start hooks surface relevant past knowledge, and new commands enable ad-hoc vault interaction.
+
+## What Changes
+
+### Files/Components Touched
+
+| File/Component | Nature of Change |
+|----------------|------------------|
+| `commands/end.md` | modify — add vault export step alongside Empirica postflight |
+| `commands/vault-save.md` | add — manual knowledge capture command |
+| `commands/vault-query.md` | add — ad-hoc vault search command |
+| `hooks/session-bootstrap.sh` | modify — add vault context injection at session start |
+| `hooks/session-end-vault.sh` | add — safety-net vault export on session end |
+| `hooks/vault-config.sh` | add — shared config (vault path, feature flag) sourced by other hooks |
+| `commands/templates/vault-notes/` | add — note templates for each artifact type |
+| `settings-example.json` | modify — add new hook wiring + MCP server config |
+| `install.sh` | modify — include new files, update counts in output |
+| `README.md` | modify — update command/hook counts, add Obsidian section |
+| `commands/README.md` | modify — add new commands to table |
+
+### External Dependencies
+
+- [x] New dependencies:
+  - **Obsidian** (desktop app, already installed)
+  - **obsidian-claude-code-mcp** (Obsidian plugin) — exposes MCP tools for vault read/write
+  - OR **direct file access** as fallback — vault is just markdown files at a known path
+
+### Database/State Changes
+
+- [x] State format changes:
+  - Vault path stored in `~/.claude/hooks/vault-config.sh` as `VAULT_PATH` env var
+  - New notes created as plain markdown files in the Obsidian vault directory
+
+## Architecture
+
+### Vault Structure
+
+```
+Helvault/                              (Obsidian vault root)
+├── CLAUDE.md                          ← Vault-level context for Claude (when running in vault)
+├── Engineering/
+│   ├── Decisions/                     ← From /decision records
+│   │   └── 2026-02-18-auth-pattern-choice.md
+│   ├── Blueprints/                    ← Blueprint summaries (not full artifacts)
+│   │   └── 2026-02-18-obsidian-integration.md
+│   ├── Findings/                      ← From Empirica finding_log
+│   │   └── 2026-02-18-hook-exit-codes.md
+│   └── Patterns/                      ← Extracted reusable patterns
+│       └── hook-enforcement-pattern.md
+├── Sessions/                          ← Auto-generated session logs
+│   └── 2026-02-18-session-summary.md
+├── Ideas/                             ← From /vault-save (ad-hoc captures)
+│   └── 2026-02-18-webhook-retry-idea.md
+└── _Templates/                        ← Obsidian template files
+    ├── decision.md
+    ├── finding.md
+    ├── blueprint-summary.md
+    ├── session-log.md
+    └── idea.md
+```
+
+### Data Flow
+
+```
+SESSION LIFECYCLE                          OBSIDIAN VAULT
+═══════════════                           ══════════════
+
+SessionStart:
+  session-bootstrap.sh
+    ├── existing: command awareness
+    ├── existing: Empirica session
+    └── NEW: vault context injection ────→ Reads recent vault notes
+        (titles + paths of last 7 days      from Sessions/, Decisions/,
+         injected into Claude's context)     Findings/ via file listing)
+
+During Session:
+  /vault-query ──────────────────────────→ Search vault via MCP or grep
+  /vault-save  ──────────────────────────→ Write note to Ideas/ or custom path
+  /decision    ──(existing, unmodified)──→ (export happens at /end)
+
+/end Command:
+  ├── existing: Empirica postflight
+  └── NEW: vault export ────────────────→ Writes to vault:
+      ├── Session summary → Sessions/       - Decisions made
+      ├── Decisions → Decisions/             - Findings logged
+      ├── Findings → Findings/               - Blueprint progress
+      └── Blueprint summary → Blueprints/    - Session overview
+
+SessionEnd Hook (safety net):
+  session-end-vault.sh ─────────────────→ Writes minimal session log
+  (only if /end didn't already export)      to Sessions/ (shell-only, no AI)
+```
+
+### Configuration
+
+All vault hooks source a shared config file:
+
+```bash
+# hooks/vault-config.sh — Shared vault configuration
+# Sourced by vault-related hooks, not executed directly.
+
+# Vault path — WSL path to Obsidian vault
+# Users MUST set this to their vault location
+VAULT_PATH="/mnt/c/Users/nickt/Desktop/Work Stuff/Helvault"
+
+# Feature flag — set to 0 to disable vault integration entirely
+VAULT_ENABLED=1
+
+# Export marker — session-end hook checks this to avoid double-export
+# Scoped by UID + date (NOT PID — marker must work across process boundaries)
+VAULT_EXPORT_MARKER="/tmp/.vault-exported-$(id -u)-$(date +%Y%m%d)"
+```
+
+**Why a shared config file instead of env vars?** Shell hooks run in isolated subprocesses — they can't share environment variables. A sourced file ensures all hooks use the same vault path.
+
+**Session-start timestamp:** `session-bootstrap.sh` writes the current ISO timestamp to `/tmp/.claude-session-start-$(id -u)` at startup. The `/end` command uses this as the cutoff for "this session" artifact collection — only decisions/findings with timestamps after the session start are exported. This solves the "what is this session?" scoping problem.
+
+### Note Templates
+
+Each note type has consistent YAML frontmatter and `[[wiki-link]]` conventions.
+
+**Wiki-link generation rules (deterministic):**
+- Links are generated ONLY between notes created in the same `/end` export batch.
+- Session summary links to all decisions/findings exported in the same batch: `[[YYYY-MM-DD-slug]]`
+- Decision/finding notes link back to their session: `[[YYYY-MM-DD-HHMM-project-summary]]`
+- Blueprint summary links to decisions made during that blueprint's lifecycle (if exported in same batch).
+- No speculative links to notes that might exist. If a note isn't being created in this batch, don't link to it.
+- Unresolved `[[wiki-links]]` are standard Obsidian behavior and render as "create new note" prompts — this is acceptable but should be minimized by the batch-scoping rule above.
+
+#### Decision Note (`_Templates/decision.md`)
+```markdown
+---
+type: decision
+date: {{date}}
+project: {{project}}
+tags: [decision]
+---
+
+# {{title}}
+
+## Context
+{{context}}
+
+## Decision
+{{decision}}
+
+## Alternatives Considered
+{{alternatives}}
+
+## Rationale
+{{rationale}}
+
+Related: {{wiki_links}}
+```
+
+#### Finding Note (`_Templates/finding.md`)
+```markdown
+---
+type: finding
+date: {{date}}
+project: {{project}}
+category: {{category}}
+severity: {{severity}}
+tags: [finding]
+---
+
+# {{title}}
+
+{{description}}
+
+## Source
+- Session: [[{{session_link}}]]
+{{#if blueprint_link}}- Blueprint: [[{{blueprint_link}}]]{{/if}}
+
+## Implications
+{{implications}}
+```
+
+#### Session Log (`_Templates/session-log.md`)
+```markdown
+---
+type: session
+date: {{date}}
+project: {{project}}
+duration: {{duration}}
+tags: [session]
+---
+
+# Session: {{date}} — {{project}}
+
+## Summary
+{{summary}}
+
+## Work Completed
+{{work_items}}
+
+## Decisions Made
+{{decision_links}}
+
+## Findings
+{{finding_links}}
+
+## Open Questions
+{{open_questions}}
+```
+
+#### Blueprint Summary (`_Templates/blueprint-summary.md`)
+```markdown
+---
+type: blueprint
+date: {{date}}
+project: {{project}}
+blueprint: {{blueprint_name}}
+stage: {{current_stage}}
+path: {{path_type}}
+tags: [blueprint]
+---
+
+# Blueprint: {{blueprint_name}}
+
+## Summary
+{{summary}}
+
+## Current Status
+Stage {{stage}}/7 — {{stage_name}}
+Path: {{path_type}} | Mode: {{challenge_mode}}
+
+## Key Decisions
+{{decision_links}}
+
+## Adversarial Findings
+{{findings_summary}}
+```
+
+#### Idea Note (`_Templates/idea.md`)
+```markdown
+---
+type: idea
+date: {{date}}
+tags: [idea]
+---
+
+# {{title}}
+
+{{content}}
+
+## Related
+{{wiki_links}}
+```
+
+### Component Specifications
+
+#### W1: Vault Structure Setup
+
+Create the directory structure and vault CLAUDE.md. This is a one-time setup step, idempotent (check existence before creating).
+
+The vault CLAUDE.md provides context when Claude Code is run against the vault directly:
+
+```markdown
+# Helvault — Engineering Knowledge Vault
+
+This Obsidian vault stores engineering knowledge captured from Claude Code sessions.
+
+## Structure
+- `Engineering/Decisions/` — Architectural Decision Records
+- `Engineering/Blueprints/` — Blueprint planning summaries
+- `Engineering/Findings/` — Discoveries, patterns, edge cases
+- `Engineering/Patterns/` — Reusable patterns extracted from findings
+- `Sessions/` — Auto-generated session logs
+- `Ideas/` — Ad-hoc captures from /vault-save
+
+## Conventions
+- Notes use `[[wiki-links]]` for cross-references
+- YAML frontmatter on every note (type, date, project, tags)
+- Date prefix on filenames: `YYYY-MM-DD-slug.md`
+- Tags follow Obsidian conventions: `#decision`, `#finding`, `#session`, etc.
+```
+
+#### W2: Vault Config Hook (`hooks/vault-config.sh`)
+
+Sourced (not executed) by other hooks. Contains:
+- `VAULT_PATH` — absolute path to vault
+- `VAULT_ENABLED` — feature flag (1/0)
+- `VAULT_EXPORT_MARKER` — dedup marker path (per-UID, per-date)
+- Helper function `vault_is_available()` that checks path exists and is writable
+- Helper function `vault_sanitize_slug()` that strips NTFS-illegal characters from filenames
+
+**Concrete implementation of `vault_is_available()`:**
+```bash
+vault_is_available() {
+    [ "$VAULT_ENABLED" = "1" ] || return 1
+    [ -n "$VAULT_PATH" ] || return 1
+    [ -d "$VAULT_PATH" ] || return 1
+    [ -w "$VAULT_PATH" ] || return 1
+    return 0
+}
+```
+
+**Concrete implementation of `vault_sanitize_slug()`:**
+```bash
+vault_sanitize_slug() {
+    # Strip NTFS-illegal chars: \ : * ? " < > |
+    # Also strip leading/trailing spaces and dots (Windows restrictions)
+    local result
+    result=$(echo "$1" | tr -cd '[:alnum:] ._-' | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | head -c 80)
+    echo "${result:-unnamed}"
+}
+```
+
+**Install pattern:** The repo contains `hooks/vault-config.sh.example` (with `VAULT_PATH=""` placeholder). `install.sh` copies it to `~/.claude/hooks/vault-config.sh.example` always, but only copies to `vault-config.sh` if that file does NOT already exist. This prevents reinstalls from overwriting user config.
+
+**Fail-open behavior:** If vault path is empty, doesn't exist, or isn't writable, all vault operations gracefully skip (log a warning, continue without error).
+
+#### W3: Extend `/end` Command (`commands/end.md`)
+
+Add a new step between Empirica postflight and the exit prompt.
+
+**Important:** The `/end` command is a Claude-executed skill (markdown), not a shell script. All steps below are instructions for Claude to execute using its tools (Read, Write, Grep, Bash). References to `vault-config.sh` mean "read the file to get config values", not "source it in a shell subprocess." Template variable substitution is done by Claude (string replacement in the note content before writing), not by shell `envsubst`.
+
+**Step 2.5: Vault Export**
+
+1. Use the Bash tool to source `vault-config.sh` and extract all config values in one call:
+   ```bash
+   source ~/.claude/hooks/vault-config.sh 2>/dev/null && echo "VAULT_ENABLED=$VAULT_ENABLED" && echo "VAULT_PATH=$VAULT_PATH" && echo "VAULT_EXPORT_MARKER=$VAULT_EXPORT_MARKER"
+   ```
+   This evaluates the `$(id -u)` and `$(date +%Y%m%d)` subshells in `VAULT_EXPORT_MARKER` at runtime. Do NOT read vault-config.sh as text — the marker path contains shell expressions.
+2. If `VAULT_ENABLED=0`, skip with note: "Vault export skipped (vault disabled)". If vault path is empty, doesn't exist, or isn't writable, skip with note: "Vault export skipped (vault not accessible)".
+3. Ensure vault subdirectories exist (idempotent):
+   ```bash
+   mkdir -p "$VAULT_PATH/Engineering/Decisions" "$VAULT_PATH/Engineering/Findings" "$VAULT_PATH/Engineering/Blueprints" "$VAULT_PATH/Engineering/Patterns" "$VAULT_PATH/Sessions" "$VAULT_PATH/Ideas"
+   ```
+4. Collect session artifacts (scoped to "this session"):
+   - Read session-start timestamp from `/tmp/.claude-session-start-$(id -u)` (written by `session-bootstrap.sh`). Use Bash: `cat /tmp/.claude-session-start-$(id -u)`. Format is ISO-8601 with timezone (e.g., `2026-02-18T14:30:00+00:00`). **Fallback:** If the file is absent or empty (e.g., after OS reboot), use `$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)` as the cutoff. Log: "Session-start timestamp missing — scoping artifacts to last 24 hours."
+   - Read `.empirica/active_session` for session ID. If file is absent or empty, use fallback: `session-YYYY-MM-DD-HHMM` (generated from current date/time).
+   - **Decision records:** The `/decision` command writes YAML frontmatter markdown files to `.claude/decisions/` (project-local). Each file has a `date:` field in ISO-8601 format. Filename pattern: `YYYY-MM-DD-slug.md`. Filter: include decisions where `date:` frontmatter value is lexicographically >= session-start timestamp.
+   - **Empirica findings:** Read `.empirica/insights.jsonl`. Each line is a JSON object with a `timestamp` field in ISO-8601 format (e.g., `"timestamp": "2026-02-18T14:30:00+00:00"`). Filter: include lines where `timestamp` value is lexicographically >= session-start timestamp. The `input.finding` field contains the finding text.
+   - Check for active blueprint progress (any blueprint in `.claude/plans/` with `state.json` `updated` timestamp after session start)
+   - Check `Ideas/` in the vault for notes with `date:` frontmatter matching today's date (these are `/vault-save` captures from this session — include their titles in the session summary)
+5. For each artifact, create a vault note using the appropriate template. **All filenames MUST be constructed via `vault_sanitize_slug()` on the title/name** (via Bash: `echo "TITLE" | tr -cd '[:alnum:] ._-' | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | head -c 80`):
+   - Decisions → `Engineering/Decisions/YYYY-MM-DD-slug.md`
+   - Findings → `Engineering/Findings/YYYY-MM-DD-slug.md`
+   - Blueprint updates → `Engineering/Blueprints/YYYY-MM-DD-blueprint-name.md`
+     - **Update semantics:** Overwrite (snapshot). Each export writes the current blueprint state as a complete snapshot. No merge logic — the latest export is the source of truth. Previous versions exist in git history if needed.
+6. Create session summary → `Sessions/YYYY-MM-DD-HHMM-project-summary.md`
+   - Filename includes HHMM timestamp to distinguish multiple sessions per day (NTFS-safe, no colons)
+7. Write the marker file (use the `VAULT_EXPORT_MARKER` value extracted in step 1 via Bash: `touch "$VAULT_EXPORT_MARKER"`) so the SessionEnd hook knows export already happened
+7. Present summary:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  VAULT EXPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Exported to Helvault:
+    Sessions/2026-02-18-session-summary.md
+    Engineering/Decisions/2026-02-18-auth-pattern.md
+    Engineering/Findings/2026-02-18-hook-exit-codes.md
+
+  Total: 3 notes (2 new, 1 updated)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**MCP vs direct file access boundary:**
+- **Writes (all components):** Always use the Write tool for direct file creation. The vault is just markdown files — no MCP needed. This avoids a runtime dependency on the Obsidian plugin.
+- **Reads in `/vault-query`:** Try MCP first (`mcp__obsidian__search`) for richer results if available. Fall back to Grep tool against `$VAULT_PATH` if MCP unavailable. The command must work without MCP.
+- **Reads in `session-bootstrap.sh`:** Direct `find` only (shell hook, Claude not active, MCP unavailable).
+- **Summary:** MCP is a read-path enhancement, never a write-path dependency. All features work without it.
+
+**What goes in the session summary note:**
+The session summary (`Sessions/` note) is created by Claude during `/end` and contains:
+- **Summary:** 2-3 sentence overview of what was accomplished (Claude-generated from conversation context)
+- **Work Completed:** Bullet list derived from artifacts Claude has evidence for: decisions made, findings logged, blueprints updated, `/vault-save` captures. Do NOT list "files modified" — Claude doesn't have reliable access to a session-scoped git diff during `/end`.
+- **Decisions Made:** Wiki-links to any decision notes exported in the same session
+- **Findings:** Wiki-links to any finding notes exported in the same session
+- **Blueprint Progress:** Current stage and status if a blueprint was active
+- **Open Questions:** Anything explicitly flagged as unresolved during the session
+
+This is Claude-generated content using Write tool, not shell-generated. The safety-net hook (W4) produces only a minimal breadcrumb by contrast.
+
+#### W4: SessionEnd Vault Hook (`hooks/session-end-vault.sh`)
+
+Safety net, mirrors `session-end-empirica.sh` pattern. Shell-only (Claude is gone).
+
+```bash
+#!/usr/bin/env bash
+# session-end-vault.sh — Safety net: writes minimal session log on exit
+# If /end was used, this is a no-op (marker file exists).
+# If /end was NOT used, writes a bare-bones session log from available data.
+
+set +e
+source ~/.claude/hooks/vault-config.sh 2>/dev/null || exit 0
+
+[ "$VAULT_ENABLED" = "1" ] || exit 0
+vault_is_available || exit 0
+
+# Check if /end already exported (uses VAULT_EXPORT_MARKER from vault-config.sh)
+[ -f "$VAULT_EXPORT_MARKER" ] && exit 0
+
+# Minimal export: just a session breadcrumb
+DATE=$(date +%Y-%m-%d)
+TIME=$(date +%H%M)  # No colons — NTFS-safe (vault is on Windows NTFS via WSL)
+PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+PROJECT=${PROJECT:-unknown-project}  # Avoid useless pwd fallback
+PROJECT=$(vault_sanitize_slug "$PROJECT")
+NOTE_PATH="${VAULT_PATH}/Sessions/${DATE}-session-${TIME}.md"
+
+mkdir -p "${VAULT_PATH}/Sessions"
+
+cat > "$NOTE_PATH" << EOF
+---
+type: session
+date: ${DATE}
+project: ${PROJECT}
+generated_by: safety-net
+tags: [session, auto-generated]
+---
+
+# Session: ${DATE} ${TIME} — ${PROJECT}
+
+> Auto-generated by session-end hook. Use /end for richer export.
+
+## Project
+${PROJECT}
+
+## Notes
+Session ended without /end command. No detailed export available.
+EOF
+
+exit 0
+```
+
+**Key design choices:**
+- Marker file (`VAULT_EXPORT_MARKER`) is per-UID per-date, sourced from `vault-config.sh` — same path in both `/end` and safety-net hook
+- For parallel sessions: marker is date-scoped, so two sessions on the same day share the marker. If session A runs `/end`, session B's safety-net skips. This is acceptable — the rich `/end` export from session A is more valuable than a bare safety-net note from B. Session B's artifacts would be captured next time `/end` is used.
+- Shell-only — no Claude intelligence, just timestamps and project name
+- The note uses `generated_by: safety-net` in frontmatter to distinguish from `/end` exports
+- The note explicitly says "use /end for richer export" to train the user
+- Always exits 0 (fail-open, can't block session end anyway)
+
+#### W5: Extend `session-bootstrap.sh`
+
+Add vault context injection after the existing Empirica section. The hook reads recent vault notes (last 7 days) and injects their titles/paths so Claude knows what past knowledge is available.
+
+**Addition to session-bootstrap.sh** (after the Empirica block, before the final `cat << EOF`):
+
+```bash
+# Write session-start timestamp (used by /end to scope "this session" artifacts)
+date -Iseconds > "/tmp/.claude-session-start-$(id -u)" 2>/dev/null
+
+# Check for Obsidian vault and inject recent context
+VAULT_CONTEXT=""
+if [ -f "${HOME}/.claude/hooks/vault-config.sh" ]; then
+    source "${HOME}/.claude/hooks/vault-config.sh" 2>/dev/null
+    if [ "$VAULT_ENABLED" = "1" ] && vault_is_available; then
+        # Find notes modified in last 7 days (POSIX-portable: -mtime, no -printf)
+        # Timeout after 2s to protect SessionStart <2s budget
+        # -maxdepth 3 limits traversal depth on slow WSL-to-NTFS mounts
+        RECENT_NOTES=$(timeout 2 find "$VAULT_PATH" -maxdepth 3 -name "*.md" -mtime -7 \
+            -not -path "*/.obsidian/*" -not -path "*/_Templates/*" -not -name "CLAUDE.md" \
+            2>/dev/null | head -10 | while IFS= read -r f; do echo "${f#$VAULT_PATH/}"; done)
+
+        if [ -n "$RECENT_NOTES" ]; then
+            # Build VAULT_CONTEXT with real newlines using printf (not \n literals)
+            VAULT_CONTEXT=$(printf '\nOBSIDIAN VAULT (recent knowledge):\n  Vault: %s\n  Recent notes (last 7 days):' "$VAULT_PATH")
+            while IFS= read -r note; do
+                VAULT_CONTEXT=$(printf '%s\n    %s' "$VAULT_CONTEXT" "$note")
+            done <<< "$RECENT_NOTES"
+            VAULT_CONTEXT=$(printf '%s\n  Use /vault-query to search for specific topics.\n  Use /vault-save to capture ideas or findings.' "$VAULT_CONTEXT")
+        fi
+    fi
+fi
+```
+
+Then include `$VAULT_CONTEXT` in the output alongside `$EMPIRICA_INSTRUCTION` and `$ACTIVE_WORK`.
+
+**Portability notes:**
+- Uses `find -mtime -7` (POSIX) instead of `find -newer $(date -d ...)` (GNU-only)
+- No `-printf` (GNU extension) — uses shell parameter expansion to strip vault path prefix
+- `timeout 2` protects the <2s SessionStart budget
+- `-maxdepth 3` limits traversal on slow WSL-to-NTFS mounts
+- `-not -name "CLAUDE.md"` excludes vault infrastructure from results
+
+**Why file listing, not MCP?** The SessionStart hook runs in bash before Claude is active. It can't call MCP tools. File listing via `find` is the only option here. This is sufficient — Claude sees recent note titles and can use MCP or file reads later if something looks relevant.
+
+#### W6: `/vault-save` Command (`commands/vault-save.md`)
+
+```yaml
+---
+description: Use when you want to capture knowledge, ideas, or findings to the Obsidian vault for future reference.
+---
+```
+
+**Process:**
+1. Source vault config via Bash (same pattern as `/end` step 1), check availability
+2. Ensure target subdirectory exists: `mkdir -p "$VAULT_PATH/<target_subdir>"` (e.g., `Ideas/`, `Engineering/Patterns/`)
+3. Ask what type of note (decision, finding, idea, pattern) or accept from argument
+4. Ask for title (or derive from content)
+5. Ask for content (or accept inline)
+6. Apply appropriate template
+7. Add `[[wiki-links]]` to **existing** vault notes only (check vault for matching titles before creating links). Do not create speculative links to notes that don't yet exist. The batch-scoping rule applies to `/end` exports; `/vault-save` links to existing notes freely.
+8. Write to appropriate vault subdirectory
+9. Confirm with file path
+
+**Example invocations:**
+```
+/vault-save                          # Interactive — asks what to save
+/vault-save idea webhook retry logic # Quick capture with type and title
+```
+
+#### W7: `/vault-query` Command (`commands/vault-query.md`)
+
+```yaml
+---
+description: Use when you need to search the Obsidian vault for past decisions, patterns, findings, or knowledge.
+---
+```
+
+**Process:**
+1. Source vault config, check availability
+2. Accept search query (from argument or ask)
+3. Search strategy (in order):
+   a. **Frontmatter search** — grep YAML frontmatter for matching tags, project names, types
+   b. **Content search** — grep note content for keywords
+   c. **Title search** — match against filenames
+4. Present results as a ranked list with snippets
+5. Offer to read full notes for any result
+
+**Example invocations:**
+```
+/vault-query authentication         # Search for auth-related knowledge
+/vault-query --type decision api    # Search only decision notes for "api"
+/vault-query --project bootstrap    # All notes for the bootstrap project
+```
+
+**Search implementation:** Uses Grep tool against the vault path. No vector database or semantic search required — wiki-links and tags provide enough structure for keyword search to be effective. If the user later wants semantic search, an Obsidian plugin like Smart Connections can be added independently.
+
+#### W8: Note Template Files (`commands/templates/vault-notes/`)
+
+The actual template files installed to `~/.claude/commands/templates/vault-notes/`. These are the source-of-truth templates that `/end` and `/vault-save` reference when creating notes.
+
+Five files: `decision.md`, `finding.md`, `session-log.md`, `blueprint-summary.md`, `idea.md` (content as specified in the Note Templates section above).
+
+#### W9: Update `install.sh`
+
+- Add `vault-notes` template directory creation and copy
+- Update hook count in output (15 → 17: +`session-end-vault.sh`, +`vault-config.sh`)
+- Add vault hooks to the output listing
+- Add note about Obsidian MCP setup (optional)
+
+#### W10: Update Documentation
+
+- `README.md` — update command count (41 → 43), hook count (15 → 17), add Obsidian integration section
+- `commands/README.md` — add `/vault-save` and `/vault-query` to command table
+- `settings-example.json` — add `session-end-vault.sh` to SessionEnd hooks
+
+## Preservation Contract (What Must NOT Change)
+
+- **Behavior that must survive:**
+  - All existing session-bootstrap.sh functionality (command awareness, Empirica session creation, active work detection)
+  - All existing `/end` functionality (Empirica postflight, session closure prompt)
+  - All existing SessionEnd hook behavior (Empirica session DB closure)
+  - Fail-open pattern on ALL hooks — vault being unavailable must never block work
+  - Install.sh must work both locally and via curl pipe
+
+- **Interfaces that must remain stable:**
+  - `settings-example.json` hook structure (additive changes only)
+  - `/end` command must still work identically when vault is disabled
+  - `session-bootstrap.sh` output format (append vault context, don't restructure existing output)
+
+- **Performance bounds that must hold:**
+  - SessionStart hook must complete in <2 seconds (file listing is fast; don't add network calls)
+  - `/end` command vault export should add <10 seconds to session closure
+
+## Success Criteria
+
+| Criterion | How to Verify |
+|-----------|---------------|
+| Vault structure created with all directories | `ls` the vault path, verify 6 directories exist |
+| `/end` exports session notes to vault | Run `/end` after a session with decisions/findings, check vault for new notes |
+| Session-end hook writes breadcrumb when `/end` not used | Exit without `/end`, verify Sessions/ has auto-generated note |
+| Session-start hook injects vault context | Start new session, verify vault notes appear in bootstrap output |
+| `/vault-save` creates correctly formatted notes | Run `/vault-save idea test`, verify note in Ideas/ with frontmatter |
+| `/vault-query` finds existing notes | Create a few notes, run `/vault-query`, verify results match |
+| Vault disabled gracefully skips all vault operations | Set `VAULT_ENABLED=0`, verify no errors, no vault writes |
+| Vault path missing gracefully skips | Point to nonexistent path, verify no errors |
+| Existing `/end` + Empirica functionality unchanged | Run `/end` with vault disabled, verify Empirica postflight still works |
+| Wiki-links connect related notes | Export a decision + finding from same session, verify `[[links]]` between them |
+| Install includes new files | Run `bash install.sh`, verify new hooks/commands/templates copied |
+| No duplicate session notes | Run `/end` then let SessionEnd hook fire, verify only one session note |
+
+## Failure Modes
+
+| What Could Fail | Detection Method | Recovery Action |
+|-----------------|------------------|-----------------|
+| Vault path doesn't exist or isn't writable | `vault_is_available()` check returns false | Skip vault operations, log warning, continue normally |
+| WSL/Windows path resolution fails | File operations error | Catch in `vault_is_available()`, skip gracefully |
+| Obsidian MCP not installed | MCP tool call fails | Fall back to direct file reads via Read/Grep tools |
+| `/end` export crashes mid-write | Partial notes in vault | Notes are independent files — partial writes don't corrupt existing data |
+| SessionEnd hook writes duplicate | Marker file missing/stale | Safety-net fires and writes a second session note. No data loss — both retained. Safety-net note identifiable by `generated_by: safety-net` in frontmatter |
+| Session-bootstrap `find` command slow on large vault | SessionStart takes >2s | Add `-maxdepth 2` to limit search depth; timeout at 2s |
+| Template variables not substituted | Notes contain `{{placeholder}}` text | Claude does string replacement — if it fails, the note is still readable |
+| Vault grows very large over months | Obsidian performance degrades | Not our problem — Obsidian handles large vaults well; user can archive old notes |
+
+## Rollback Plan
+
+1. Remove `hooks/session-end-vault.sh` and `hooks/vault-config.sh`
+2. Revert `hooks/session-bootstrap.sh` to remove vault context block
+3. Revert `commands/end.md` to remove vault export step
+4. Remove `commands/vault-save.md` and `commands/vault-query.md`
+5. Remove `commands/templates/vault-notes/` directory
+6. Revert `settings-example.json`, `install.sh`, `README.md`, `commands/README.md`
+7. Vault notes remain in Obsidian (harmless, user can delete manually)
+8. No state migration needed — vault integration is purely additive
+
+All changes are additive. No existing data formats are modified. `git revert` of the implementation commit(s) is sufficient.
+
+## Dependencies (Preconditions)
+
+- [x] Obsidian installed (confirmed)
+- [x] Vault exists at known path (confirmed: `/mnt/c/Users/nickt/Desktop/Work Stuff/Helvault`)
+- [ ] Obsidian MCP server installed (optional — direct file access works as fallback)
+- [x] Existing hooks infrastructure working (confirmed)
+- [x] `/end` command exists and works (confirmed)
+
+## Open Questions (Resolved)
+
+1. **MCP server: install now or defer?** → **Install now.** Set up `obsidian-claude-code-mcp` as part of W1 (vault setup). Direct file access remains the primary write path; MCP enhances read/query capabilities.
+2. **Vault path portability:** → **Hardcode.** Single user, vault won't move. One line in `vault-config.sh` to edit if it ever does. No env var override needed.
+3. **Note deduplication:** → **No special logic.** Export marker prevents double-export within a session. Timestamp-based filenames prevent collisions across sessions. Two notes from the same period are different snapshots, both valuable.
+4. **Pattern extraction:** → **Manual only for v1.** `/vault-save pattern` enables ad-hoc pattern capture. Automated extraction (detecting repeated findings and suggesting patterns) is deferred to a future iteration — it requires a heuristic that isn't well-defined yet, and manual capture covers the need in the meantime.
+
+## Senior Review Simulation
+
+- **They'd probably ask about:** "What happens when the vault path has spaces in it?" — It does (`Work Stuff`). All shell scripts must properly quote `"$VAULT_PATH"` everywhere. This is a known footgun.
+- **The non-obvious risk is:** Cross-filesystem writes from WSL to Windows NTFS. File operations are slower (~10x) and some POSIX features don't work (symlinks, permissions). The spec avoids these — we only write plain files and never rely on POSIX metadata.
+- **The standard approach I might be missing:** Many Obsidian integrations use the Obsidian REST API or Local REST API plugin instead of direct file writes. This gives transactional guarantees and triggers Obsidian's indexer immediately. However, it adds a network dependency and another plugin. Direct file writes are simpler and Obsidian detects file changes on its own (with a small delay).
+- **What bites first-timers here:** Forgetting that `session-bootstrap.sh` runs BEFORE Claude is active — it can't call tools, read context, or use AI. It's pure bash. Any intelligence needs to happen in commands (which run during the session), not hooks.
+
+---
+
+## Work Units
+
+| ID | Description | Files | Dependencies | Complexity |
+|----|-------------|-------|--------------|------------|
+| W1 | Create vault directory structure and CLAUDE.md | vault dirs, vault CLAUDE.md | — | low |
+| W2 | Create vault-config.sh shared config | `hooks/vault-config.sh` | — | low |
+| W3 | Create note template files | `commands/templates/vault-notes/*.md` | — | low |
+| W4 | Extend `/end` command with vault export | `commands/end.md` | W1, W2, W3 | high |
+| W5 | Create session-end-vault.sh safety net hook | `hooks/session-end-vault.sh` | W2 | medium |
+| W6 | Extend session-bootstrap.sh with vault context | `hooks/session-bootstrap.sh` | W2 | medium |
+| W7 | Create `/vault-save` command | `commands/vault-save.md` | W2, W3 | medium |
+| W8 | Create `/vault-query` command | `commands/vault-query.md` | W2 | medium |
+| W9 | Update install.sh and settings-example.json | `install.sh`, `settings-example.json` | W4, W5, W6, W7, W8 | low |
+| W10 | Update documentation (README, commands/README) | `README.md`, `commands/README.md` | W9 | low |
+
+---
+
+Specification complete. Next steps:
+  - Challenge assumptions → Stage 3 (debate mode)
+  - Probe boundaries → Stage 4 (edge cases)
+  - Generate tests → Stage 6
+  - Ready to build → Stage 7

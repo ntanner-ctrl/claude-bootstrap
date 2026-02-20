@@ -1,0 +1,625 @@
+# Specification: /vault-curate
+
+## Overview
+
+Interactive, multi-stage knowledge triage workflow for the Obsidian vault. Covers all vault content types (findings, blueprints, ideas, sessions, decisions, patterns). Integrates Empirica calibration data when available. Self-tuning frequency recommendations.
+
+Subsumes `/review-findings`, which becomes a deprecated alias pointing to `/vault-curate --quick --section findings`.
+
+## Command Signature
+
+```
+/vault-curate                                    # Full 6-stage interactive workflow
+/vault-curate --quick                            # Quick pass: Inventory + Triage (findings only) + Report
+/vault-curate --section findings|blueprints|ideas|sessions|decisions|patterns
+                                                 # Deep dive on one vault area
+/vault-curate --project NAME                     # Filter to one project
+/vault-curate --skip-health                      # Skip Stage 2 (Health Check)
+/vault-curate --skip-synthesis                   # Skip Stage 4 (Synthesis)
+```
+
+Flags are composable: `--quick --project claude-bootstrap` works.
+
+## YAML Frontmatter
+
+```yaml
+---
+description: Use when you want to curate, triage, and maintain the Obsidian vault. Reviews all vault content types for staleness, contradictions, and synthesis opportunities.
+---
+```
+
+## Vault Content Types
+
+The command covers 6 content types, each with type-specific health signals:
+
+| Type | Directory | Health Signals |
+|------|-----------|----------------|
+| Finding | `Engineering/Findings/` | `empirica_status`, `empirica_confidence`, `empirica_assessed` age |
+| Blueprint | `Engineering/Blueprints/` | Linked plan still exists? Execute stage reached? Age vs. project activity |
+| Idea | `Ideas/` | Age without action (>30 days = cold), linked to any blueprint? |
+| Session | `Sessions/` | Has findings? Has open questions? Links to other notes? |
+| Decision | `Engineering/Decisions/` | Referenced by later work? Superseded by newer decisions? |
+| Pattern | `Engineering/Patterns/` | Still seen in codebase? Referenced by findings? |
+
+## Stage 1: Inventory
+
+**Always runs. Not skippable.**
+
+### Process
+
+1. Source vault config:
+   ```bash
+   source ~/.claude/hooks/vault-config.sh 2>/dev/null && echo "VAULT_ENABLED=$VAULT_ENABLED" && echo "VAULT_PATH=$VAULT_PATH"
+   ```
+   If vault unavailable, stop: `"Vault not available. /vault-curate requires an accessible Obsidian vault."`
+
+2. Scan all vault directories, counting notes by type:
+   - `Engineering/Findings/*.md`
+   - `Engineering/Blueprints/*.md`
+   - `Engineering/Decisions/*.md`
+   - `Engineering/Patterns/*.md`
+   - `Ideas/*.md`
+   - `Sessions/*.md`
+
+3. For each note, read frontmatter to extract:
+   - `type`, `date`, `project`, `tags`
+   - Empirica fields if present (`empirica_confidence`, `empirica_status`, `empirica_assessed`)
+   - Any type-specific metadata
+
+4. Check for active Empirica session:
+   ```bash
+   GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+   cat "$GIT_ROOT/.empirica/active_session" 2>/dev/null || echo "NO_SESSION"
+   ```
+   If session available, query `mcp__empirica__get_calibration_report` for calibration data.
+
+5. If `--project` flag set, filter to notes matching that project. Otherwise include all.
+
+6. Compute age distribution: notes by age bucket (0-7 days, 8-30 days, 31-90 days, 90+ days).
+
+7. Compute project distribution: notes by project name.
+
+### Output
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  VAULT INVENTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Total notes: N
+  Empirica session: [session_id or "none — proceeding without calibration"]
+
+  By type:
+    Findings:    N
+    Blueprints:  N
+    Ideas:       N
+    Sessions:    N
+    Decisions:   N
+    Patterns:    N
+
+  By project:
+    claude-bootstrap:  N
+    project-scout:     N
+    [other]:           N
+
+  By age:
+    Fresh (0-7d):      N
+    Recent (8-30d):    N
+    Aging (31-90d):    N
+    Old (90+d):        N
+
+  Calibration: [adjustment note or "no Empirica data"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Stage 2: Health Check
+
+**Skippable with `--skip-health`. Skipped in `--quick` mode.**
+
+### Process
+
+For each note, assess health using type-specific signals:
+
+#### Findings Health
+
+| Status | Criteria |
+|--------|----------|
+| **Contradicted** | `empirica_status: contradicted` |
+| **Stale** | `empirica_status: stale` OR `empirica_assessed` > 30 days ago |
+| **Low confidence** | `empirica_confidence` < 0.6 |
+| **Unassessed** | No `empirica_*` fields at all |
+| **Healthy** | `empirica_status: confirmed` AND confidence >= 0.7 AND assessed < 30 days |
+
+#### Blueprints Health
+
+| Status | Criteria |
+|--------|----------|
+| **Orphaned** | Links to `.claude/plans/X/` that no longer exists in any known project |
+| **Incomplete** | Blueprint summary shows execute stage not reached |
+| **Stale** | Blueprint > 60 days old AND no recent session references it |
+| **Healthy** | Execute complete, linked plan exists or age < 60 days |
+
+#### Ideas Health
+
+| Status | Criteria |
+|--------|----------|
+| **Cold** | > 30 days old with no linked blueprint or session referencing it |
+| **Acted on** | Has a linked blueprint or referenced in a session log |
+| **Fresh** | < 30 days old |
+
+#### Sessions Health
+
+| Status | Criteria |
+|--------|----------|
+| **Sparse** | No findings, no open questions, no links |
+| **Rich** | Has findings AND links to other notes |
+| **Isolated** | No backlinks from other notes |
+
+#### Decisions Health
+
+| Status | Criteria |
+|--------|----------|
+| **Superseded** | A newer decision exists for the same topic/component |
+| **Unreferenced** | No other notes link to this decision |
+| **Active** | Referenced by findings or blueprints within last 90 days |
+
+#### Patterns Health
+
+| Status | Criteria |
+|--------|----------|
+| **Unused** | No findings or sessions reference this pattern |
+| **Active** | Referenced by recent work |
+
+### Vault Health Score
+
+Compute an overall health score (0-100):
+- Each healthy note: +1 point (scaled to percentage)
+- Each contradicted/stale/orphaned note: -2 points from max
+- Each unassessed note: -0.5 points from max
+
+Formula: `score = max(0, 100 * (healthy_count / total_count) - penalties)`
+
+### Output
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  VAULT HEALTH CHECK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Overall health: NN/100
+
+  Needs attention:
+    Findings:
+      🔴 Contradicted: N
+      🟠 Stale: N
+      🟡 Low confidence: N
+      ⚪ Unassessed: N
+
+    Blueprints:
+      🔴 Orphaned: N
+      🟠 Stale: N
+      🟡 Incomplete: N
+
+    Ideas:
+      🟠 Cold (>30d, no action): N
+
+    Sessions:
+      🟡 Sparse: N
+      ⚪ Isolated: N
+
+    Decisions:
+      🟠 Superseded: N
+      ⚪ Unreferenced: N
+
+    Patterns:
+      ⚪ Unused: N
+
+  Healthy notes: N/N total (X%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Stage 3: Triage
+
+**Always runs (core stage). In `--quick` mode, only processes findings.**
+
+### Grouping Strategy
+
+Notes needing attention are grouped for efficient batch review. Grouping order:
+
+1. **By project** (primary grouping) — review all notes for one project together
+2. **By type** (secondary grouping within project) — findings first, then blueprints, ideas, etc.
+3. **By severity** (tertiary) — contradicted/orphaned first, then stale, then unassessed
+
+### Interactive Flow
+
+For each group, present the group header:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Reviewing: [project] / [type] (N notes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+For each note in the group:
+
+1. **Show the note**: Display title, date, project, current status, and a 2-3 line summary of content
+2. **Show context**:
+   - For findings: search codebase for related code, check recent git history
+   - For blueprints: check if linked plan directory exists, check execute status
+   - For ideas: check if any blueprint or session references it
+   - For decisions: check if newer decisions exist for same topic
+   - For sessions: check finding count, link count
+   - For patterns: check codebase for usage
+3. **Assess**: Propose an updated status with reasoning:
+   - "This finding appears **still valid** — code at X:Y confirms it"
+   - "This blueprint is **orphaned** — `.claude/plans/auth-redesign/` no longer exists"
+   - "This idea has been **acted on** — blueprint `vault-data-pipeline` implements it"
+4. **Offer verdict** (type-appropriate):
+
+**Findings verdict options:**
+```
+  [1] Confirm — mark as confirmed, update confidence
+  [2] Update — edit content, then confirm
+  [3] Contradict — mark as contradicted, add note
+  [4] Stale — needs deeper investigation later
+  [5] Skip — leave as-is for now
+  [6] Archive — flag as archived (remains in place)
+```
+
+**Blueprints verdict options:**
+```
+  [1] Current — blueprint is still relevant
+  [2] Completed — work was done, mark as complete
+  [3] Abandoned — mark as abandoned with reason
+  [4] Skip — leave as-is
+  [5] Archive — flag as archived
+```
+
+**Ideas verdict options:**
+```
+  [1] Still relevant — keep, update if needed
+  [2] Acted on — link to blueprint/finding that implements it
+  [3] Superseded — another approach was taken
+  [4] Skip — leave as-is
+  [5] Archive — flag as archived
+```
+
+**Sessions verdict options:**
+```
+  [1] Enriched — add missing links or findings references
+  [2] Complete — no action needed
+  [3] Skip — leave as-is
+  [4] Archive — flag as archived (old, sparse sessions)
+```
+
+**Decisions verdict options:**
+```
+  [1] Still active — decision is current
+  [2] Superseded — link to newer decision
+  [3] Skip — leave as-is
+  [4] Archive — flag as archived
+```
+
+**Patterns verdict options:**
+```
+  [1] Active — still in use
+  [2] Evolved — update to reflect current practice
+  [3] Skip — leave as-is
+  [4] Archive — flag as archived
+```
+
+### Batch Operations
+
+After presenting each group, offer batch option:
+
+```
+Group summary: N notes reviewed
+  Batch options:
+    [B1] Confirm all remaining in this group
+    [B2] Skip all remaining in this group
+    [B3] Continue one-by-one
+```
+
+This prevents fatigue when many notes in a group are clearly healthy.
+
+### Conversation Mode
+
+Unlike the current `/review-findings` which is strictly checklist-based, triage encourages discussion:
+
+- After showing context, pause for user input before proposing a verdict
+- If the user says "tell me more about this" — expand: show full note content, deeper codebase search, related notes
+- If the user says "what else is related?" — search vault for notes with overlapping tags, project, or keywords
+- If the user proposes a different interpretation — adapt the verdict accordingly
+
+This is the "back-and-forth" that makes this a curation *conversation* rather than a checklist.
+
+## Stage 4: Synthesis
+
+**Skippable with `--skip-synthesis`. Skipped in `--quick` mode.**
+
+### Process
+
+After triage, Claude analyzes the confirmed/updated findings looking for higher-level patterns:
+
+1. **Cluster detection**: Group confirmed findings by overlapping tags, keywords, and project. Identify clusters of 3+ findings that share a theme.
+
+2. **Cross-project patterns**: Look for findings from different projects that describe the same underlying pattern or principle. Example: "fail-open hook design" appearing in both `claude-bootstrap` and `project-scout`.
+
+3. **Contradiction detection**: Identify findings that contradict each other (e.g., one says "always use X" and another says "X causes problems in context Y").
+
+4. **Gap detection**: Based on the distribution of findings across projects and topics, identify areas with suspiciously few findings. Example: "You have 15 findings about hooks but zero about agent design — is that intentional or a blind spot?"
+
+5. **Trend analysis**: If multiple curation sessions have occurred, compare: are certain topics accumulating stale findings faster? Are some projects generating findings at a higher rate?
+
+### Synthesis Trellis
+
+For each synthesis observation, Claude presents it within a structured frame:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SYNTHESIS OBSERVATION [N of M]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Type: [Cluster | Cross-Project | Contradiction | Gap | Trend]
+
+  Observation: [2-3 sentence description]
+
+  Evidence:
+    - [[finding-1]] (project-a)
+    - [[finding-2]] (project-b)
+    - [N more related notes]
+
+  Proposed action:
+    [1] Create meta-finding — capture this as a new finding note
+    [2] Merge findings — combine N findings into one consolidated note
+    [3] Note and continue — interesting but no action needed
+    [4] Dismiss — not actually a meaningful pattern
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Meta-Finding Creation
+
+When the user selects "Create meta-finding", use `/vault-save finding` flow internally:
+- Title: synthesis-derived (e.g., "Fail-open pattern is universal across hook designs")
+- Tags: include `synthesis`, source project tags
+- Content: the observation + evidence links
+- Frontmatter: `empirica_confidence: 0.7`, `empirica_status: active`, `synthesis_source: true`
+
+## Stage 5: Prune
+
+**Always runs. Applies decisions from Stages 3-4.**
+
+### Process
+
+For each note with a verdict from triage or synthesis:
+
+1. **Confirmed/Active/Current** — Update frontmatter:
+   ```yaml
+   empirica_assessed: YYYY-MM-DD
+   empirica_status: confirmed
+   empirica_confidence: [updated value]
+   empirica_session: [current session ID]
+   ```
+
+2. **Updated/Enriched/Evolved** — Edit note content as discussed during triage, then update frontmatter as above.
+
+3. **Contradicted** — Update frontmatter:
+   ```yaml
+   empirica_status: contradicted
+   empirica_confidence: [low value]
+   empirica_assessed: YYYY-MM-DD
+   ```
+   Add note to Implications section:
+   ```markdown
+   > ⚠️ Contradicted during vault curation on YYYY-MM-DD — [brief reason]
+   ```
+
+4. **Archived** — Add frontmatter flag:
+   ```yaml
+   archived: true
+   archived_date: YYYY-MM-DD
+   archived_reason: [reason from verdict]
+   ```
+   Note remains in its original location. Future inventory scans exclude notes with `archived: true`.
+
+5. **Acted on (ideas)** — Update frontmatter:
+   ```yaml
+   acted_on: true
+   acted_on_date: YYYY-MM-DD
+   acted_on_link: "[[linked-blueprint-or-finding]]"
+   ```
+
+6. **Superseded (decisions)** — Update frontmatter:
+   ```yaml
+   superseded: true
+   superseded_by: "[[newer-decision]]"
+   superseded_date: YYYY-MM-DD
+   ```
+
+7. **Log to Empirica** (if session active): Call `mcp__empirica__finding_log` for each updated note. Call `mcp__empirica__deadend_log` for archived notes with reason.
+
+### Dry-Run Preview
+
+Before applying changes, present a summary:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PRUNE PREVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Changes to apply:
+
+    Update frontmatter:     N notes
+    Edit content:           N notes
+    Archive (flag):         N notes
+    Create meta-findings:   N notes
+
+  [1] Apply all
+  [2] Review changes one-by-one
+  [3] Cancel (no changes applied)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Stage 6: Report
+
+**Always runs. Not skippable.**
+
+### Process
+
+1. Compute final statistics
+2. Compare vault health before vs. after (using Stage 2 baseline)
+3. Estimate next recommended curation date
+
+### Frequency Recommendation
+
+Calculate based on observed decay rate:
+
+```
+decay_rate = (stale_count + contradicted_count) / total_count
+days_since_last_curation = days since most recent `empirica_assessed` date across all notes
+
+if decay_rate > 0.3:
+    recommend = "1-2 weeks"
+elif decay_rate > 0.15:
+    recommend = "2-4 weeks"
+elif decay_rate > 0.05:
+    recommend = "monthly"
+else:
+    recommend = "quarterly"
+
+# Adjust for vault growth rate
+if notes_created_since_last_curation > 20:
+    recommend = one_tier_sooner(recommend)
+```
+
+### Output
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CURATION COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Session summary:
+    Notes reviewed:     N
+    Confirmed:          N
+    Updated:            N
+    Contradicted:       N
+    Archived:           N
+    Skipped:            N
+    Meta-findings:      N (new synthesis notes)
+
+  Vault health:
+    Before: NN/100
+    After:  NN/100 (+NN)
+
+  Synthesis:
+    Clusters found:     N
+    Cross-project:      N
+    Contradictions:     N
+    Gaps identified:    N
+
+  Next curation:
+    Recommended in ~N weeks (based on N% decay rate)
+    Suggested date: YYYY-MM-DD
+
+  Time spent: ~N minutes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Log to Empirica
+
+If session active, call `mcp__empirica__finding_log` with:
+- finding: "Vault curation complete: N notes reviewed, health NN→NN, next curation ~YYYY-MM-DD"
+- category: "vault-curation"
+
+## Quick Mode (`--quick`)
+
+When `--quick` is passed:
+
+1. **Inventory** runs (always)
+2. **Health Check** skipped
+3. **Triage** runs but ONLY for findings (same behavior as current `/review-findings`)
+4. **Synthesis** skipped
+5. **Prune** runs (applies triage decisions)
+6. **Report** runs (abbreviated — no health comparison, no synthesis section)
+
+This is the backwards-compatible path that `/review-findings` redirects to.
+
+## Fail-Soft Behavior
+
+- **No vault**: Stop immediately with helpful error
+- **No Empirica session**: Proceed without calibration data. Skip calibration-dependent features (confidence adjustment, session logging). Note in inventory: "No Empirica session — proceeding without calibration data"
+- **Vault on unreachable path**: Stop with error (e.g., NTFS path not mounted in WSL)
+- **Read-only vault**: Allow inventory and health check. Block prune stage with: "Vault is read-only — cannot apply changes. Review-only mode."
+- **Individual note read failure**: Skip note, log warning, continue with remaining notes
+- **Empirica call failure mid-session**: Log warning, continue without Empirica for remainder
+
+## Deprecation: /review-findings
+
+The existing `commands/review-findings.md` is replaced with a deprecation notice:
+
+```yaml
+---
+description: "DEPRECATED: Use /vault-curate instead. For equivalent behavior, use /vault-curate --quick --section findings."
+---
+```
+
+Body: brief redirect message explaining the migration.
+
+## Work Units
+
+### WU1: Create `commands/vault-curate.md`
+The main command file implementing all 6 stages. This is the bulk of the work.
+**Depends on:** nothing
+**Estimated size:** ~300-400 lines of markdown
+
+### WU2: Deprecate `commands/review-findings.md`
+Replace content with deprecation notice and redirect.
+**Depends on:** WU1 (new command must exist first)
+**Estimated size:** ~15 lines
+
+### WU3: Update `commands/README.md`
+Add vault-curate entry, mark review-findings as deprecated.
+**Depends on:** WU1
+**Estimated size:** ~5 lines changed
+
+### WU4: Update `README.md`
+Add vault-curate to Commands at a Glance, update command count (45→46).
+**Depends on:** WU1
+**Estimated size:** ~5 lines changed
+
+### WU5: Update `.claude/CLAUDE.md`
+Update command count (45→46).
+**Depends on:** WU1
+**Estimated size:** ~2 lines changed
+
+### WU6: Update `install.sh`
+Update command count in output message.
+**Depends on:** WU1
+**Estimated size:** ~2 lines changed
+
+### WU7: Update cross-references
+Any commands that reference `/review-findings` should reference `/vault-curate` instead (or note both).
+**Depends on:** WU1, WU2
+**Estimated size:** ~5-10 lines across 2-3 files
+
+## Work Graph
+
+```
+WU1 ─┬─→ WU2
+     ├─→ WU3
+     ├─→ WU4
+     ├─→ WU5
+     ├─→ WU6
+     └─→ WU7 (also depends on WU2)
+```
+
+WU1 is the critical path. WU2-WU6 can be parallelized after WU1 completes. WU7 depends on both WU1 and WU2.
+
+Width: 5 (WU2-WU6 parallel)
+Critical path length: 2 (WU1 → WU7)

@@ -1,0 +1,81 @@
+{
+  "name": "bootstrap-enforcement-upgrade",
+  "created": "2026-01-22T13:00:00Z",
+  "updated": "2026-01-22T14:30:00Z",
+  "type": "program",
+  "description": "Major enforcement upgrade based on Superpowers, Turkey-Build, and ZacheryGlass analysis",
+  "recommended_path": "custom",
+  "current_stage": 1,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed": "2026-01-22T13:30:00Z"
+    }
+  },
+  "tracks": {
+    "quick-wins": {
+      "name": "Quick Wins Bundle (P1, P5, P6, P7)",
+      "status": "planned",
+      "estimated_effort": "4-5 hours",
+      "plan_file": "../quick-wins-bundle/spec.md",
+      "priorities": [
+        1,
+        5,
+        6,
+        7
+      ],
+      "dependencies": []
+    },
+    "enforcement-language": {
+      "name": "Enforcement Language Audit (P2)",
+      "status": "planned",
+      "estimated_effort": "5-6 hours",
+      "plan_file": "../p2-enforcement-language-audit/spec.md",
+      "priorities": [
+        2
+      ],
+      "dependencies": [
+        "quick-wins.p1"
+      ]
+    },
+    "tdd-enforcement": {
+      "name": "TDD Enforcement (P3)",
+      "status": "planned",
+      "estimated_effort": "6-7 hours",
+      "plan_file": "../p3-tdd-enforcement/spec.md",
+      "priorities": [
+        3
+      ],
+      "dependencies": []
+    },
+    "subagent-orchestration": {
+      "name": "Subagent Orchestration (P4)",
+      "status": "needs-research",
+      "estimated_effort": "2-3 sessions",
+      "plan_file": "../p4-subagent-orchestration/spec.md",
+      "priorities": [
+        4
+      ],
+      "dependencies": [],
+      "blockers": [
+        "Research Claude Code Task tool capabilities"
+      ]
+    },
+    "exploratory": {
+      "name": "Exploratory Items",
+      "status": "deferred",
+      "items": {
+        "self-improvement": "Deferred until P1-P4 complete",
+        "maturity-modes": "Can be bundled with quick-wins"
+      }
+    }
+  },
+  "execution_order": [
+    "quick-wins",
+    "enforcement-language",
+    "tdd-enforcement",
+    "subagent-orchestration",
+    "exploratory"
+  ],
+  "notes": "P4 requires research phase before design commitment"
+}

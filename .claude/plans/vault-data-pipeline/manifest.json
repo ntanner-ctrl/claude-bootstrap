@@ -1,0 +1,204 @@
+{
+  "name": "vault-data-pipeline",
+  "blueprint_version": 2,
+  "empirica_session_id": "d56dec89-2382-40a4-a724-c0f40696b198",
+  "summary": "Unify data flow from project artifacts (blueprints, Empirica findings, preflight assessments) into the Obsidian vault with backward compatibility for non-vault users.",
+  "scope": {
+    "files_touched": 12,
+    "new_files": 4,
+    "modified_files": 8,
+    "risk_flags": [
+      "user-facing behavior change"
+    ],
+    "path": "full",
+    "challenge_mode": "debate"
+  },
+  "spec_digest": [
+    {
+      "action": "create",
+      "target": "scripts/backfill-vault.sh",
+      "description": "One-time local migration of 19 blueprints + 24 findings to vault"
+    },
+    {
+      "action": "modify",
+      "target": "commands/vault-save.md",
+      "description": "Add blueprint as 5th note type"
+    },
+    {
+      "action": "modify",
+      "target": "commands/blueprint.md",
+      "description": "Add vault export at Stage 7 completion guarded by vault_is_available()"
+    },
+    {
+      "action": "create",
+      "target": "hooks/empirica-preflight-capture.sh",
+      "description": "PostToolUse hook mirroring preflight vectors to .empirica/preflight.jsonl"
+    },
+    {
+      "action": "create",
+      "target": "hooks/empirica-postflight-capture.sh",
+      "description": "PostToolUse hook mirroring postflight vectors to .empirica/postflight.jsonl"
+    },
+    {
+      "action": "modify",
+      "target": "commands/end.md",
+      "description": "Add Step 2.6 — pair preflight+postflight, export epistemic delta to vault"
+    },
+    {
+      "action": "create",
+      "target": "commands/templates/vault-notes/epistemic-delta.md",
+      "description": "Template for epistemic delta vault notes"
+    },
+    {
+      "action": "modify",
+      "target": "settings-example.json",
+      "description": "Wire new hooks to PostToolUse matchers"
+    },
+    {
+      "action": "modify",
+      "target": "install.sh, README.md, commands/README.md, .claude/CLAUDE.md",
+      "description": "Update hook counts 17→19"
+    }
+  ],
+  "work_units": [
+    {
+      "id": "WU1",
+      "desc": "Backfill script",
+      "files": [
+        "scripts/backfill-vault.sh"
+      ],
+      "deps": [],
+      "complexity": "medium"
+    },
+    {
+      "id": "WU2",
+      "desc": "Vault-save blueprint type",
+      "files": [
+        "commands/vault-save.md"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU3",
+      "desc": "Blueprint auto-export",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "deps": [
+        "WU2"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "WU4",
+      "desc": "Preflight capture hook",
+      "files": [
+        "hooks/empirica-preflight-capture.sh"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU5",
+      "desc": "Postflight capture hook",
+      "files": [
+        "hooks/empirica-postflight-capture.sh"
+      ],
+      "deps": [],
+      "complexity": "low"
+    },
+    {
+      "id": "WU6",
+      "desc": "Epistemic delta in /end",
+      "files": [
+        "commands/end.md",
+        "commands/templates/vault-notes/epistemic-delta.md"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "WU7",
+      "desc": "Settings wiring",
+      "files": [
+        "settings-example.json"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "trivial"
+    },
+    {
+      "id": "WU8",
+      "desc": "Doc count updates",
+      "files": [
+        "install.sh",
+        "README.md",
+        "commands/README.md",
+        ".claude/CLAUDE.md"
+      ],
+      "deps": [
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "trivial"
+    }
+  ],
+  "parallel_score": {
+    "width": 4,
+    "critical_path": 3,
+    "file_conflicts": []
+  },
+  "decisions": [
+    {
+      "choice": "Backfill is local-only, not distributed",
+      "rejected": [
+        "Distributable migration command"
+      ],
+      "reason": "One-time cleanup, not a feature"
+    },
+    {
+      "choice": "Approach C: auto at completion + manual via /vault-save",
+      "rejected": [
+        "Hook on every stage transition",
+        "Export only at /end"
+      ],
+      "reason": "Balance automation with user control"
+    },
+    {
+      "choice": "PostToolUse hook for preflight capture",
+      "rejected": [
+        "Query Empirica at /end time"
+      ],
+      "reason": "Survives context compaction; hook pattern proven"
+    },
+    {
+      "choice": "Raw vectors stored, not delta-only",
+      "rejected": [
+        "Delta-only export"
+      ],
+      "reason": "~1.5KB/session, negligible; complete data more valuable"
+    },
+    {
+      "choice": "Silent dedup skip on backfill",
+      "rejected": [
+        "Flag duplicates for review"
+      ],
+      "reason": "User preference from brainstorm"
+    }
+  ],
+  "confidence": {
+    "describe": 0.9,
+    "specify": null
+  },
+  "artifact_timestamps": {
+    "describe": "2026-02-20T00:00:00Z",
+    "spec": "2026-02-20T00:01:00Z",
+    "work_graph": "2026-02-20T00:01:00Z"
+  }
+}

@@ -6,9 +6,9 @@ Extensibility tools for Claude Code: commands, agents, hooks, and planning infra
 
 - **Test install locally:** `bash install.sh` (copies to `~/.claude/`)
 - **Verify install:** `ls ~/.claude/commands/blueprint.md`
-- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 45)
+- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 46)
 - **Count agents:** `ls agents/*.md | wc -l` (expect 6)
-- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 18)
+- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 20)
 - **Lint enforcement:** `grep -rn "^description:.*\(consider\|might\|optionally\)" commands/` (expect 0 matches)
 - **Run from repo:** `cd /path/to/project && claude` then `/bootstrap-project`
 
@@ -28,7 +28,7 @@ claude-bootstrap/
 │   │   └── documentation/    # Diataxis doc templates
 │   └── *.md           # The actual toolkit commands
 ├── agents/            # 6 review agents (spec, quality, security, performance, architecture, CloudFormation)
-├── hooks/             # 17 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
+├── hooks/             # 19 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
 ├── hookify-rules/     # 7 YAML-based safety rules (*.local.md)
 ├── plugins/           # Session-start plugin (bootstrap-toolkit)
 ├── ops-starter-kit/   # Domain extension example for infrastructure teams
