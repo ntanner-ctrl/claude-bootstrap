@@ -28,11 +28,14 @@ tool_input=$(echo "$input" | jq -r '.tool_input // empty' 2>/dev/null)
 # Bail if we can't parse (fail-open)
 [ -z "$tool_input" ] && exit 0
 
-# Find project root
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-
-# Ensure .empirica directory exists
-EMPIRICA_DIR="$GIT_ROOT/.empirica"
+# Resolve data dir: EMPIRICA_DATA_DIR takes priority (global DB mode),
+# then git root, then cwd fallback. Must match path_resolver.py priority.
+if [ -n "$EMPIRICA_DATA_DIR" ]; then
+    EMPIRICA_DIR="$EMPIRICA_DATA_DIR"
+else
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+    EMPIRICA_DIR="$GIT_ROOT/.empirica"
+fi
 mkdir -p "$EMPIRICA_DIR" 2>/dev/null
 
 INSIGHTS_FILE="$EMPIRICA_DIR/insights.jsonl"

@@ -43,6 +43,7 @@ What type of note?
   [2] Decision — architectural or process decision (→ Engineering/Decisions/)
   [3] Finding — discovery or insight (→ Engineering/Findings/)
   [4] Pattern — reusable technique or approach (→ Engineering/Patterns/)
+  [5] Blueprint — planning snapshot (→ Engineering/Blueprints/)
 ```
 
 | Type | Template | Target Directory |
@@ -51,6 +52,15 @@ What type of note?
 | decision | vault-notes/decision.md | Engineering/Decisions/ |
 | finding | vault-notes/finding.md | Engineering/Findings/ |
 | pattern | vault-notes/finding.md (adapted) | Engineering/Patterns/ |
+| blueprint | vault-notes/blueprint-summary.md | Engineering/Blueprints/ |
+
+**Blueprint auto-detection [F9]:** When `blueprint` type is selected:
+1. Check `.claude/plans/*/state.json` for a plan with `status: "in_progress"` on any stage
+2. If multiple in-progress plans, use most recently modified `state.json` (by mtime)
+3. If none in-progress, use most recent `state.json` by mtime
+4. If no plans found, prompt user for blueprint name and details manually
+5. Auto-populate template fields from `manifest.json` (primary) with `state.json` fallback
+6. Include `schema_version: 1` in frontmatter
 
 ### Step 4: Get Title
 

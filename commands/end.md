@@ -218,6 +218,52 @@ After export, scan vault findings for staleness. A finding is stale if its `empi
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+### Step 2.6: Export Epistemic Delta to Vault
+
+Pair preflight and postflight vectors and export the learning delta.
+
+1. **Read preflight vectors**: Read `.empirica/preflight.jsonl`. Find the most recent entry matching the current session_id (from `input.session_id`). If no match, find the most recent entry by timestamp. If file missing or empty, skip with note: `"Epistemic delta skipped: preflight data not found"`.
+
+2. **Read postflight vectors**: Read `.empirica/postflight.jsonl`. Find the most recent entry. If file missing (postflight just submitted and hook hasn't fired yet), extract vectors from the postflight call made in Step 2.
+
+3. **Resolve paths [F14]**: Explicitly display the `.empirica/` path being read:
+   `"Reading epistemic data from: /path/to/project/.empirica/"`
+
+4. **Calculate delta**: For each of the 13 vectors, compute `postflight - preflight`. Categorize:
+   - Delta > +0.2: "Significant learning gain"
+   - Delta > +0.1: "Moderate gain"
+   - Delta -0.1 to +0.1: "Stable"
+   - Delta < -0.1: "Confidence decreased" (not a bad thing — recalibration)
+
+   Handle non-numeric values: if a vector value is null, NaN, or non-numeric, display "n/a" in the delta column and skip that vector in categorization.
+
+5. **Create vault note**: If vault is available AND both preflight and postflight data exist, hydrate `~/.claude/commands/templates/vault-notes/epistemic-delta.md` template:
+   - `date`: today (YYYY-MM-DD)
+   - `project`: current project name (git repo basename)
+   - `session_id`: from `.empirica/active_session`
+   - `vector_rows`: table rows for all 13 vectors (one row per vector: dimension | pre | post | delta | assessment)
+   - `key_movements`: top 3 biggest deltas (positive or negative) with brief explanation
+   - `session_link`: link to session summary note if created in Step 2.5
+   - `blueprint_link`: link to active blueprint note if applicable
+
+   Write to `$VAULT_PATH/Sessions/YYYY-MM-DD-epistemic-delta-project.md`
+
+   Use the merge-write pattern [F2] if file already exists. Ensure `mkdir -p` for the target directory [S-2].
+
+6. **Guard**: Only create if vault is available AND both preflight and postflight data exist. If either is missing, log reason and continue (fail-soft).
+
+### Step 2.7: Mark JSONL Entries as Exported
+
+After successful vault writes (Steps 1.5, 2.5, 2.6), mark consumed JSONL entries as exported to prevent duplication on future runs:
+
+1. For each `insights.jsonl` entry exported to vault this session: add `"exported": true`
+2. For each `preflight.jsonl` entry consumed in Step 2.6: add `"exported": true`
+3. For each `postflight.jsonl` entry consumed in Step 2.6: add `"exported": true`
+
+Implementation: For each file, read all lines, update matching entries (by timestamp match), write back. Use a temporary file to avoid partial writes.
+
+**Fail-soft**: If marking fails, log warning and continue. Never block session closure for export bookkeeping.
+
 ### Step 3: Collect Remaining Insights
 
 This is your last chance to capture session knowledge. Do NOT skip this step.
@@ -248,6 +294,8 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
   Confidence:   [N findings updated / skipped]
   Insights:     [N ★ blocks found, M already logged, K swept / skipped]
   Findings:     [N logged this session (total)]
+  Delta:        [13 vectors paired / skipped (reason)]
+  Exported:     [N JSONL entries marked / skipped]
   Vault:        [N notes exported / skipped (reason)]
   Stale:        [N findings need re-verification / none]
 

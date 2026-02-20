@@ -1,56 +1,122 @@
 #!/bin/bash
-# Claude Code Status Line - Toolkit-Aware
-# Receives JSON on stdin with: model, cost, context_window, workspace
-# Reads .claude/state-index.json for active plan/TDD state
-# Outputs single line with ANSI colors
+# Claude Code Status Line v2 - Two-Line Toolkit Dashboard
 #
-# Optimized for 300ms update frequency: minimal forks, single jq calls
+# Line 1: Model │ Style │ Code Churn │ Duration │ Context Burn Sparkline │ Toolkit State
+# Line 2: Context Bar (checkerboard transition) + % of window │ Cache Hit │ Sub Usage (future)
+#
+# Receives JSON on stdin: model, cost, context_window, output_style, rate_limits, etc.
+# Reads .claude/state-index.json for active plan/TDD state
+# Maintains /tmp/claude-sl-ctx-history for sparkline data
+#
+# Optimized for 300ms update frequency: single jq call for stdin, minimal forks
 
-# Parse all input fields in one jq call (tab-separated)
-IFS=$'\t' read -r MODEL COST CTX_PCT < <(jq -r '[
+set +e
+
+# --- Parse all input fields in one jq call (tab-separated) ---
+IFS=$'\t' read -r MODEL CTX_PCT CTX_SIZE CACHE_READ CACHE_CREATE INPUT_TOKENS \
+    DURATION_MS LINES_ADD LINES_REM STYLE RATE_SESSION < <(jq -r '[
   (.model.display_name // "Unknown"),
-  (.cost.total_cost_usd // 0 | tostring),
-  (.context_window.used_percentage // 0 | tostring)
+  (.context_window.used_percentage // 0 | tostring),
+  (.context_window.context_window_size // 200000 | tostring),
+  (.context_window.current_usage.cache_read_input_tokens // 0 | tostring),
+  (.context_window.current_usage.cache_creation_input_tokens // 0 | tostring),
+  (.context_window.current_usage.input_tokens // 0 | tostring),
+  (.cost.total_duration_ms // 0 | tostring),
+  (.cost.total_lines_added // 0 | tostring),
+  (.cost.total_lines_removed // 0 | tostring),
+  (.output_style.name // ""),
+  (.rate_limits.session.used_percentage // -1 | tostring)
 ] | join("\t")' 2>/dev/null)
 
-# Shorten model name (pure bash, no sed fork)
-MODEL_SHORT="${MODEL#Claude }"
-MODEL_SHORT="${MODEL_SHORT/Sonnet/Son}"
-MODEL_SHORT="${MODEL_SHORT/Haiku/Hai}"
-
-# Format cost (awk is lighter than bc)
-if awk "BEGIN{exit(!($COST < 0.01))}" 2>/dev/null; then
-    COST_FMT="<\$0.01"
-else
-    COST_FMT="\$$(printf '%.2f' "$COST")"
-fi
-
-# Context bar (10 chars wide, pure bash)
-CTX_INT=${CTX_PCT%.*}
-CTX_INT=${CTX_INT:-0}
-FILLED=$((CTX_INT / 10))
-EMPTY=$((10 - FILLED))
-BAR=""
-for ((i=0; i<FILLED; i++)); do BAR+="█"; done
-for ((i=0; i<EMPTY; i++)); do BAR+="░"; done
-
-# Color context based on usage
-if [ "$CTX_INT" -ge 80 ]; then
-    CTX_COLOR="\033[31m"  # Red — getting close to limit
-elif [ "$CTX_INT" -ge 60 ]; then
-    CTX_COLOR="\033[33m"  # Yellow — past halfway
-else
-    CTX_COLOR="\033[32m"  # Green — plenty of room
-fi
-RESET="\033[0m"
+# --- ANSI palette ---
+RST="\033[0m"
 DIM="\033[2m"
-BOLD="\033[1m"
-CYAN="\033[36m"
+BLD="\033[1m"
+CYN="\033[36m"
+GRN="\033[32m"
+YLW="\033[33m"
+RED="\033[31m"
+MAG="\033[35m"
 
-# Build base status
-STATUS="${BOLD}${MODEL_SHORT}${RESET} ${DIM}│${RESET} ${COST_FMT} ${DIM}│${RESET} ${CTX_COLOR}${BAR} ${CTX_INT}%${RESET}"
+# --- Sanitize numerics ---
+CTX_INT=${CTX_PCT%.*}; CTX_INT=${CTX_INT:-0}
+DURATION_MS=${DURATION_MS:-0}
+LINES_ADD=${LINES_ADD:-0}
+LINES_REM=${LINES_REM:-0}
+CACHE_READ=${CACHE_READ:-0}
+CACHE_CREATE=${CACHE_CREATE:-0}
+INPUT_TOKENS=${INPUT_TOKENS:-0}
+CTX_SIZE=${CTX_SIZE:-200000}
+RATE_SESSION=${RATE_SESSION:--1}
 
-# Read toolkit state if available (single jq call for all fields)
+# ═══════════════════════════════════════════════════════════════════
+# LINE 1: Operational State
+# ═══════════════════════════════════════════════════════════════════
+
+L1="${BLD}${MODEL}${RST}"
+
+# Output style (skip if default or empty)
+if [ -n "$STYLE" ] && [ "$STYLE" != "default" ]; then
+    L1+=" ${DIM}│${RST} ${MAG}${STYLE}${RST}"
+fi
+
+# Code churn (+lines / -lines)
+if [ "$LINES_ADD" -gt 0 ] || [ "$LINES_REM" -gt 0 ]; then
+    L1+=" ${DIM}│${RST} ${GRN}+${LINES_ADD}${RST} ${RED}−${LINES_REM}${RST}"
+fi
+
+# Session duration
+SECS_TOTAL=$((DURATION_MS / 1000))
+MINS=$((SECS_TOTAL / 60))
+SECS=$((SECS_TOTAL % 60))
+if [ "$MINS" -gt 0 ]; then
+    L1+=" ${DIM}│${RST} ${DIM}${MINS}m ${SECS}s${RST}"
+elif [ "$SECS" -gt 0 ]; then
+    L1+=" ${DIM}│${RST} ${DIM}${SECS}s${RST}"
+fi
+
+# Context burn sparkline (rolling 8 samples, recorded every ~10s)
+HISTORY_FILE="/tmp/claude-sl-ctx-history"
+SAMPLE_TS_FILE="/tmp/claude-sl-last-sample"
+
+NOW=${EPOCHSECONDS:-$(date +%s)}
+LAST_SAMPLE=0
+[ -f "$SAMPLE_TS_FILE" ] && LAST_SAMPLE=$(cat "$SAMPLE_TS_FILE" 2>/dev/null)
+
+if [ $((NOW - LAST_SAMPLE)) -ge 10 ]; then
+    echo "$CTX_INT" >> "$HISTORY_FILE"
+    echo "$NOW" > "$SAMPLE_TS_FILE"
+    # Keep only last 8 samples
+    if [ -f "$HISTORY_FILE" ]; then
+        tail -8 "$HISTORY_FILE" > "${HISTORY_FILE}.tmp" 2>/dev/null && \
+            mv "${HISTORY_FILE}.tmp" "$HISTORY_FILE" 2>/dev/null
+    fi
+fi
+
+SPARK_CHARS=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+SPARKLINE=""
+if [ -f "$HISTORY_FILE" ]; then
+    while IFS= read -r val; do
+        val=${val:-0}
+        idx=$((val * 7 / 100))
+        [ "$idx" -gt 7 ] && idx=7
+        [ "$idx" -lt 0 ] && idx=0
+        SPARKLINE+="${SPARK_CHARS[$idx]}"
+    done < "$HISTORY_FILE"
+fi
+
+if [ -n "$SPARKLINE" ]; then
+    if [ "$CTX_INT" -ge 80 ]; then
+        SPARK_CLR="$RED"
+    elif [ "$CTX_INT" -ge 60 ]; then
+        SPARK_CLR="$YLW"
+    else
+        SPARK_CLR="$GRN"
+    fi
+    L1+=" ${DIM}│${RST} ${SPARK_CLR}${SPARKLINE}${RST}${DIM} ctx${RST}"
+fi
+
+# Toolkit state (plan/TDD) from state-index
 STATE_FILE=".claude/state-index.json"
 if [ -f "$STATE_FILE" ]; then
     IFS=$'\t' read -r PLAN STAGE TDD_PHASE < <(jq -r '[
@@ -61,21 +127,90 @@ if [ -f "$STATE_FILE" ]; then
 
     TOOLKIT=""
     if [ -n "$PLAN" ]; then
-        TOOLKIT="${CYAN}Plan: ${PLAN}"
+        TOOLKIT="${CYN}Plan: ${PLAN}"
         [ -n "$STAGE" ] && TOOLKIT+=" [${STAGE}]"
-        TOOLKIT+="${RESET}"
+        TOOLKIT+="${RST}"
     fi
     if [ -n "$TDD_PHASE" ]; then
         [ -n "$TOOLKIT" ] && TOOLKIT+=" "
         case "$TDD_PHASE" in
-            RED)   TDD_CLR="\033[31m" ;;
-            GREEN) TDD_CLR="\033[32m" ;;
-            *)     TDD_CLR="\033[33m" ;;
+            RED)   TDD_CLR="$RED" ;;
+            GREEN) TDD_CLR="$GRN" ;;
+            *)     TDD_CLR="$YLW" ;;
         esac
-        TOOLKIT+="${TDD_CLR}TDD: ${TDD_PHASE}${RESET}"
+        TOOLKIT+="${TDD_CLR}TDD: ${TDD_PHASE}${RST}"
     fi
-
-    [ -n "$TOOLKIT" ] && STATUS+=" ${DIM}│${RESET} ${TOOLKIT}"
+    [ -n "$TOOLKIT" ] && L1+=" ${DIM}│${RST} ${TOOLKIT}"
 fi
 
-echo -e "$STATUS"
+# ═══════════════════════════════════════════════════════════════════
+# LINE 2: Resource Gauges
+# ═══════════════════════════════════════════════════════════════════
+
+# Context bar (10 chars with checkerboard transition)
+FILLED=$((CTX_INT / 10))
+REMAINDER=$((CTX_INT % 10))
+
+BAR=""
+for ((i=0; i<FILLED; i++)); do BAR+="█"; done
+
+# Transition cell: ▒ for low fill, ▓ for high fill within the cell
+if [ "$REMAINDER" -gt 0 ]; then
+    if [ "$REMAINDER" -ge 5 ]; then
+        BAR+="▓"
+    else
+        BAR+="▒"
+    fi
+    EMPTY=$((9 - FILLED))
+else
+    EMPTY=$((10 - FILLED))
+fi
+[ "$EMPTY" -lt 0 ] && EMPTY=0
+for ((i=0; i<EMPTY; i++)); do BAR+="░"; done
+
+# Color context by usage threshold
+if [ "$CTX_INT" -ge 80 ]; then
+    CTX_CLR="$RED"
+elif [ "$CTX_INT" -ge 60 ]; then
+    CTX_CLR="$YLW"
+else
+    CTX_CLR="$GRN"
+fi
+
+# Format context window size (200k or 1M)
+if [ "$CTX_SIZE" -ge 1000000 ]; then
+    SIZE_FMT="1M"
+else
+    SIZE_FMT="$((CTX_SIZE / 1000))k"
+fi
+
+L2="${CTX_CLR}${BAR} ${CTX_INT}%${RST} ${DIM}of ${SIZE_FMT}${RST}"
+
+# Cache hit ratio
+TOTAL_INPUT=$((INPUT_TOKENS + CACHE_CREATE + CACHE_READ))
+if [ "$TOTAL_INPUT" -gt 0 ]; then
+    CACHE_HIT=$((CACHE_READ * 100 / TOTAL_INPUT))
+    if [ "$CACHE_HIT" -ge 70 ]; then
+        CACHE_CLR="$GRN"
+    elif [ "$CACHE_HIT" -ge 40 ]; then
+        CACHE_CLR="$YLW"
+    else
+        CACHE_CLR="$DIM"
+    fi
+    L2+=" ${DIM}│${RST} ${DIM}cache:${RST} ${CACHE_CLR}${CACHE_HIT}%${RST}"
+fi
+
+# Subscription usage (future-proofed — lights up when rate_limits ships)
+if [ "$RATE_SESSION" != "-1" ]; then
+    if [ "$RATE_SESSION" -ge 80 ]; then
+        RATE_CLR="$RED"
+    elif [ "$RATE_SESSION" -ge 60 ]; then
+        RATE_CLR="$YLW"
+    else
+        RATE_CLR="$GRN"
+    fi
+    L2+=" ${DIM}│${RST} ${DIM}sub:${RST} ${RATE_CLR}${RATE_SESSION}%${RST}"
+fi
+
+echo -e "$L1"
+echo -e "$L2"

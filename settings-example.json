@@ -75,6 +75,24 @@
             "command": "~/.claude/hooks/empirica-insight-capture.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__empirica__submit_preflight_assessment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/empirica-preflight-capture.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__empirica__submit_postflight_assessment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/empirica-postflight-capture.sh"
+          }
+        ]
       }
     ],
     "PreToolUse": [

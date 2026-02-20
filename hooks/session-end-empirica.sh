@@ -12,11 +12,17 @@
 
 set +e
 
-# Find project root (git root preferred, fall back to cwd)
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+# Resolve data dir: EMPIRICA_DATA_DIR takes priority (global DB mode),
+# then git root, then cwd fallback. Must match path_resolver.py priority.
+if [ -n "$EMPIRICA_DATA_DIR" ]; then
+    EMPIRICA_ROOT="$EMPIRICA_DATA_DIR"
+else
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+    EMPIRICA_ROOT="$GIT_ROOT/.empirica"
+fi
 
-ACTIVE_SESSION_FILE="$GIT_ROOT/.empirica/active_session"
-DB_PATH="$GIT_ROOT/.empirica/sessions/sessions.db"
+ACTIVE_SESSION_FILE="$EMPIRICA_ROOT/active_session"
+DB_PATH="$EMPIRICA_ROOT/sessions/sessions.db"
 
 # No active session file? Nothing to do.
 [ -f "$ACTIVE_SESSION_FILE" ] || exit 0

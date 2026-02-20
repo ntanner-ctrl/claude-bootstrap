@@ -17,10 +17,15 @@ set +e
 # Consume stdin to prevent broken pipe
 cat > /dev/null 2>&1
 
-# Find project root
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+# Resolve data dir: EMPIRICA_DATA_DIR takes priority (global DB mode)
+if [ -n "$EMPIRICA_DATA_DIR" ]; then
+    EMPIRICA_ROOT="$EMPIRICA_DATA_DIR"
+else
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+    EMPIRICA_ROOT="$GIT_ROOT/.empirica"
+fi
 
-ACTIVE_SESSION_FILE="$GIT_ROOT/.empirica/active_session"
+ACTIVE_SESSION_FILE="$EMPIRICA_ROOT/active_session"
 
 # No active session file? Allow creation through.
 if [ ! -f "$ACTIVE_SESSION_FILE" ]; then

@@ -940,6 +940,33 @@ Planning complete! Summary:
 
 Ready to implement. Artifacts saved for reference.
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Vault Export (Automatic)
+
+After presenting the completion summary, export blueprint to vault if available:
+
+1. Source vault config:
+   ```bash
+   source ~/.claude/hooks/vault-config.sh 2>/dev/null && echo "VAULT_ENABLED=$VAULT_ENABLED" && echo "VAULT_PATH=$VAULT_PATH"
+   ```
+
+2. If vault is available (`VAULT_ENABLED=1` and path exists and writable):
+   a. Ensure target directory: `mkdir -p "$VAULT_PATH/Engineering/Blueprints"`
+   b. Read `manifest.json` for the completed blueprint
+   c. Read `adversarial.md` for top findings (if exists)
+   d. Determine project name: `basename $(git rev-parse --show-toplevel 2>/dev/null || echo "unknown")`
+   e. Generate slug from blueprint name (include project): `YYYY-MM-DD-project-blueprint-name.md`
+   f. Hydrate `blueprint-summary.md` template with `schema_version: 1` in frontmatter
+   g. **Merge-write [F2]**: If file exists, read it, split at `<!-- user-content -->` sentinel, preserve content below sentinel, overwrite above
+   h. Write to `$VAULT_PATH/Engineering/Blueprints/YYYY-MM-DD-project-blueprint-name.md`
+   i. Report: `Vault: Blueprint summary exported to Engineering/Blueprints/`
+
+3. If vault is enabled but not accessible: `"Vault write skipped: directory not accessible"`
+4. If vault is not enabled: silently skip (no message)
+
+```
   Pre-implementation:
     /design-check [name]    — Verify prerequisites are met (recommended)
     /preflight              — Safety check for risky operations
