@@ -163,4 +163,4 @@ If the file contained ONLY the entries that were just processed, the file can be
 - All vault writes use the Write tool (no Obsidian MCP dependency)
 - Filenames use vault_sanitize_slug for NTFS safety
 - The PostToolUse hook (`empirica-insight-capture.sh`) is the write-through safety net that populates insights.jsonl
-- Pair with `/end` for full session closure, or use standalone mid-session to flush accumulated insights
+- **Relationship to `/end`:** The `/end` command runs this same insight sweep automatically (Step 3). Use `/collect-insights` for mid-session flushes; `/end` handles the final sweep at session close.

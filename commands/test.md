@@ -209,3 +209,4 @@ Watch for these anti-patterns:
 - **Uses:** `/spec-to-tests` (Stage 2)
 - **Part of:** `/blueprint` wizard (Stage 6)
 - **Fed by:** `/spec-change` (testable criteria)
+- Also available (user-initiated): If `testing-suite` plugin is installed, `/generate-tests` and `/test-coverage` provide comprehensive test automation and coverage analysis

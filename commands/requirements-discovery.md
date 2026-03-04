@@ -117,6 +117,12 @@ Once the user confirms the requirements summary:
 - For **simpler tasks**: Suggest direct implementation
 - For **unclear direction**: Suggest `/brainstorm` first
 
+## Integration
+
+- **Feeds into:** `/spec-change`, `/blueprint` Stage 2
+- **Fed by:** `/brainstorm` (if direction unclear), `/describe-change` (if requirements fuzzy)
+- **Insight capture:** Requirement gaps and stakeholder constraints are epistemic gold. Run `/collect-insights` to flush to vault + Empirica.
+
 ---
 
 $ARGUMENTS

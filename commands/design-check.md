@@ -130,3 +130,4 @@ Display results:
 - Use `/blueprint` for full planning workflow (includes this as a phase check)
 - Use `/spec-change` to formalize requirements identified here
 - Use `/edge-cases` to probe boundaries identified in step 1
+- **Insight capture:** Prerequisite gaps and design boundary discoveries are prime findings material. Run `/collect-insights` to flush to vault + Empirica.

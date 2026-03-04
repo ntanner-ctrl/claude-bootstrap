@@ -428,6 +428,7 @@ Skipped - project is nascent, run `/bootstrap-project` again when workflows are 
 1. Review generated CLAUDE.md and refine
 2. Test the installed hooks by editing a source file
 3. Try `/troubleshooter` agent on your next bug
+4. Existing documentation? Run `/migrate-docs` to restructure into Diataxis framework
 
 ### Maintenance
 - Run `/check-project-setup` periodically to detect drift

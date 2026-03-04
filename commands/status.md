@@ -125,4 +125,4 @@ Path: Full
 
 - **Reads from:** `.claude/plans/*/state.json`, `.claude/overrides.json`
 - **Linked from:** `/toolkit`, `/blueprint` wizard
-- **Leads to:** `/blueprint [name]`, `/overrides`
+- **Leads to:** `/blueprint [name]`, `/overrides`, `/approve` (advance a planning stage)

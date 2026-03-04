@@ -266,6 +266,8 @@ Implementation: For each file, read all lines, update matching entries (by times
 
 ### Step 3: Collect Remaining Insights
 
+**Note:** For mid-session insight capture, use `/collect-insights` directly. This step runs the same sweep automatically at session close.
+
 This is your last chance to capture session knowledge. Do NOT skip this step.
 
 1. **Scan conversation for unlogged `★ Insight` blocks**: Search your own output in this session for any `★ Insight` blocks. For each one, check if a corresponding `finding_log` call followed it (look for a finding_log tool call within ~2 messages after the insight).
@@ -303,6 +305,10 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+## Integration
+
+Also available (user-initiated): If `documentation-generator` plugin is installed, docs changed this session? Run `/update-docs` before closing.
 
 ## Notes
 

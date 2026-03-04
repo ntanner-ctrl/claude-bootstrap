@@ -211,7 +211,7 @@ Results: markdown format, advisory only.
 **Phase 2 agents:**
 - `code-analysis:detective` — Deep code investigation, architecture tracing, usage pattern discovery, bug tracking
 
-**Workflow seams (Phase 2):**
+**Workflow seams (Wired):**
 - `/debug` Phase 2 (HYPOTHESIZE) — Deep investigation to generate/validate hypotheses
 - `/describe-change` — Automated codebase analysis for step decomposition
 - Blueprint Stage 7 — Pre-implementation codebase understanding
@@ -226,18 +226,89 @@ Results: markdown format, advisory only.
 **Phase 2 agents:**
 - `testing-suite:test-engineer` — Test automation, coverage analysis, CI/CD testing, quality engineering
 
-**Workflow seams (Phase 2):**
+**Workflow seams (Wired):**
 - `/test` Stage 3 (Verify) — Enhanced tautology detection and coverage analysis
 - `/tdd` REFACTOR phase — Test quality improvement
 - `/quality-gate` — Tests category (20 points) enhanced assessment
 - Blueprint Stage 6 (Test) — Enhanced test generation
+
+### ralph-wiggum (Wired — verification loops)
+
+**Fills:** `iterate:loop`
+**Detection:** Check installed_plugins.json for key with prefix "ralph-wiggum"
+
+**Workflow seams (Wired):**
+- `/blueprint` Stage 7 (Execute) — Verification checkpoints during long implementations
+
+### commit-commands (Wired — commit workflow)
+
+**Fills:** `commit:workflow`
+**Detection:** Check installed_plugins.json for key with prefix "commit-commands"
+
+**Workflow seams (Wired):**
+- `/push-safe` — Streamlined commit workflow before pushing
+
+### git-workflow (Wired — branch management)
+
+**Fills:** `branch:lifecycle`
+**Detection:** Check installed_plugins.json for key with prefix "git-workflow"
+
+**Workflow seams (Wired):**
+- `/blueprint` Stage 7 (Execute) — Git Flow feature/finish lifecycle for implementation branches
+
+### hookify (Wired — mistake prevention)
+
+**Fills:** `prevent:hooks`
+**Detection:** Check installed_plugins.json for key with prefix "hookify"
+
+**Workflow seams (Wired):**
+- `/debug` Integration — Create prevention hooks for recurring mistakes
+
+### documentation-generator (Wired — docs maintenance)
+
+**Fills:** `docs:update`
+**Detection:** Check installed_plugins.json for key with prefix "documentation-generator"
+
+**Workflow seams (Wired):**
+- `/end` Integration — Update docs before closing session
+
+### agentdev (Wired — agent development)
+
+**Fills:** `develop:agents`
+**Detection:** Check installed_plugins.json for key with prefix "agentdev"
+
+**Workflow seams (Wired):**
+- `/spec-agent` — Full-cycle multi-model agent creation after spec
+
+### plugin-dev (Wired — plugin development)
+
+**Fills:** `develop:plugins`
+**Detection:** Check installed_plugins.json for key with prefix "plugin-dev"
+
+**Workflow seams (Wired):**
+- `/spec-agent` — Guided plugin workflow after agent spec
+
+### devops-automation (Wired — infrastructure)
+
+**Fills:** `infra:architect`
+**Detection:** Check installed_plugins.json for key with prefix "devops-automation"
+
+**Workflow seams (Wired):**
+- `/security-checklist` Integration — Infrastructure security posture review
+
+### project-management-suite (Wired — planning)
+
+**Fills:** `plan:strategy`
+**Detection:** Check installed_plugins.json for key with prefix "project-management-suite"
+
+**Workflow seams (Wired):**
+- `/start` — Product strategy and roadmap when project context suggests planning
 
 ### Other Plugins Noted for Future Phases
 
 | Plugin | Slot | Phase | Marketplace |
 |--------|------|-------|-------------|
 | bun | `execute:backend` | Phase 2 | mag-claude-plugins |
-| ralph-wiggum | `iterate:loop` | Phase 2 | claude-code-plugins |
 
 These entries are documented for planning. Phase 2+ integration seams are NOT active.
 

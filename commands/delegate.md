@@ -289,12 +289,29 @@ After standard two-stage review (spec + quality) passes, run additional lenses:
 | `arch` | architecture-reviewer | Layer violations, circular deps, cohesion |
 | `cfn` | cloudformation-reviewer | Tagging, naming, security posture, CF best practices |
 
+<!-- Extended lens table mirrors dispatch.md — keep in sync -->
+
+**Extended lenses** (require plugins — availability depends on what's installed):
+
+| Lens | Agent | Plugin | Focus |
+|------|-------|--------|-------|
+| `silent-failures` | pr-review-toolkit:silent-failure-hunter | pr-review-toolkit | Silent failures, error handling |
+| `types` | pr-review-toolkit:type-design-analyzer | pr-review-toolkit | Type design, encapsulation |
+| `comments` | pr-review-toolkit:comment-analyzer | pr-review-toolkit | Comment accuracy |
+| `simplify` | pr-review-toolkit:code-simplifier | pr-review-toolkit | Simplification opportunities |
+| `test-coverage` | pr-review-toolkit:pr-test-analyzer | pr-review-toolkit | Test coverage gaps |
+| `deep-security` | security-pro:security-auditor | security-pro | Deep vulnerability assessment |
+| `deep-perf` | performance-optimizer:performance-engineer | performance-optimizer | Bottleneck identification |
+| `methodology` | superpowers:code-reviewer | superpowers | Methodology-based review |
+| `conventions` | feature-dev:code-reviewer | feature-dev | Convention-focused review |
+
 Lenses run on haiku model and are **advisory** — they don't trigger re-dispatch.
 
 **If `--review` used but `--lenses` NOT specified**, print after standard review:
 ```
 Review complete (spec: PASS, quality: PASS).
-Tip: Additional lenses available: --lenses security,perf,arch,cfn,cfn
+Tip: Additional lenses available: --lenses security,perf,arch,cfn
+      Extended lenses (plugin-dependent): silent-failures,types,comments,simplify,test-coverage,deep-security,deep-perf,methodology,conventions
 ```
 
 ---

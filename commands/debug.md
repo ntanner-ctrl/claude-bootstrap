@@ -133,3 +133,7 @@ After debugging completes, consider:
 - Is this a symptom of a deeper issue? (architectural)
 - Should this be documented? (if non-obvious)
 - **Insight capture:** Root causes and fix patterns are high-value findings. Run `/collect-insights` to flush them to vault + Empirica — debugging insights prevent repeat failures across sessions
+
+Also available (user-initiated):
+- Same mistake recurring? If `hookify` plugin is installed, `/hookify` creates a prevention hook
+- Deep investigation needed? If `code-analysis` plugin is installed, `/analyze` or the `detective` agent traces code paths across the codebase

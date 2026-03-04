@@ -1359,6 +1359,12 @@ After presenting the completion summary, export blueprint to vault if available:
     /simplify               — Review changed code for reuse, quality, efficiency (if available)
     /quality-gate           — Score against rubric before completing
 
+  Also available (user-initiated):
+    [If git-workflow plugin detected:]
+      Working on a feature branch? /feature and /finish manage Git Flow lifecycle.
+    [If ralph-wiggum plugin detected:]
+      Long implementation? /ralph-loop adds verification checkpoints during execution.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

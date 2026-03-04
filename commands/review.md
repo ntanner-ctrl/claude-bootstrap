@@ -131,6 +131,10 @@ After completing the core 4 stages, check for plugin enhancements:
     [5] Conventions Review — feature-dev:code-reviewer
         Convention-focused review with confidence-based filtering
 
+  [If frontend detected:]
+    [6] Multi-Model Review — frontend:reviewer
+        Parallel assessment from multiple AI models
+
     [N] Skip — core review is sufficient
 
 >

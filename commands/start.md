@@ -105,6 +105,9 @@ Complexity: [Quick/Medium/Significant]
 ## Alternatives
 - [Option 2]
 - [Option 3]
+[If vault context was displayed above:]
+- Search deeper: /vault-query [topic]
+- Full command index: /toolkit
 ```
 
 ---

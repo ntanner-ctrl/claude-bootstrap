@@ -192,3 +192,5 @@ Specification complete. Next:
   • Review constraints → Are they specific enough?
   • Test with example → Does the example cover the role?
   • Implement → Create the agent file
+  • Full-cycle development → If `agentdev` plugin is installed, `/develop` provides multi-model agent creation
+  • Building a plugin? → If `plugin-dev` plugin is installed, `/create-plugin` provides guided plugin workflow

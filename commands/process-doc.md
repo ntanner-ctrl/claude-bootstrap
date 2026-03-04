@@ -25,10 +25,12 @@ This skill generates **How-to Guides** — one of four Diataxis documentation ty
 
 | Type | Purpose | This Skill? |
 |------|---------|-------------|
-| Tutorial | Learn by doing | No — use `/tutorial-doc` |
+| Tutorial | Learn by doing | No — use tutorial template |
 | **How-to Guide** | Accomplish a task | **Yes** |
-| Reference | Look up information | No — use `/reference-doc` |
-| Explanation | Understand concepts | No — use `/explanation-doc` |
+| Reference | Look up information | No — use reference template |
+| Explanation | Understand concepts | No — use explanation template |
+
+> For other Diataxis types, use the templates in `commands/templates/documentation/`.
 
 **How-to Guide characteristics:**
 - Task-oriented (reader has a specific goal)
@@ -132,9 +134,9 @@ Before finalizing, verify against Diataxis principles:
 | Skill | Generates |
 |-------|-----------|
 | `/process-doc` | How-to Guide (this skill) |
-| `/tutorial-doc` | Tutorial (planned) |
-| `/reference-doc` | Reference (planned) |
-| `/explanation-doc` | Explanation (planned) |
+| `templates/documentation/tutorial.md` | Tutorial |
+| `templates/documentation/reference.md` | Reference |
+| `templates/documentation/explanation.md` | Explanation |
 
 ---
 

@@ -53,6 +53,9 @@ these must be atomic?
 | "X with Y" | "Create user with permissions" | Create + permission |
 | Vague verbs | "Handle the migration" | Specific actions |
 
+**Requirements unclear?** If the user can't articulate steps clearly, suggest:
+> Requirements seem unclear. Consider running `/requirements-discovery` first to validate assumptions before decomposing steps.
+
 ### Step 3: Quick Risk Scan
 
 Present this checklist:

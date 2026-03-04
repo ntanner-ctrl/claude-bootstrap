@@ -68,6 +68,10 @@ git log -1 --oneline --decorate
 
 Display commit hash, branch, and summary.
 
+## Integration
+
+Also available (user-initiated): If `commit-commands` plugin is installed, `/commit` provides a streamlined commit workflow.
+
 ---
 
 $ARGUMENTS

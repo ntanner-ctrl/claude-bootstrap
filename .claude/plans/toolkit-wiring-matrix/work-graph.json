@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "computed_at": "2026-03-03T21:35:00Z",
+  "width": 5,
+  "critical_path": [
+    "WU-1",
+    "WU-6"
+  ],
+  "critical_path_length": 2,
+  "parallelization_recommendation": "strong",
+  "units": {
+    "WU-1": {
+      "name": "Fix Ghost + Orphans",
+      "files": [
+        "commands/blueprint.md",
+        "commands/review.md",
+        "commands/start.md",
+        "commands/status.md"
+      ],
+      "depends_on": [],
+      "estimated_edits": 4
+    },
+    "WU-2": {
+      "name": "Insight Capture Gaps",
+      "files": [
+        "commands/security-checklist.md",
+        "commands/design-check.md",
+        "commands/requirements-discovery.md"
+      ],
+      "depends_on": [],
+      "estimated_edits": 3
+    },
+    "WU-3": {
+      "name": "Orphan Rescue + Cleanup",
+      "files": [
+        "commands/describe-change.md",
+        "commands/process-doc.md",
+        "commands/bootstrap-project.md",
+        "commands/end.md",
+        "commands/collect-insights.md"
+      ],
+      "depends_on": [],
+      "estimated_edits": 5
+    },
+    "WU-4": {
+      "name": "Plugin Seam Wiring",
+      "files": [
+        "commands/push-safe.md",
+        "commands/blueprint.md",
+        "commands/debug.md",
+        "commands/end.md",
+        "commands/spec-agent.md"
+      ],
+      "depends_on": [],
+      "estimated_edits": 6
+    },
+    "WU-5": {
+      "name": "Delegate Lens Table + Phase 2",
+      "files": [
+        "commands/delegate.md",
+        "commands/plugin-enhancers.md",
+        "commands/test.md",
+        "commands/blueprint.md"
+      ],
+      "depends_on": [],
+      "estimated_edits": 5
+    },
+    "WU-6": {
+      "name": "Documentation Verification",
+      "files": [
+        "README.md",
+        "commands/README.md"
+      ],
+      "depends_on": [
+        "WU-1",
+        "WU-2",
+        "WU-3",
+        "WU-4",
+        "WU-5"
+      ],
+      "estimated_edits": 1
+    }
+  }
+}
