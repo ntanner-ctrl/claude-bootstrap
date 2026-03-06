@@ -19,6 +19,12 @@ Before offering ANY solution:
    - What existing code/patterns are relevant?
    - What has been tried before (check git history if applicable)?
    - What dependencies or side effects should we consider?
+   - **Vault check (if vault available):**
+     1. Source vault config: `source ~/.claude/hooks/vault-config.sh 2>/dev/null`
+     2. If vault available, search for findings, decisions, and patterns matching the topic
+     3. If matches found: "The vault already contains knowledge on this topic:" with titles
+     4. Read relevant notes to inform the analysis — avoid re-discovering what's already known
+     5. Skip silently if vault unavailable
 
 3. **Clarifying Questions**
    - List 2-5 questions that would change your approach if answered differently

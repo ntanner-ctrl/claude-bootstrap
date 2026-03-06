@@ -50,7 +50,7 @@ Reconcile insights that exist on disk but not in vault, or vice versa. This clos
    - Use vault_sanitize_slug for the filename
 
 5. **Reconcile vault → Empirica**: For vault finding notes (created this session via `/vault-save`) with NO matching insights.jsonl entry:
-   - Call `mcp__empirica__finding_log` with the finding text and category from the vault note
+   - Call `mcp__empirica__finding_log` with the finding text (prefix with "[Insight] " if from vault finding notes)
 
 6. **Report**:
    ```
@@ -272,7 +272,7 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
 
 1. **Scan conversation for unlogged `★ Insight` blocks**: Search your own output in this session for any `★ Insight` blocks. For each one, check if a corresponding `finding_log` call followed it (look for a finding_log tool call within ~2 messages after the insight).
 
-2. **For each unlogged insight**: Call `mcp__empirica__finding_log` with `category: "insight"` and the insight text. This is the safety net for the behavioral gap where insights get generated as text but never recorded.
+2. **For each unlogged insight**: Call `mcp__empirica__finding_log` with `session_id` and `finding` (the insight text, prefixed with "[Insight] "). Do NOT pass `category` — it is not a valid parameter. This is the safety net for the behavioral gap where insights get generated as text but never recorded.
 
 3. **Final reflection**: Beyond `★ Insight` blocks, did you learn something significant that wasn't captured anywhere? If so, log it now.
 

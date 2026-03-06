@@ -1,0 +1,131 @@
+{
+  "spec_checksum": "pending",
+  "generated": "2026-03-06",
+  "nodes": [
+    {
+      "id": "WU1",
+      "description": "Rewrite vault context in session-bootstrap.sh",
+      "files": [
+        "hooks/session-bootstrap.sh"
+      ],
+      "complexity": "medium",
+      "dependencies": []
+    },
+    {
+      "id": "WU2",
+      "description": "Add curation cadence check to session-bootstrap.sh",
+      "files": [
+        "hooks/session-bootstrap.sh"
+      ],
+      "complexity": "small",
+      "dependencies": [
+        "WU1"
+      ]
+    },
+    {
+      "id": "WU3",
+      "description": "Add vault-query step to /blueprint Stage 1",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "complexity": "small",
+      "dependencies": []
+    },
+    {
+      "id": "WU4",
+      "description": "Add vault-query step to /debug Phase 1",
+      "files": [
+        "commands/debug.md"
+      ],
+      "complexity": "small",
+      "dependencies": []
+    },
+    {
+      "id": "WU5",
+      "description": "Add vault-query step to /brainstorm Phase 1",
+      "files": [
+        "commands/brainstorm.md"
+      ],
+      "complexity": "small",
+      "dependencies": []
+    },
+    {
+      "id": "WU6",
+      "description": "Create pattern.md vault-note template",
+      "files": [
+        "commands/templates/vault-notes/pattern.md"
+      ],
+      "complexity": "small",
+      "dependencies": []
+    },
+    {
+      "id": "WU7",
+      "description": "Add pattern promotion to /vault-curate Stage 4",
+      "files": [
+        "commands/vault-curate.md",
+        ".claude/plans/vault-curate/spec.md"
+      ],
+      "complexity": "medium",
+      "dependencies": [
+        "WU6"
+      ]
+    },
+    {
+      "id": "WU8",
+      "description": "Enhance /vault-save pattern path",
+      "files": [
+        "commands/vault-save.md"
+      ],
+      "complexity": "small",
+      "dependencies": [
+        "WU6"
+      ]
+    },
+    {
+      "id": "WU9",
+      "description": "Document _Templates and Engineering/Patterns in vault CLAUDE.md",
+      "files": [],
+      "complexity": "trivial",
+      "dependencies": []
+    }
+  ],
+  "batches": [
+    {
+      "batch": 1,
+      "units": [
+        "WU1",
+        "WU3",
+        "WU4",
+        "WU5",
+        "WU6",
+        "WU9"
+      ]
+    },
+    {
+      "batch": 2,
+      "units": [
+        "WU2",
+        "WU7",
+        "WU8"
+      ]
+    }
+  ],
+  "analysis": {
+    "max_parallel_width": 6,
+    "critical_path_length": 2,
+    "critical_path": [
+      "WU1",
+      "WU2"
+    ],
+    "file_conflicts": [
+      {
+        "file": "hooks/session-bootstrap.sh",
+        "units": [
+          "WU1",
+          "WU2"
+        ],
+        "resolution": "sequential"
+      }
+    ]
+  }
+}

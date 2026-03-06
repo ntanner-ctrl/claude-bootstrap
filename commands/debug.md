@@ -47,6 +47,20 @@ Display:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+#### Vault Check (if vault available)
+
+Before hypothesizing, check if this issue has been seen before:
+
+1. Source vault config:
+   ```bash
+   source ~/.claude/hooks/vault-config.sh 2>/dev/null
+   ```
+2. If vault available, search for findings related to the error message, component name, or behavior:
+   - Use Grep to search `$VAULT_PATH/Engineering/Findings/` for key terms from the observation
+   - If matches found: "Vault has prior findings that may be relevant:" with titles and 1-line summaries
+   - This can immediately shortcut debugging if the issue was previously documented
+3. Skip silently if vault unavailable
+
 ### Phase 2: HYPOTHESIZE
 
 **Goal:** Generate 3+ possible causes. Rank by likelihood.

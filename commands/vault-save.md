@@ -51,8 +51,18 @@ What type of note?
 | idea | vault-notes/idea.md | Ideas/ |
 | decision | vault-notes/decision.md | Engineering/Decisions/ |
 | finding | vault-notes/finding.md | Engineering/Findings/ |
-| pattern | vault-notes/finding.md (adapted) | Engineering/Patterns/ |
+| pattern | vault-notes/pattern.md | Engineering/Patterns/ |
 | blueprint | vault-notes/blueprint-summary.md | Engineering/Blueprints/ |
+
+**Pattern guided search:** When `pattern` type is selected:
+1. Ask: "What is the core principle or technique?" (1-2 sentences)
+2. Source vault config and search `$VAULT_PATH/Engineering/Findings/` for findings related to the principle
+3. If matches found, present: "Found N findings that may relate to this pattern:"
+   - List with titles and 1-line summaries
+   - Ask: "Which of these are source examples of this pattern? (comma-separated numbers, or 'none')"
+4. Selected findings become `extracted_from` links in the pattern template
+5. If no matches or user says 'none', proceed without source links
+6. Continue to Step 4 (Get Title) with the principle description as context
 
 **Blueprint auto-detection [F9]:** When `blueprint` type is selected:
 1. Check `.claude/plans/*/state.json` for a plan with `status: "in_progress"` on any stage

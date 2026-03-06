@@ -58,6 +58,23 @@ Before planning, consider:
 These are optional. Proceed to /blueprint when you have a clear enough picture.
 ```
 
+### Vault Awareness (if vault available)
+
+Before starting Stage 1, search the vault for prior knowledge relevant to this blueprint:
+
+1. Source vault config:
+   ```bash
+   source ~/.claude/hooks/vault-config.sh 2>/dev/null
+   ```
+2. If vault available, search for notes related to the blueprint topic:
+   - Use Grep to search `$VAULT_PATH` for the blueprint name and key terms across findings, decisions, and patterns
+   - Present any matches: "Vault has N notes that may be relevant to this work:"
+   - List matches with titles and 1-line summaries
+   - If a prior decision or pattern directly applies, highlight it
+3. If vault unavailable, skip silently (fail-open)
+
+This is advisory — it surfaces context, not gates progress.
+
 ### Starting or Resuming
 
 **New blueprint:**

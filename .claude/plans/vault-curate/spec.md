@@ -485,6 +485,7 @@ For each synthesis observation, Claude presents it within a structured frame:
     [2] Merge findings — combine N findings into one consolidated note
     [3] Note and continue — interesting but no action needed
     [4] Dismiss — not actually a meaningful pattern
+    [5] Promote to pattern — extract the reusable principle into Engineering/Patterns/
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -560,6 +561,18 @@ When the user selects "Merge findings — combine N findings into one consolidat
 
 4. **Confirm**: `"Merged N findings → [[merged-note-title]]. Source notes archived (not deleted)."`
 
+### Promote to Pattern
+
+When the user selects "Promote to pattern", extract the reusable principle from a finding cluster into `Engineering/Patterns/`:
+
+1. **Present pattern extraction preview** listing source findings and proposed pattern title/applicability. If user answers **n**, cancel and return to the synthesis observation frame.
+
+2. **Create the pattern note** using `~/.claude/commands/templates/vault-notes/pattern.md` at `$VAULT_PATH/Engineering/Patterns/YYYY-MM-DD-[slug].md` with `type: pattern`, source finding links in `extracted_from`, and `applicability` field.
+
+3. **Update source findings** to link to the new pattern (add `pattern_link: "[[pattern-name]]"` to frontmatter).
+
+4. **Confirm**: `"Pattern created: [[pattern-name]]. N source findings linked."`
+
 ## Stage 5: Prune
 
 **Always runs. Applies decisions from Stages 3-4.**
@@ -611,7 +624,7 @@ For each note with a verdict from triage or synthesis:
    superseded_date: YYYY-MM-DD
    ```
 
-7. **Log to Empirica** (if session active): Call `mcp__empirica__finding_log` for each updated note. For archived notes, call `mcp__empirica__finding_log` with `category: "archived"` and the archive reason (NOT `deadend_log` — archiving is curation, not a dead end).
+7. **Log to Empirica** (if session active): Call `mcp__empirica__finding_log` for each updated note. For archived notes, prefix finding with "[Archived] " and the archive reason (NOT `deadend_log` — archiving is curation, not a dead end).
 
 ### Interruption Recovery
 
@@ -759,8 +772,7 @@ if fraction_never_assessed > 0.5:
 ### Log to Empirica
 
 If session active, call `mcp__empirica__finding_log` with:
-- finding: "Vault curation complete: N notes reviewed, health NN→NN, next curation ~YYYY-MM-DD"
-- category: "vault-curation"
+- finding: "[Vault curation] Vault curation complete: N notes reviewed, health NN→NN, next curation ~YYYY-MM-DD"
 
 ## Quick Mode (`--quick`)
 

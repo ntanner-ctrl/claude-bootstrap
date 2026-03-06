@@ -175,20 +175,61 @@ VAULT_CONTEXT=""
 if [ -f "${HOME}/.claude/hooks/vault-config.sh" ]; then
     source "${HOME}/.claude/hooks/vault-config.sh" 2>/dev/null
     if [ "$VAULT_ENABLED" = "1" ] && vault_is_available; then
-        # Find notes modified in last 7 days (POSIX-portable: -mtime, no -printf)
-        # Timeout after 2s to protect SessionStart <2s budget
-        # -maxdepth 3 limits traversal depth on slow WSL-to-NTFS mounts
-        RECENT_NOTES=$(timeout 2 find "$VAULT_PATH" -maxdepth 3 -name "*.md" -mtime -7 \
-            -not -path "*/.obsidian/*" -not -path "*/_Templates/*" -not -name "CLAUDE.md" \
-            2>/dev/null | head -10 | while IFS= read -r f; do echo "${f#$VAULT_PATH/}"; done)
+        # Get current project name for filtering
+        VAULT_PROJECT=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+
+        # Project-filtered search: grep frontmatter for project match, sort by mtime, limit 7
+        # Timeout after 2s to protect SessionStart <2s budget on slow WSL-to-NTFS mounts
+        RECENT_NOTES=""
+        VAULT_LABEL="recent"
+        if [ -n "$VAULT_PROJECT" ]; then
+            RECENT_NOTES=$(timeout 2 grep -rl "^project:.*${VAULT_PROJECT}" "$VAULT_PATH" --include="*.md" \
+                2>/dev/null | grep -v '/.obsidian/' | grep -v '/_Templates/' | grep -v '/CLAUDE.md' \
+                | xargs ls -t 2>/dev/null | head -7)
+            VAULT_LABEL="for ${VAULT_PROJECT}"
+        fi
+
+        # Fall back to global recent if no project-specific notes found
+        if [ -z "$RECENT_NOTES" ]; then
+            RECENT_NOTES=$(timeout 2 find "$VAULT_PATH" -maxdepth 3 -name "*.md" \
+                -not -path "*/.obsidian/*" -not -path "*/_Templates/*" -not -name "CLAUDE.md" \
+                2>/dev/null | xargs ls -t 2>/dev/null | head -7)
+            VAULT_LABEL="recent (no project match)"
+        fi
 
         if [ -n "$RECENT_NOTES" ]; then
-            # Build VAULT_CONTEXT with real newlines using printf (not \n literals)
-            VAULT_CONTEXT=$(printf '\nOBSIDIAN VAULT (recent knowledge):\n  Vault: %s\n  Recent notes (last 7 days):' "$VAULT_PATH")
-            while IFS= read -r note; do
-                VAULT_CONTEXT=$(printf '%s\n    %s' "$VAULT_CONTEXT" "$note")
+            VAULT_CONTEXT=$(printf '\nOBSIDIAN VAULT (project knowledge):\n  Vault: %s\n  Notes %s:' "$VAULT_PATH" "$VAULT_LABEL")
+            while IFS= read -r note_path; do
+                [ -f "$note_path" ] || continue
+                REL_PATH="${note_path#$VAULT_PATH/}"
+                # Extract first H1 title for context
+                TITLE=$(awk '/^# /{print; exit}' "$note_path" 2>/dev/null | sed 's/^# //')
+                if [ -n "$TITLE" ]; then
+                    VAULT_CONTEXT=$(printf '%s\n    %s\n      "%s"' "$VAULT_CONTEXT" "$REL_PATH" "$TITLE")
+                else
+                    VAULT_CONTEXT=$(printf '%s\n    %s' "$VAULT_CONTEXT" "$REL_PATH")
+                fi
             done <<< "$RECENT_NOTES"
             VAULT_CONTEXT=$(printf '%s\n  Use /vault-query to search for specific topics.\n  Use /vault-save to capture ideas or findings.' "$VAULT_CONTEXT")
+        fi
+
+        # Curation cadence check
+        if [ -f "$VAULT_PATH/.vault-last-curated" ]; then
+            LAST_CURATED=$(cat "$VAULT_PATH/.vault-last-curated" 2>/dev/null)
+            if [ -n "$LAST_CURATED" ]; then
+                CURATED_EPOCH=$(date -d "$LAST_CURATED" +%s 2>/dev/null || echo 0)
+                if [ "$CURATED_EPOCH" -gt 0 ]; then
+                    DAYS_SINCE=$(( ($(date +%s) - CURATED_EPOCH) / 86400 ))
+                    if [ "$DAYS_SINCE" -gt 30 ]; then
+                        VAULT_CONTEXT=$(printf '%s\n  Vault maintenance: Last curated %s days ago. Consider /vault-curate.' "$VAULT_CONTEXT" "$DAYS_SINCE")
+                    fi
+                fi
+            fi
+        else
+            # Never curated — only mention if vault has notes
+            if [ -n "$RECENT_NOTES" ]; then
+                VAULT_CONTEXT=$(printf '%s\n  Vault maintenance: Never curated. Consider /vault-curate --quick.' "$VAULT_CONTEXT")
+            fi
         fi
     fi
 fi

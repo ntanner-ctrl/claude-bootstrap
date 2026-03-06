@@ -1,0 +1,36 @@
+{
+  "blueprint_version": 2,
+  "name": "vault-lifecycle",
+  "challenge_mode": "vanilla",
+  "execution_preference": "speed",
+  "created": "2026-03-06",
+  "stages": {
+    "describe": {
+      "status": "complete"
+    },
+    "specify": {
+      "status": "complete"
+    },
+    "challenge": {
+      "status": "pending"
+    },
+    "edge_cases": {
+      "status": "pending"
+    },
+    "review": {
+      "status": "pending"
+    },
+    "test": {
+      "status": "pending"
+    },
+    "execute": {
+      "status": "pending"
+    }
+  },
+  "current_stage": "specify",
+  "regressions": [],
+  "confidence": {
+    "describe": 0.9,
+    "specify": 0.85
+  }
+}

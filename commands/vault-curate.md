@@ -462,6 +462,7 @@ For each observation, present within a structured frame:
     [2] Merge findings — combine N findings into one consolidated note
     [3] Note and continue — interesting but no action needed
     [4] Dismiss — not actually a meaningful pattern
+    [5] Promote to pattern — extract the reusable principle into Engineering/Patterns/
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -530,6 +531,45 @@ When user selects "Create meta-finding", create a new finding note directly (NOT
    ```
 
 4. **Confirm**: `"Merged N findings -> [[merged-note-title]]. Source notes archived (not deleted)."`
+
+### Promote to Pattern
+
+When user selects "Promote to pattern", extract the reusable principle from a finding cluster into `Engineering/Patterns/`:
+
+#### Promotion Process
+
+1. **Present pattern extraction preview**:
+   ```
+   Promoting cluster to pattern:
+     Source findings:
+       - [[finding-1]]: "Title 1" (project-a)
+       - [[finding-2]]: "Title 2" (project-b)
+
+     Proposed pattern title: "[extracted principle]"
+     Applicability: "[when this pattern applies]"
+     Proceed? [Y/n]
+   ```
+   If **n**, cancel and return to the synthesis observation frame, re-presenting the five action options.
+
+2. **Create the pattern note** using the template (`~/.claude/commands/templates/vault-notes/pattern.md`) at `$VAULT_PATH/Engineering/Patterns/YYYY-MM-DD-[slug].md`:
+   ```yaml
+   type: pattern
+   date: YYYY-MM-DD
+   project: [primary project, or "cross-project"]
+   tags: [pattern, source project tags]
+   extracted_from:
+     - "[[source-finding-1]]"
+     - "[[source-finding-2]]"
+   applicability: "[when to use this pattern]"
+   ```
+   Content: the reusable principle, when to use it, example, source findings list, and trade-offs.
+
+3. **Update source findings** to link to the new pattern. Add to each source finding's frontmatter:
+   ```yaml
+   pattern_link: "[[pattern-name]]"
+   ```
+
+4. **Confirm**: `"Pattern created: [[pattern-name]]. N source findings linked."`
 
 ---
 
@@ -607,7 +647,7 @@ For each note with a verdict:
    superseded_date: YYYY-MM-DD
    ```
 
-7. **Log to Empirica** (if session active): `mcp__empirica__finding_log` for each updated note. For archived notes use `category: "archived"` (NOT `deadend_log`).
+7. **Log to Empirica** (if session active): `mcp__empirica__finding_log` for each updated note. For archived notes, prefix finding with "[Archived] " (NOT `deadend_log` — archiving is curation, not a dead end).
 
 ### Interruption Recovery
 
@@ -711,11 +751,18 @@ if fraction_never_assessed > 0.5:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+### Write Cadence Marker
+
+After report is generated, write the curation date for the bootstrap hook to check:
+
+```bash
+echo "$(date +%Y-%m-%d)" > "$VAULT_PATH/.vault-last-curated"
+```
+
 ### Log to Empirica
 
 If session active, call `mcp__empirica__finding_log` with:
-- finding: "Vault curation complete: N notes reviewed, health NN->NN, next curation ~YYYY-MM-DD"
-- category: "vault-curation"
+- finding: "[Vault curation] Vault curation complete: N notes reviewed, health NN->NN, next curation ~YYYY-MM-DD"
 
 ---
 

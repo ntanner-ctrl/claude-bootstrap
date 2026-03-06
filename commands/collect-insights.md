@@ -44,7 +44,7 @@ Note the session ID. If no session, Empirica writes will be skipped (fail-soft).
 Read `.empirica/insights.jsonl` (at git root). Each line is a JSON object:
 
 ```json
-{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "text", "category": "insight"}}
+{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "text"}}
 ```
 
 Parse each line. Collect all entries that have NOT already been synced (check for `"synced": true` field — unsynced entries lack this field).
@@ -66,7 +66,6 @@ Combine disk insights (Step 3) and conversation insights (Step 4) into a single 
 
 - **title**: Short descriptive title (extract from finding text or ★ Insight header)
 - **description**: Full insight text
-- **category**: From the JSON `category` field, or "insight" as default
 - **severity**: From the JSON if present, or "info" as default
 - **timestamp**: From the JSON `timestamp`, or current time for conversation-only insights
 - **confidence**: From the JSON if present, or 0.7 as default for unassessed insights
@@ -90,7 +89,7 @@ mkdir -p "$VAULT_PATH/Engineering/Findings"
    - Replace template placeholders:
      - `{{date}}`: Today's date (YYYY-MM-DD)
      - `{{project}}`: Project name
-     - `{{category}}`: From insight data
+     - `{{category}}`: "insight" (default for all insights collected here)
      - `{{severity}}`: From insight data
      - `{{title}}`: Insight title
      - `{{description}}`: Full insight text
@@ -113,8 +112,7 @@ If an active Empirica session exists (Step 2):
 
 For each insight, call `mcp__empirica__finding_log` with:
 - `session_id`: Active session ID
-- `finding`: The insight text
-- `category`: "insight"
+- `finding`: The insight text (prefix with "[Insight] " to distinguish from other findings)
 
 If no session exists, log: "Empirica write skipped (no active session). Vault-only mode."
 
