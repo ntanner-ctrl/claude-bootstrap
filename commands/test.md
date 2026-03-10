@@ -6,6 +6,16 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "Those test failures are pre-existing" | Prove it. Run the tests on the base branch. If you can't, you can't claim they're pre-existing. |
+| "The change is too small to break anything" | The smallest changes cause the most surprising failures. A one-character typo can break a build. |
+| "I'll write tests after" | "After" never comes. Tests written alongside code catch design issues; tests written after just verify the (possibly wrong) implementation. |
+
 # Test
 
 Guided testing workflow that ensures tests are derived from specification, not implementation.

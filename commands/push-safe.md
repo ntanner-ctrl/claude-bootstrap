@@ -2,6 +2,16 @@
 description: STOP. You MUST run this before ANY git push. Catches secrets, large files, and unsafe patterns before they hit the remote.
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "I already checked the diff" | You checked your *intent*. Push-safe checks the *reality* — secrets, large files, force-push targets. These are different checks. |
+| "It's just a small change" | Small changes to CI/CD, auth, or config can have outsized blast radius. Size ≠ risk. |
+| "We're in a hurry" | Pushing a secret to a public repo creates an emergency that dwarfs any time saved by skipping checks. |
+
 # Safe Push with Secret Scanning
 
 Stage, commit, and push with comprehensive safety checks.

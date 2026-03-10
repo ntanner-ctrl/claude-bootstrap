@@ -260,6 +260,9 @@ echo "  ~/.claude/hooks/insight-nudge.sh          - Throttled reminder to captur
 echo "  ~/.claude/hooks/session-end-empirica.sh  - Close Empirica session on exit"
 echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
 echo "  ~/.claude/hooks/session-end-vault.sh  - Safety-net vault export on session end"
+echo "  ~/.claude/hooks/compaction-guardian.sh - Gate tool calls when context nears compaction"
+echo "  ~/.claude/hooks/failure-escalation.sh  - Track consecutive test/build failures"
+echo "  ~/.claude/hooks/session-end-cleanup.sh - Clean up signal files on session end"
 echo "  ~/.claude/hooks/vault-config.sh       - Shared vault configuration (sourced by vault hooks)"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
@@ -288,6 +291,12 @@ echo '      "matcher": "*",'
 echo '      "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify.sh" }]'
 echo '    }],'
 echo '    "PostToolUse": [{'
+echo '      "matcher": "Bash",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/empirica-commit-reminder.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/failure-escalation.sh" }'
+echo '      ]'
+echo '    }, {'
 echo '      "matcher": "Edit|Write",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/after-edit.sh" },'
@@ -309,6 +318,11 @@ echo '        { "type": "command", "command": "~/.claude/hooks/protect-claude-md
 echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }'
 echo '      ]'
 echo '    }, {'
+echo '      "matcher": "*",'
+echo '      "hooks": ['
+echo '        { "type": "command", "command": "~/.claude/hooks/compaction-guardian.sh" }'
+echo '      ]'
+echo '    }, {'
 echo '      "matcher": "mcp__empirica__session_create",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/empirica-session-guard.sh" }'
@@ -318,7 +332,8 @@ echo '    "SessionEnd": [{'
 echo '      "matcher": "",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/session-end-empirica.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/session-end-vault.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/session-end-vault.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/session-end-cleanup.sh" }'
 echo '      ]'
 echo '    }]'
 echo '  }'

@@ -55,6 +55,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/empirica-commit-reminder.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/failure-escalation.sh"
           }
         ]
       },
@@ -123,6 +127,15 @@
         ]
       },
       {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/compaction-guardian.sh"
+          }
+        ]
+      },
+      {
         "matcher": "mcp__empirica__session_create",
         "hooks": [
           {
@@ -143,6 +156,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/session-end-vault.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-end-cleanup.sh"
           }
         ]
       }

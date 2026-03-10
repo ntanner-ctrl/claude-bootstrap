@@ -1,0 +1,135 @@
+{
+  "blueprint": "toolkit-hardening",
+  "blueprint_version": 2,
+  "revision": 1,
+  "current_stage": "specify",
+  "stages_complete": [
+    "describe",
+    "specify"
+  ],
+  "challenge_mode": "debate",
+  "path": "full",
+  "empirica_session_id": null,
+  "component_count": 6,
+  "components": [
+    {
+      "id": 1,
+      "name": "Compaction Guardian",
+      "phase": "A",
+      "type": "new_hook",
+      "files": [
+        "hooks/statusline.sh",
+        "hooks/compaction-guardian.sh",
+        "commands/checkpoint.md",
+        "settings-example.json",
+        "install.sh"
+      ],
+      "effort": "medium",
+      "depends_on": []
+    },
+    {
+      "id": 2,
+      "name": "Ambiguity Gate",
+      "phase": "B",
+      "type": "command_modification",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "effort": "small",
+      "depends_on": []
+    },
+    {
+      "id": 3,
+      "name": "Cognitive Trap Tables",
+      "phase": "A",
+      "type": "command_augmentation",
+      "files": [
+        "commands/blueprint.md",
+        "commands/push-safe.md",
+        "commands/test.md",
+        "commands/quality-gate.md"
+      ],
+      "effort": "small",
+      "depends_on": []
+    },
+    {
+      "id": 4,
+      "name": "Failure Counter Escalation",
+      "phase": "C",
+      "type": "new_hook",
+      "files": [
+        "hooks/failure-escalation.sh",
+        "settings-example.json",
+        "install.sh"
+      ],
+      "effort": "medium",
+      "depends_on": []
+    },
+    {
+      "id": 5,
+      "name": "Wonder/Reflect Phase",
+      "phase": "B",
+      "type": "command_modification",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "effort": "small",
+      "depends_on": [
+        2
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Knowledge Maturation Cycle",
+      "phase": "D",
+      "type": "new_command",
+      "files": [
+        "commands/promote-finding.md",
+        "commands/templates/vault-notes/promotion.md"
+      ],
+      "effort": "medium",
+      "depends_on": [
+        1,
+        5
+      ]
+    }
+  ],
+  "overlaps": [
+    {
+      "components": [
+        1,
+        5
+      ],
+      "surface": "checkpoint enrichment"
+    },
+    {
+      "components": [
+        3,
+        4
+      ],
+      "surface": "Claude behavioral correction"
+    },
+    {
+      "components": [
+        2,
+        5
+      ],
+      "surface": "blueprint stage modification"
+    },
+    {
+      "components": [
+        1,
+        5,
+        6
+      ],
+      "surface": "Empirica data flow chain"
+    }
+  ],
+  "critical_path": [
+    1,
+    2,
+    5,
+    6
+  ],
+  "spec_digest": "6-component spec with subagent lifeboat, 65/75% thresholds, ambiguity scoring, trap tables, failure counters, reflection prompts, maturation tiers with capacity-gated promotion"
+}

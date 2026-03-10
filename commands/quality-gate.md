@@ -6,6 +6,15 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "The code works, that's enough" | Working code that's unmaintainable, insecure, or untested creates technical debt that compounds. |
+| "We already reviewed in the challenge stage" | Challenge reviewed the *spec*. Quality gate reviews the *implementation*. Specs can be correct while implementations diverge. |
+
 # Quality Gate
 
 Score implementation against a structured rubric. Work below threshold is BLOCKED from completion.

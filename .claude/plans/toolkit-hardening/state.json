@@ -1,0 +1,85 @@
+{
+  "blueprint_version": 2,
+  "name": "toolkit-hardening",
+  "description": "Six toolkit improvements: compaction guardian, ambiguity gate, cognitive trap tables, failure counter escalation, wonder/reflect phase, knowledge maturation cycle",
+  "challenge_mode": "debate",
+  "current_stage": "complete",
+  "execution_preference": "auto",
+  "revision": 2,
+  "regressions": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "debate_critical_findings",
+      "reason": "Guardian livelock: matcher:* blocks checkpoint dispatch (F2/M1). Also: failure counter catchall too broad (F3), promote-finding self-referential (F5), recent-checkpoint detection undefined (M3), plus 7 medium/low findings.",
+      "timestamp": "2026-03-10T00:00:00Z",
+      "revision": 2
+    }
+  ],
+  "regression_count": 1,
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "empirica_session_id": null,
+  "empirica_preflight_complete": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "confidence": 0.8,
+      "confidence_note": "Clear requirements from user research session, specific overlaps identified"
+    },
+    "specify": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "Revision 2: All 15 debate findings addressed. Revision 3 micro-patches: subagent PPID pass-through, stdin read pattern, 4 low-priority clarifications."
+    },
+    "challenge": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "Two debate rounds. Round 1: 2 critical, regressed. Round 2: 0 critical, 2 medium (both fixed), 5 low (4 fixed, 1 accepted). PASS_WITH_NOTES.",
+      "debate_progress": {
+        "rounds_completed": [
+          "challenger-r1",
+          "defender-r1",
+          "judge-r1",
+          "challenger-r2",
+          "defender-judge-r2"
+        ],
+        "current_round": "complete"
+      }
+    },
+    "edge_cases": {
+      "status": "complete",
+      "confidence": 0.9,
+      "confidence_note": "PASS_WITH_NOTES: 0 critical, 2 medium (both fixed in spec), 5 low (4 fixed, 1 accepted). All boundary categories covered. Known limitations documented.",
+      "debate_progress": {
+        "rounds_completed": [
+          "boundary-explorer",
+          "stress-tester",
+          "synthesizer"
+        ],
+        "current_round": "complete"
+      }
+    },
+    "premortem": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "4 NEW findings (2 medium, 2 low), 2 COVERED. No critical. PM1 (heartbeat), PM2 (disable docs), PM3 (cleanup gap) patched into spec. PM5 (metrics) deferred as future enhancement."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Thorough coverage from 2 debate rounds + boundary analysis + pre-mortem. User confirmed sufficient."
+    },
+    "test": {
+      "status": "complete",
+      "confidence": 0.85,
+      "confidence_note": "54 spec-blind tests across 6 components + 4 contract tests + 4 failure mode tests. All derived from acceptance criteria. Anti-tautology review passed."
+    },
+    "execute": {
+      "status": "complete",
+      "confidence": 0.9,
+      "confidence_note": "All 6 components implemented. 3 parallel agents + integration pass. Structural tests pass. Behavioral tests pass (guardian block/allow, failure escalation ladder, false positive prevention). Enforcement lint clean."
+    }
+  },
+  "created": "2026-03-10T00:00:00Z"
+}

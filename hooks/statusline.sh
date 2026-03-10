@@ -212,5 +212,31 @@ if [ "$RATE_SESSION" != "-1" ]; then
     L2+=" ${DIM}│${RST} ${DIM}sub:${RST} ${RATE_CLR}${RATE_SESSION}%${RST}"
 fi
 
+# --- Compaction Guardian Signal Files ---
+# Determine session-scoped path
+if [ "$PPID" -eq 1 ]; then
+    SIG_SUFFIX="$USER-$(pwd | md5sum | cut -c1-8)"
+else
+    SIG_SUFFIX="$PPID"
+fi
+
+if [ "$CTX_INT" -ge 75 ]; then
+    echo "$CTX_INT" > "/tmp/.claude-ctx-critical-${SIG_SUFFIX}"
+    echo "$(date +%s)" >> "/tmp/.claude-ctx-critical-${SIG_SUFFIX}"
+    # Also write warning if not already there
+    if [ ! -f "/tmp/.claude-ctx-warning-${SIG_SUFFIX}" ]; then
+        echo "$CTX_INT" > "/tmp/.claude-ctx-warning-${SIG_SUFFIX}"
+        echo "$(date +%s)" >> "/tmp/.claude-ctx-warning-${SIG_SUFFIX}"
+    fi
+elif [ "$CTX_INT" -ge 65 ]; then
+    echo "$CTX_INT" > "/tmp/.claude-ctx-warning-${SIG_SUFFIX}"
+    echo "$(date +%s)" >> "/tmp/.claude-ctx-warning-${SIG_SUFFIX}"
+    # Remove critical if context dropped below 75
+    rm -f "/tmp/.claude-ctx-critical-${SIG_SUFFIX}" 2>/dev/null
+elif [ "$CTX_INT" -lt 75 ]; then
+    # Cleanup when context drops below thresholds
+    rm -f "/tmp/.claude-ctx-warning-${SIG_SUFFIX}" "/tmp/.claude-ctx-critical-${SIG_SUFFIX}" 2>/dev/null
+fi
+
 echo -e "$L1"
 echo -e "$L2"

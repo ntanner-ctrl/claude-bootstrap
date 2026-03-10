@@ -12,6 +12,17 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "This is too simple for a blueprint" | Simple tasks have the highest confident-mistake rate. The describe stage takes 2 minutes. The mistake it prevents takes 20. |
+| "I'll just do it and fix issues later" | Fixing is always more expensive than preventing. You're trading 5 minutes of planning for 30 minutes of debugging. |
+| "The user seems to want speed" | The user wants *correct results* quickly. A fast wrong answer wastes more time than a slightly slower right one. |
+| "I already explored this in conversation" | Conversation exploration ≠ structured decomposition. The blueprint forces you to make implicit assumptions explicit. |
+
 # Blueprint
 
 Guided planning workflow that walks through all stages. Use this for full planning discipline, or when you want the toolkit to guide you through the right steps.
@@ -205,6 +216,85 @@ Each stage invokes its corresponding command or inline logic:
 | 5. Review | `/gpt-review` | Yes | Always optional |
 | 6. Test | `/spec-to-tests` | Yes | Light path |
 | 7. Execute | Exit wizard | No | Never |
+
+### Ambiguity Gate (Between Stage 1 → Stage 2)
+
+After Stage 1 (Describe) completes and before Stage 2 (Specify) begins, run a clarity check on the description output. This front-loads ambiguity detection before it becomes baked into the spec.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  AMBIGUITY CHECK │ Before proceeding to Specify
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Scoring the description across three dimensions:
+
+  Goal Clarity       [?/5] — Is the desired outcome unambiguous?
+                              Can two people read this and agree
+                              on what "done" looks like?
+
+  Constraint Clarity  [?/5] — Are boundaries explicit?
+                              What's in scope vs out of scope?
+                              What can't change?
+
+  Success Criteria    [?/5] — Are acceptance criteria testable?
+                              Could you write a test for "done"
+                              without asking clarifying questions?
+
+  Composite Score: [weighted average] / 5.0
+    (Goal: 40%, Constraint: 30%, Success: 30%)
+
+  Threshold: >= 3.5 to proceed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### Gate Behavior
+
+| Score | Action |
+|-------|--------|
+| >= 3.5 | Pass. Proceed to Specify. |
+| 2.5 - 3.4 | Warn. Present specific ambiguities. Ask user to clarify OR override with reason. |
+| < 2.5 | Block. "This description isn't ready for specification. Here's what's unclear: [list]." User must clarify or explicitly override. |
+
+**Override mechanism:** User can always say "proceed anyway" — logged in `state.json` as `ambiguity_gate` object with scores, composite, result, override flag, and override_reason.
+
+#### Scoring Prompt (Internal)
+
+Claude scores itself using this internal prompt (not shown to user):
+
+```
+Review the describe stage output and score each dimension 1-5:
+
+GOAL CLARITY (1-5):
+  1 = Vague aspiration. Example: "Make auth better"
+  2 = General direction but ambiguous outcome. Example: "Add token refresh"
+  3 = Clear outcome, some interpretation needed. Example: "Add JWT refresh tokens so sessions don't expire during use"
+  4 = Specific outcome, minimal ambiguity. Example: "Add JWT refresh token rotation with configurable expiry"
+  5 = Unambiguous, two people would agree on "done". Example: "Add JWT refresh token rotation: 7-day expiry, sliding window, revocation on password change"
+
+CONSTRAINT CLARITY (1-5):
+  1 = No constraints mentioned. Example: (nothing about scope, compatibility, or limits)
+  2 = Implied constraints only. Example: "Should work with existing auth" (what existing auth?)
+  3 = Some explicit constraints, gaps remain. Example: "Must work with our Express middleware. No breaking API changes."
+  4 = Clear boundaries, scope defined. Example: "In scope: token rotation. Out of scope: SSO, OAuth providers. Must maintain backwards compat with v2 API."
+  5 = Explicit in/out scope, unchangeables named. Example: Full scope table with explicit "will not change" list.
+
+SUCCESS CRITERIA (1-5):
+  1 = No criteria. Example: "It should work"
+  2 = Subjective criteria. Example: "Auth should feel seamless"
+  3 = Some testable criteria, some subjective. Example: "Tokens refresh without user action; auth feels smooth"
+  4 = Mostly testable criteria. Example: "Refresh token issued on login; auto-refreshes when access token < 5min from expiry; refresh token rotated on each use"
+  5 = All criteria are testable assertions. Example: Each criterion maps to a specific test case with inputs and expected outputs.
+
+For each dimension, cite the specific text from the describe output that supports your score.
+If you can't find supporting text, that IS the score evidence (it's missing).
+IMPORTANT: Compare the describe output to the calibration examples above. Your score should match the example level that most closely resembles the text.
+```
+
+#### Light Path Behavior
+
+On Light path, run a **shortened gate**: score Goal Clarity only (the single most impactful dimension). If Goal Clarity < 3, warn. This catches "make it better" descriptions without the full 3-dimension overhead.
+
+**Known gap:** Constraint Clarity and Success Criteria are intentionally not checked on Light path.
 
 ### Path-Based Stage Selection
 
@@ -1305,6 +1395,90 @@ Skip recorded. Proceeding to Stage [N+1].
 ```
 
 Skips are logged in `state.json` and visible in `/overrides`.
+
+---
+
+## Post-Implementation Reflection (Stage 7 Completion)
+
+When Stage 7 (Execute) is about to be marked complete, fire this reflection step inline. This is NOT a separate stage — it's part of Stage 7 completion.
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POST-IMPLEMENTATION REFLECTION │ [blueprint name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Implementation is complete. Before closing this blueprint,
+  capture what was learned.
+
+  WONDER — What surprised you?
+  1. What assumption from the spec turned out to be wrong?
+  2. What was harder than expected? What was easier?
+  3. What would you add to the spec if starting over?
+  4. Did any adversarial finding turn out to be more (or less)
+     important than rated?
+
+  REFLECT — What should change for next time?
+  1. Which spec sections were most useful during implementation?
+  2. Which were ignored or irrelevant?
+  3. What's one thing the blueprint process missed?
+  4. If a similar feature were planned tomorrow, what would you
+     tell the planner?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Reflection Output
+
+Written to `.claude/plans/[name]/reflect.md` with this structure:
+
+```markdown
+# Post-Implementation Reflection
+
+## Wonder (Surprises)
+
+### Assumptions Proven Wrong
+- [list]
+
+### Difficulty Calibration
+- Harder than expected: [list]
+- Easier than expected: [list]
+
+### Spec Gaps (would add if starting over)
+- [list]
+
+### Adversarial Finding Recalibration
+- [finding] (rated [severity]) was actually [higher/lower] because [reason]
+
+## Reflect (Process Improvements)
+
+### Most Useful Spec Sections
+- [list]
+
+### Least Useful Spec Sections
+- [list]
+
+### Blueprint Process Gap
+- [description]
+
+### Advice for Next Planner
+- [guidance]
+```
+
+### Reflection Export (Mandatory)
+
+After writing `reflect.md`, execute this export sequence (NOT optional):
+
+1. **Empirica (mandatory if session active):** For each finding in "Assumptions Proven Wrong" and "Spec Gaps", call `finding_log` with prefix "[Reflection]". Each discrete finding gets its own log entry. If Empirica session is not active, write findings to `.empirica/insights.jsonl` as fallback.
+
+2. **Vault (mandatory if vault available):** Export a summary finding to `Engineering/Findings/YYYY-MM-DD-reflect-[blueprint-name].md` using the finding template. ONE note per reflection (not per finding).
+
+3. **If both unavailable:** Write findings to `reflect.md` only and log a warning.
+
+### Skippability
+
+The reflection is prompted but skippable. When skipped: `"reflection": { "status": "skipped", "reason": "[user reason]" }` in state.json.
+
+On Light/Standard paths, it's suggested but brief. On Full path, the full prompt is shown.
 
 ---
 

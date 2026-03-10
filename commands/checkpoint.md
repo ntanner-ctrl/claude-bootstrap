@@ -49,6 +49,8 @@ fi
 
 ### Step 3: Write Checkpoint
 
+> **Atomic write requirement:** Checkpoint JSON MUST be written atomically: write to a temp file first (`checkpoint.json.tmp`), then rename to the final path. This prevents partial reads if the guardian or a subagent reads the checkpoint mid-write.
+
 Create JSON:
 ```json
 {
@@ -65,9 +67,36 @@ Create JSON:
     "active_plan_stage": "[N or null]",
     "active_tdd_phase": "[phase or null]",
     "files_in_progress": ["file1.ts", "file2.ts"]
+  },
+  "empirica": {
+    "session_id": "uuid or null",
+    "preflight_complete": true,
+    "last_finding_count": 5
+  },
+  "compaction_context": {
+    "triggered_by_guardian": true,
+    "context_percentage_at_checkpoint": 76,
+    "key_context": {
+      "current_task": "Implementing JWT refresh token rotation",
+      "blocking_question": "Whether to use sliding or fixed expiry windows",
+      "last_file_edited": "src/auth/refresh.ts",
+      "next_intended_action": "Write the token rotation middleware",
+      "confidence_caveat": "At 76% context — early conversation details may already be compressed"
+    }
   }
 }
 ```
+
+### Step 3.5: Write Guardian Signal (if triggered by guardian)
+
+If this checkpoint was triggered by the compaction guardian, write the completion signal:
+
+```bash
+# Write checkpoint-done signal for the guardian
+echo "$(date +%s)" > "/tmp/.claude-checkpoint-done-${GUARDIAN_SIG_SUFFIX}"
+```
+
+Where `GUARDIAN_SIG_SUFFIX` is the literal signal path provided by the guardian's block message.
 
 ### Step 4: Confirm
 
@@ -113,3 +142,5 @@ cat .claude/checkpoints/*.json | jq -s 'sort_by(.timestamp) | last'
 - Old checkpoints are NOT deleted (they're cheap and provide history)
 - The session-bootstrap hook only shows the LATEST checkpoint
 - Pair with `/dashboard` to see full active state
+- **`empirica` field:** Captures Empirica session state so a resumed session can reconnect to the same epistemic tracking. `session_id` is the active Empirica session UUID (or null if none). `preflight_complete` indicates whether preflight assessment was submitted. `last_finding_count` is the number of findings logged so far (helps the resumed session gauge how much was captured).
+- **`compaction_context` field:** Only populated when the checkpoint is triggered by the compaction guardian (context >= 75%). Contains `triggered_by_guardian` (boolean), `context_percentage_at_checkpoint` (integer), and `key_context` (object with `current_task`, `blocking_question`, `last_file_edited`, `next_intended_action`, and `confidence_caveat`). The `confidence_caveat` should note that high-context checkpoints may have lossy early-conversation recall.
