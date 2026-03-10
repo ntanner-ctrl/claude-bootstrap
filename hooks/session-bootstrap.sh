@@ -75,12 +75,14 @@ elif [ -x "${HOME}/.local/bin/empirica" ]; then
 fi
 
 if [ -n "$EMPIRICA_BIN" ]; then
+    # Always resolve git root (needed for project name even in global DB mode)
+    GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+
     # Resolve data dir: EMPIRICA_DATA_DIR takes priority (global DB mode),
     # then git root, then cwd fallback. Must match path_resolver.py priority.
     if [ -n "$EMPIRICA_DATA_DIR" ]; then
         EMPIRICA_ROOT="$EMPIRICA_DATA_DIR"
     else
-        GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
         EMPIRICA_ROOT="$GIT_ROOT/.empirica"
     fi
     ACTIVE_SESSION_FILE="$EMPIRICA_ROOT/active_session"
@@ -96,9 +98,40 @@ if [ -n "$EMPIRICA_BIN" ]; then
         fi
     fi
 
-    # Create new session via CLI
+    # Set resolver context before session-create.
+    # session-create internally calls get_active_project_path() which checks
+    # instance_projects/{instance_id}.json for the project path. Without this
+    # file, session-create fails with "Cannot resolve project path" after DB
+    # rebuilds or when resolver context files are stale/missing.
+    #
+    # We write the file directly rather than calling project-switch because
+    # project-switch writes to active_work.json (canonical) which
+    # get_active_project_path() doesn't check — it only reads instance-keyed files.
+    PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+    INSTANCE_ID="claude_bootstrap_hook"
+    if [ -n "$PROJECT_NAME" ] && [ -n "$GIT_ROOT" ]; then
+        # Ensure project is registered (idempotent)
+        "$EMPIRICA_BIN" project-create --name "$PROJECT_NAME" --output json 2>/dev/null || true
+
+        # Resolve project_id from workspace.db
+        PROJECT_ID=""
+        WORKSPACE_DB="${HOME}/.empirica/workspace/workspace.db"
+        if [ -f "$WORKSPACE_DB" ] && command -v sqlite3 &>/dev/null; then
+            PROJECT_ID=$(sqlite3 "$WORKSPACE_DB" \
+                "SELECT id FROM global_projects WHERE name='$PROJECT_NAME' LIMIT 1" 2>/dev/null)
+        fi
+
+        # Write instance_projects file for get_active_project_path()
+        if [ -n "$PROJECT_ID" ]; then
+            mkdir -p "${HOME}/.empirica/instance_projects"
+            echo "{\"project_path\": \"$GIT_ROOT\", \"project_id\": \"$PROJECT_ID\"}" \
+                > "${HOME}/.empirica/instance_projects/${INSTANCE_ID}.json"
+        fi
+    fi
+
+    # Create new session via CLI (with instance ID so it finds the resolver context)
     mkdir -p "$EMPIRICA_ROOT"
-    SESSION_OUTPUT=$("$EMPIRICA_BIN" session-create --ai-id claude-code --output json 2>/dev/null)
+    SESSION_OUTPUT=$(EMPIRICA_INSTANCE_ID=$INSTANCE_ID "$EMPIRICA_BIN" session-create --ai-id claude-code --output json 2>/dev/null)
     SESSION_EXIT=$?
 
     if [ $SESSION_EXIT -eq 0 ] && [ -n "$SESSION_OUTPUT" ]; then
@@ -115,13 +148,6 @@ if [ -n "$EMPIRICA_BIN" ]; then
             # Write active session file
             echo "$SESSION_ID" > "$ACTIVE_SESSION_FILE"
 
-            # Auto-register project if not already registered
-            # This stabilizes the project ID (prevents hash fragmentation across sessions)
-            PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
-            if [ -n "$PROJECT_NAME" ]; then
-                "$EMPIRICA_BIN" project-create --name "$PROJECT_NAME" --output json 2>/dev/null || true
-            fi
-
             # Export session ID as environment variable for other hooks/commands
             if [ -n "$CLAUDE_ENV_FILE" ]; then
                 echo "export EMPIRICA_SESSION_ID=${SESSION_ID}" >> "$CLAUDE_ENV_FILE"
@@ -133,12 +159,17 @@ if [ -n "$EMPIRICA_BIN" ]; then
   Store session_id ${SESSION_ID} for use throughout this conversation.
   Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
         else
+            # Clear stale pointer so empirica-session-guard.sh doesn't deadlock
+            # (guard blocks MCP session_create when file exists, even if session is closed)
+            rm -f "$ACTIVE_SESSION_FILE" 2>/dev/null
             EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
   Session auto-creation failed (JSON parse error). You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
   Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
   Before ending the session, suggest /end to close Empirica with a proper postflight assessment."
         fi
     else
+        # Clear stale pointer so empirica-session-guard.sh doesn't deadlock
+        rm -f "$ACTIVE_SESSION_FILE" 2>/dev/null
         EMPIRICA_INSTRUCTION="\nEMPIRICA (epistemic tracking — REQUIRED):
   Session auto-creation failed (exit code: ${SESSION_EXIT}). You MUST call mcp__empirica__session_create (ai_id: \"claude-code\") as your FIRST action.
   Then call mcp__empirica__submit_preflight_assessment with honest self-assessment vectors.
