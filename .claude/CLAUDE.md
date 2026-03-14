@@ -4,12 +4,9 @@ Structured workflows, safety guardrails, and planning discipline for Claude Code
 
 ## Quick Reference
 
-- **Test install locally:** `bash install.sh` (copies to `~/.claude/`)
+- **Run tests:** `bash test.sh` (60 checks: syntax, counts, lint, JSON, install dry-run)
+- **Install locally:** `bash install.sh` (copies to `~/.claude/`)
 - **Verify install:** `ls ~/.claude/commands/blueprint.md`
-- **Count commands:** `ls commands/*.md | grep -v README | wc -l` (expect 49)
-- **Count agents:** `ls agents/*.md | wc -l` (expect 6)
-- **Count hooks:** `ls hooks/*.sh | wc -l` (expect 18)
-- **Lint enforcement:** `grep -rn "^description:.*\(consider\|might\|optionally\)" commands/` (expect 0 matches)
 - **Run from repo:** `cd /path/to/project && claude` then `/bootstrap-project`
 
 ## Architecture Overview
@@ -148,11 +145,24 @@ Stock elements go in `commands/templates/stock-{hooks,agents,commands}/`. These 
 
 ## Testing
 
-No automated test suite. Verification is manual:
-- **Install test:** `bash install.sh` and verify files copied correctly
-- **Command count:** `ls commands/*.md | grep -v README | wc -l` should match README claims
-- **Enforcement lint:** `grep -rn "^description:.*\(consider\|might\|optionally\)" commands/` should return nothing
+Run `bash test.sh` for automated verification (60 checks across 7 categories):
+
+```bash
+bash test.sh
+```
+
+**What it checks:**
+1. **Shell syntax** — `bash -n` on all hooks and install.sh
+2. **Shellcheck** — lint warnings (graceful skip if not installed)
+3. **File counts** — commands, agents, hooks, hookify rules, stock elements vs README claims
+4. **Enforcement lint** — no escape-hatch language in descriptions, required frontmatter
+5. **Hook conventions** — no `set -e`, no `eval`, `set +e` presence
+6. **JSON validation** — settings-example.json, plugin.json, plan state files
+7. **Install dry run** — runs install.sh in a temp `$HOME`, verifies all files land correctly
+
+**Manual verification** (not covered by test.sh):
 - **Hook test:** Start a Claude Code session in any project and verify hooks fire
+- **Remote install:** `curl -fsSL <tarball_url> | bash` path (test.sh only tests local install)
 
 ## Important Context
 
