@@ -308,7 +308,9 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
 
 ## Integration
 
-Also available (user-initiated): If `documentation-generator` plugin is installed, docs changed this session? Run `/update-docs` before closing.
+Also available (user-initiated):
+- If `documentation-generator` plugin is installed, docs changed this session? Run `/update-docs` before closing.
+- Anything go notably well or poorly this session? `/log-success` and `/log-error` capture the patterns before context is lost. Best done before `/end` while the conversation is still fresh.
 
 ## Notes
 

@@ -146,8 +146,10 @@ After debugging completes, consider:
 - Should there be a test for this? (prevents regression)
 - Is this a symptom of a deeper issue? (architectural)
 - Should this be documented? (if non-obvious)
+- **Was this a user error?** If the bug traces back to a bad prompt, stale context, or wrong harness choice — `/log-error` captures the lesson so the same mistake doesn't repeat
 - **Insight capture:** Root causes and fix patterns are high-value findings. Run `/collect-insights` to flush them to vault + Empirica — debugging insights prevent repeat failures across sessions
 
 Also available (user-initiated):
 - Same mistake recurring? If `hookify` plugin is installed, `/hookify` creates a prevention hook
 - Deep investigation needed? If `code-analysis` plugin is installed, `/analyze` or the `detective` agent traces code paths across the codebase
+- Bug was your fault? `/log-error` interviews you about what went wrong in your prompting/context/harnessing

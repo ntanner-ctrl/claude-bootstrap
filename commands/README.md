@@ -56,6 +56,13 @@ Complete reference for all Claude Sail commands.
 | `/security-checklist` | 8-point OWASP-style security audit |
 | `/debug` | Scientific debugging (OBSERVE-HYPOTHESIZE-PREDICT-EXPERIMENT-CONCLUDE) |
 
+### Learning
+
+| Command | One-liner |
+|---------|-----------|
+| `/log-error` | Structured self-interview after mistakes — identifies what YOU did wrong |
+| `/log-success` | Capture what went unusually well and why, so you can reproduce it |
+
 ### Execution
 
 | Command | One-liner |
@@ -685,6 +692,36 @@ Phases:
 **When to use:** Bug resists quick fixes, or you've already tried the obvious solution.
 
 ---
+
+## Learning Commands
+
+### `/log-error`
+
+**Structured self-interview after mistakes.** Identifies what YOU did wrong in prompting, context management, or harness configuration. Categorizes errors into a taxonomy (Prompt / Context / Harness / Meta), captures the exact triggering prompt, and suggests prevention strategies.
+
+```
+/log-error "Claude built the wrong component"
+/log-error
+```
+
+Includes pattern analysis — flags recurring error categories and suggests hookify rules or CLAUDE.md additions.
+
+---
+
+### `/log-success`
+
+**Capture what went right.** When something works unusually well, this interviews you about why — the prompt structure, context setup, or workflow discipline that made it click. Identifies reproducible patterns worth standardizing.
+
+```
+/log-success "Auth flow came together first try"
+/log-success
+```
+
+Cross-references with error logs to reveal your personal skill profile — strengths to lean on, weaknesses to address.
+
+---
+
+## Execution Commands
 
 ### `/push-safe`
 

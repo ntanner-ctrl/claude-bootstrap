@@ -65,7 +65,7 @@ echo ""
 bold "3. File Counts (vs README claims)"
 
 # Expected counts from README.md
-CMD_EXPECTED=49
+CMD_EXPECTED=51
 AGENT_EXPECTED=6
 HOOK_EXPECTED=18
 HOOKIFY_EXPECTED=7
