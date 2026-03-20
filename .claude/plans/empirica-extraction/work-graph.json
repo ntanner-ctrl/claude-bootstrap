@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "blueprint": "empirica-extraction",
+  "generated_at": "2026-03-19T11:35:00Z",
+  "revision": 2,
+  "units": {
+    "schema-init": {
+      "id": 1,
+      "name": "JSON schema + init script",
+      "depends_on": [],
+      "files": [
+        "scripts/epistemic-init.sh"
+      ],
+      "complexity": "low"
+    },
+    "calibration-compute": {
+      "id": 2,
+      "name": "Calibration computation (rolling avg, atomic writes, jq)",
+      "depends_on": [
+        "schema-init"
+      ],
+      "files": [
+        "scripts/epistemic-compute.sh"
+      ],
+      "complexity": "medium"
+    },
+    "feedback-templates": {
+      "id": "3a",
+      "name": "Behavioral feedback templates (priority 5 + catch-all)",
+      "depends_on": [
+        "calibration-compute"
+      ],
+      "files": [],
+      "complexity": "medium",
+      "note": "Templates embedded in feedback generation script"
+    },
+    "feedback-logic": {
+      "id": "3b",
+      "name": "Feedback generation logic",
+      "depends_on": [
+        "calibration-compute",
+        "feedback-templates"
+      ],
+      "files": [
+        "scripts/epistemic-feedback.sh"
+      ],
+      "complexity": "medium"
+    },
+    "hook-sessionstart": {
+      "id": 4,
+      "name": "SessionStart hook (calibration injection, timeout, stale marker)",
+      "depends_on": [
+        "schema-init",
+        "calibration-compute",
+        "feedback-logic"
+      ],
+      "files": [
+        "hooks/epistemic-preflight.sh"
+      ],
+      "complexity": "medium"
+    },
+    "cmd-preflight": {
+      "id": "5a",
+      "name": "/epistemic-preflight slash command (vector capture)",
+      "depends_on": [
+        "schema-init",
+        "calibration-compute"
+      ],
+      "files": [
+        "commands/epistemic-preflight.md"
+      ],
+      "complexity": "medium"
+    },
+    "cmd-postflight": {
+      "id": "5b",
+      "name": "/epistemic-postflight slash command (deltas, calibration update)",
+      "depends_on": [
+        "schema-init",
+        "calibration-compute",
+        "feedback-logic",
+        "cmd-preflight"
+      ],
+      "files": [
+        "commands/epistemic-postflight.md"
+      ],
+      "complexity": "high"
+    },
+    "hook-sessionend": {
+      "id": "5c",
+      "name": "SessionEnd hook + /end integration",
+      "depends_on": [
+        "cmd-postflight"
+      ],
+      "files": [
+        "hooks/epistemic-postflight.sh"
+      ],
+      "complexity": "medium"
+    },
+    "claude-md": {
+      "id": 6,
+      "name": "CLAUDE.md instruction updates",
+      "depends_on": [
+        "cmd-preflight",
+        "cmd-postflight"
+      ],
+      "files": [],
+      "complexity": "low"
+    },
+    "migration": {
+      "id": 7,
+      "name": "Migration script (verify schema, JSONL fallback)",
+      "depends_on": [
+        "schema-init"
+      ],
+      "files": [
+        "scripts/migrate-empirica.sh"
+      ],
+      "complexity": "medium"
+    },
+    "smoke-test": {
+      "id": "8a",
+      "name": "Smoke test script",
+      "depends_on": [
+        "cmd-preflight",
+        "cmd-postflight",
+        "hook-sessionstart",
+        "hook-sessionend"
+      ],
+      "files": [
+        "scripts/epistemic-smoke-test.sh"
+      ],
+      "complexity": "low"
+    },
+    "deprecation": {
+      "id": 8,
+      "name": "Deprecate Empirica — /end transition FIRST, then MCP removal",
+      "depends_on": [
+        "hook-sessionstart",
+        "hook-sessionend",
+        "smoke-test"
+      ],
+      "files": [],
+      "complexity": "medium",
+      "note": "CRITICAL ORDERING: update /end before removing Empirica MCP [F16]"
+    },
+    "tests": {
+      "id": 9,
+      "name": "test.sh updates",
+      "depends_on": [
+        "hook-sessionstart",
+        "hook-sessionend",
+        "deprecation"
+      ],
+      "files": [
+        "test.sh"
+      ],
+      "complexity": "low"
+    },
+    "install": {
+      "id": 10,
+      "name": "install.sh + settings-example.json updates",
+      "depends_on": [
+        "hook-sessionstart",
+        "hook-sessionend",
+        "cmd-preflight",
+        "cmd-postflight"
+      ],
+      "files": [
+        "install.sh",
+        "settings-example.json"
+      ],
+      "complexity": "low"
+    }
+  },
+  "critical_path": [
+    "schema-init",
+    "calibration-compute",
+    "feedback-templates",
+    "feedback-logic",
+    "cmd-preflight",
+    "cmd-postflight",
+    "hook-sessionend"
+  ],
+  "parallelizable_groups": [
+    {
+      "after": "schema-init",
+      "parallel": [
+        "calibration-compute",
+        "migration"
+      ]
+    },
+    {
+      "after": "feedback-logic",
+      "parallel": [
+        "hook-sessionstart",
+        "cmd-preflight"
+      ]
+    },
+    {
+      "after": "hook-sessionend",
+      "parallel": [
+        "deprecation",
+        "claude-md",
+        "tests",
+        "install"
+      ]
+    }
+  ],
+  "max_width": 4,
+  "critical_path_length": 7
+}

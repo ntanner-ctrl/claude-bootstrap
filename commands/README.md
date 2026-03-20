@@ -70,7 +70,7 @@ Complete reference for all Claude Sail commands.
 | `/dispatch` | Single-task subagent dispatch with fresh context and optional review lenses |
 | `/delegate` | Multi-task delegation with orchestration, lenses, and worktree isolation |
 | `/checkpoint` | Manual context-save for session continuity |
-| `/end` | Graceful session close with Empirica postflight and vault export |
+| `/end` | Graceful session close with epistemic postflight and vault export |
 | `/push-safe` | Safe git push with secret scanning |
 
 ### Vault Integration
@@ -79,7 +79,7 @@ Complete reference for all Claude Sail commands.
 |---------|-----------|
 | `/vault-save` | Capture knowledge, ideas, or findings to Obsidian vault |
 | `/vault-query` | Search vault for past decisions, patterns, findings |
-| `/collect-insights` | Flush pending insights to Obsidian vault and Empirica |
+| `/collect-insights` | Flush pending insights to Obsidian vault and epistemic tracking |
 | `/vault-curate` | Interactive multi-stage vault triage (inventory, health, triage, synthesis, prune, report) |
 | `/promote-finding` | Promote a recurring finding to a CLAUDE.md rule (capacity checking) |
 | `/review-findings` | DEPRECATED — use `/vault-curate --quick --section findings` |
@@ -532,14 +532,14 @@ Location: `.claude/plans/[name]/checkpoints/` (if blueprint active) or `.claude/
 
 ### `/end`
 
-**Graceful session close.** Runs Empirica postflight assessment and vault export while Claude is still in the loop, then prompts the user to `/exit`.
+**Graceful session close.** Runs epistemic postflight assessment and vault export while Claude is still in the loop, then prompts the user to `/exit`.
 
 ```
 /end
 ```
 
 Steps:
-1. Reads active Empirica session from `.empirica/active_session`
+1. Reads active epistemic session from `~/.claude/.current-session`
 2. Claude self-assesses current epistemic state (13 vectors)
 3. Submits postflight assessment (captures learning delta)
 4. Exports session artifacts to Obsidian vault (decisions, findings, blueprints, session summary)

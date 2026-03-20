@@ -86,28 +86,22 @@ fi
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `session-sail.sh` | SessionStart | Inject command awareness, auto-create Empirica session, and active work state |
+| `session-sail.sh` | SessionStart | Inject command awareness and active work state |
 | `worktree-cleanup.sh` | SessionStart | Clean orphaned worktrees |
+| `epistemic-preflight.sh` | SessionStart | Inject calibration context and create session marker |
 | `dangerous-commands.sh` | PreToolUse (Bash) | Block catastrophic commands |
 | `secret-scanner.sh` | PreToolUse (Bash) | Scan for secrets before commits |
 | `protect-claude-md.sh` | PreToolUse (Edit\|Write) | Block CLAUDE.md edits (approval file bypass for /bootstrap-project) |
 | `tdd-guardian.sh` | PreToolUse (Edit\|Write) | Block impl edits during TDD RED phase |
-| `empirica-session-guard.sh` | PreToolUse (mcp__empirica__session_create) | Block duplicate Empirica sessions (redirect to preflight) |
 | `after-edit.sh` | PostToolUse (Edit\|Write) | Auto-format files after edits |
 | `cfn-lint-check.sh` | PostToolUse (Edit\|Write) | Auto-lint CloudFormation templates (fail-open) |
 | `state-index-update.sh` | PostToolUse (Edit\|Write) | Maintain active work state index |
-| `blueprint-stage-gate.sh` | PostToolUse (Edit\|Write) | Check Empirica data before stage transitions (advisory) |
+| `blueprint-stage-gate.sh` | PostToolUse (Edit\|Write) | Check epistemic data before stage transitions |
 | `statusline.sh` | StatusLine | Model, cost, context, active blueprint/TDD state |
 | `notify.sh` | Notification | Desktop alerts |
-| `empirica-commit-reminder.sh` | PostToolUse (Bash) | Remind to log findings via Empirica after successful commits |
-| `empirica-insight-capture.sh` | PostToolUse (mcp__empirica__finding_log\|mistake_log\|deadend_log) | Mirror finding/mistake/deadend logs to disk as write-through safety net |
-| `empirica-preflight-capture.sh` | PostToolUse (mcp__empirica__submit_preflight_assessment) | Capture preflight vectors to `.empirica/preflight.jsonl` |
-| `empirica-postflight-capture.sh` | PostToolUse (mcp__empirica__submit_postflight_assessment) | Capture postflight vectors to `.empirica/postflight.jsonl` |
-| `insight-nudge.sh` | PostToolUse | Throttled reminder to capture insights (every 8 tool calls) |
-| `compaction-guardian.sh` | PreCompact | Protect critical context through compaction events |
 | `failure-escalation.sh` | PostToolUse | Track repeated failures and escalate when threshold exceeded |
 | `session-end-cleanup.sh` | SessionEnd | Clean up signal files and temporary state |
-| `session-end-empirica.sh` | SessionEnd | Attempt Empirica postflight if session wasn't closed with `/end` |
+| `epistemic-postflight.sh` | SessionEnd | Remind about unpaired sessions if postflight not submitted |
 | `session-end-vault.sh` | SessionEnd | Safety-net vault export when `/end` not used |
 
 ### Fail-Open Pattern
@@ -216,9 +210,6 @@ Add hooks to `~/.claude/settings.json`:
         { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },
         { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }
       ]},
-      { "matcher": "mcp__empirica__session_create", "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/empirica-session-guard.sh" }
-      ]}
     ],
     "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [
       { "type": "command", "command": "~/.claude/hooks/after-edit.sh" },

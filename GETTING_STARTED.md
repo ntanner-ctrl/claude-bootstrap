@@ -127,7 +127,7 @@ Global components are the toolkit itself. Project components are tailored artifa
 
 Sail works standalone, but it can integrate with other tools if you have them:
 
-- **Empirica** — Epistemic tracking (what you know, what you learned, what went wrong). If the Empirica MCP server is available, blueprint workflows automatically log findings and track confidence.
+- **Epistemic Tracking** — Self-assessment calibration (what you know, what you learned, calibration feedback). Built into Sail natively via `~/.claude/epistemic.json` — no external dependencies needed.
 - **Obsidian Vault** — Knowledge management. If an Obsidian MCP server is connected, Sail can read and write vault notes during planning and review stages.
 - **Plugins** — Claude Code plugins (like `pr-review-toolkit`, `security-pro`, `frontend`) automatically enhance review stages when detected. No configuration needed.
 

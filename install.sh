@@ -109,6 +109,15 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
         cp "${SCRIPT_DIR}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
     fi
 
+    # Epistemic tracking scripts (sourced by hooks at runtime)
+    if [ -d "${SCRIPT_DIR}/scripts" ]; then
+        mkdir -p "${CLAUDE_HOME}/scripts"
+        for script in epistemic-init.sh epistemic-compute.sh epistemic-feedback.sh; do
+            [ -f "${SCRIPT_DIR}/scripts/${script}" ] && cp "${SCRIPT_DIR}/scripts/${script}" "${CLAUDE_HOME}/scripts/"
+        done
+        chmod +x "${CLAUDE_HOME}/scripts/"*.sh 2>/dev/null || true
+    fi
+
     # Agents
     if [ -d "${SCRIPT_DIR}/agents" ]; then
         echo "  → agents ($(ls "${SCRIPT_DIR}/agents/"*.md 2>/dev/null | wc -l) files)"
@@ -208,6 +217,15 @@ else
         cp "${REPO_DIR}/hooks/HOOK-PATTERNS-RESEARCH.md" "${CLAUDE_HOME}/hooks/" 2>/dev/null || true
     fi
 
+    # Epistemic tracking scripts (sourced by hooks at runtime)
+    if [ -d "${REPO_DIR}/scripts" ]; then
+        mkdir -p "${CLAUDE_HOME}/scripts"
+        for script in epistemic-init.sh epistemic-compute.sh epistemic-feedback.sh; do
+            [ -f "${REPO_DIR}/scripts/${script}" ] && cp "${REPO_DIR}/scripts/${script}" "${CLAUDE_HOME}/scripts/"
+        done
+        chmod +x "${CLAUDE_HOME}/scripts/"*.sh 2>/dev/null || true
+    fi
+
     # Agents
     if [ -d "${REPO_DIR}/agents" ]; then
         echo "  → agents ($(ls "${REPO_DIR}/agents/"*.md 2>/dev/null | wc -l) files)"
@@ -291,12 +309,13 @@ echo "Adversarial review:"
 echo "  /devils-advocate       - Challenge assumptions"
 echo "  /gpt-review            - External model review"
 echo ""
-echo "Obsidian vault + Empirica integration:"
+echo "Obsidian vault + epistemic tracking:"
 echo "  /vault-curate            - Interactive vault triage (6-stage curation workflow)"
 echo "  /vault-save              - Capture knowledge to vault"
 echo "  /vault-query             - Search vault for past knowledge"
-echo "  /collect-insights        - Flush pending insights to vault + Empirica"
-echo "  /end                     - Session close (vault export + confidence writeback)"
+echo "  /epistemic-preflight     - Submit preflight self-assessment vectors"
+echo "  /epistemic-postflight    - Submit postflight vectors + calibration update"
+echo "  /end                     - Session close (vault export + epistemic postflight)"
 echo ""
 echo "Run /toolkit for the complete command reference."
 echo ""
@@ -309,12 +328,11 @@ echo "  ~/.claude/hooks/secret-scanner.sh     - Scan for secrets before commits"
 echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
 echo "  ~/.claude/hooks/tdd-guardian.sh       - Block impl edits during TDD RED phase"
 echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index"
-echo "  ~/.claude/hooks/blueprint-stage-gate.sh - Check Empirica data before blueprint stage transitions"
+echo "  ~/.claude/hooks/blueprint-stage-gate.sh - Check data before blueprint stage transitions"
 echo "  ~/.claude/hooks/cfn-lint-check.sh     - Auto-lint CloudFormation templates (fail-open)"
 echo "  ~/.claude/hooks/worktree-cleanup.sh   - Clean orphaned worktrees on start"
-echo "  ~/.claude/hooks/empirica-insight-capture.sh - Mirror Empirica logs to disk"
-echo "  ~/.claude/hooks/empirica-preflight-capture.sh - Capture preflight vectors to disk"
-echo "  ~/.claude/hooks/empirica-postflight-capture.sh - Capture postflight vectors to disk"
+echo "  ~/.claude/hooks/epistemic-preflight.sh  - Inject calibration context at session start"
+echo "  ~/.claude/hooks/epistemic-postflight.sh - Remind about unpaired sessions at session end"
 echo "  ~/.claude/hooks/statusline.sh         - Toolkit-aware status line display"
 echo "  ~/.claude/hooks/session-end-vault.sh  - Safety-net vault export on session end"
 echo "  ~/.claude/hooks/failure-escalation.sh  - Track consecutive test/build failures"
@@ -339,7 +357,8 @@ echo '    "SessionStart": [{'
 echo '      "matcher": "",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/session-sail.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/worktree-cleanup.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/worktree-cleanup.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/epistemic-preflight.sh" }'
 echo '      ]'
 echo '    }],'
 echo '    "Notification": [{'
@@ -359,21 +378,6 @@ echo '        { "type": "command", "command": "~/.claude/hooks/cfn-lint-check.sh
 echo '        { "type": "command", "command": "~/.claude/hooks/state-index-update.sh" },'
 echo '        { "type": "command", "command": "~/.claude/hooks/blueprint-stage-gate.sh" }'
 echo '      ]'
-echo '    }, {'
-echo '      "matcher": "mcp__empirica__finding_log|mcp__empirica__mistake_log|mcp__empirica__deadend_log",'
-echo '      "hooks": ['
-echo '        { "type": "command", "command": "~/.claude/hooks/empirica-insight-capture.sh" }'
-echo '      ]'
-echo '    }, {'
-echo '      "matcher": "mcp__empirica__submit_preflight_assessment",'
-echo '      "hooks": ['
-echo '        { "type": "command", "command": "~/.claude/hooks/empirica-preflight-capture.sh" }'
-echo '      ]'
-echo '    }, {'
-echo '      "matcher": "mcp__empirica__submit_postflight_assessment",'
-echo '      "hooks": ['
-echo '        { "type": "command", "command": "~/.claude/hooks/empirica-postflight-capture.sh" }'
-echo '      ]'
 echo '    }],'
 echo '    "PreToolUse": [{'
 echo '      "matcher": "Bash",'
@@ -392,7 +396,8 @@ echo '    "SessionEnd": [{'
 echo '      "matcher": "",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/session-end-vault.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/session-end-cleanup.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/session-end-cleanup.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/epistemic-postflight.sh" }'
 echo '      ]'
 echo '    }]'
 echo '  }'

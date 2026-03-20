@@ -114,9 +114,8 @@ Mark as **FAILURE** and skip to Category 3.
 ~/.claude/hooks/state-index-update.sh
 ~/.claude/hooks/blueprint-stage-gate.sh
 ~/.claude/hooks/failure-escalation.sh
-~/.claude/hooks/empirica-insight-capture.sh
-~/.claude/hooks/empirica-preflight-capture.sh
-~/.claude/hooks/empirica-postflight-capture.sh
+~/.claude/hooks/epistemic-preflight.sh
+~/.claude/hooks/epistemic-postflight.sh
 ~/.claude/hooks/dangerous-commands.sh
 ~/.claude/hooks/secret-scanner.sh
 ~/.claude/hooks/protect-claude-md.sh
@@ -137,7 +136,7 @@ Also verify the file exists and is executable:
 test -x ~/.claude/hooks/hook-filename.sh && echo "OK" || echo "NOT_EXECUTABLE"
 ```
 
-Tally: N wired out of 17 expected.
+Tally: N wired out of 16 expected.
 
 Report each missing or non-executable hook individually:
 ```
@@ -146,10 +145,10 @@ Report each missing or non-executable hook individually:
 ```
 
 Overall:
-- All 17 wired and executable → **PASS**
+- All 16 wired and executable → **PASS**
 - Any missing or non-executable → **FAILURE**
 
-Report: `N/17 expected hooks wired`
+Report: `N/16 expected hooks wired`
 
 If `--fix` is set and there are failures:
 
@@ -205,9 +204,15 @@ If `--fix` is set and there are warnings:
 
 This category NEVER affects overall status. Always labeled as "informational."
 
-### Empirica
+### Epistemic Tracking
 
-Attempt to call `mcp__empirica__system_status`. If the tool does not exist in the session, report "not available." If it succeeds, report "connected."
+Check if the native epistemic tracking system is available:
+
+```bash
+test -f "$HOME/.claude/hooks/epistemic-preflight.sh" && test -f "$HOME/.claude/epistemic.json" && echo "AVAILABLE" || echo "NOT_AVAILABLE"
+```
+
+If both files exist, report "connected." Otherwise, report "not available."
 
 ### Context7
 

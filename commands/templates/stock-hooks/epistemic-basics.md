@@ -1,6 +1,6 @@
 ---
-name: empirica-basics
-description: After significant code changes, suggests logging findings via Empirica if available
+name: epistemic-basics
+description: After significant code changes, suggests logging findings to the epistemic tracking system if available
 hooks:
   - event: PostToolUse
     tools:
@@ -8,7 +8,7 @@ hooks:
       - Edit
 ---
 
-# Empirica Finding Nudge
+# Epistemic Finding Nudge
 
 After making significant code changes, consider whether you learned something worth logging.
 
@@ -26,26 +26,24 @@ This nudge applies when you just made a change AND one of these is true:
 - Routine changes (formatting, renaming, adding boilerplate)
 - Changes where nothing surprising was learned
 - If you already logged this finding earlier in the session
-- If Empirica is not available (no MCP server, no active session) -- just move on
 
 ## How to Log
 
-If Empirica MCP tools are available and a session is active, use:
+Append to `.empirica/insights.jsonl` at the git root (or current directory):
 
-- **`finding_log`** -- For discoveries and insights
-  - Required: `session_id`, `finding`
-  - Optional: `impact`
-  - Prefix finding with context: "[Insight] ...", "[Architecture] ...", "[Gotcha] ..."
+```json
+{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Insight] your finding text here"}}
+```
 
-- **`mistake_log`** -- For mistakes and wrong assumptions
-  - Required: `session_id`, `mistake`, `why_wrong`, `prevention`
+For different types of observations:
 
-- **`deadend_log`** -- For approaches that were tried and abandoned
-  - Required: `session_id`, `approach`, `why_failed`
+- **Findings/discoveries** -- type: "finding", prefix with "[Insight] ...", "[Architecture] ...", "[Gotcha] ..."
+- **Mistakes and wrong assumptions** -- type: "mistake", include `mistake`, `why_wrong`, `prevention` fields
+- **Approaches tried and abandoned** -- type: "deadend", include `approach`, `why_failed` fields
 
-## If Empirica Is Not Available
+## If Logging Would Be Disruptive
 
-If the Empirica MCP server is not connected or no session is active, you have two options:
+You have two options:
 
 1. **Skip it** -- This is fine. The nudge is advisory.
 2. **Note it in CLAUDE.md** -- If the finding is important enough, add it to the project's CLAUDE.md under a relevant section so future sessions benefit.
@@ -64,4 +62,4 @@ If the Empirica MCP server is not connected or no session is active, you have tw
 
 ## Fail-Soft
 
-This hook is purely advisory. If logging would interrupt your flow or Empirica is unavailable, skip it entirely. The point is to build a habit of epistemic capture, not to create friction.
+This hook is purely advisory. If logging would interrupt your flow, skip it entirely. The point is to build a habit of epistemic capture, not to create friction.

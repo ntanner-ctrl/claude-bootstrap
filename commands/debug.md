@@ -147,7 +147,7 @@ After debugging completes, consider:
 - Is this a symptom of a deeper issue? (architectural)
 - Should this be documented? (if non-obvious)
 - **Was this a user error?** If the bug traces back to a bad prompt, stale context, or wrong harness choice — `/log-error` captures the lesson so the same mistake doesn't repeat
-- **Insight capture:** Root causes and fix patterns are high-value findings. Run `/collect-insights` to flush them to vault + Empirica — debugging insights prevent repeat failures across sessions
+- **Insight capture:** Root causes and fix patterns are high-value findings. Run `/collect-insights` to flush them to vault + epistemic tracking — debugging insights prevent repeat failures across sessions
 
 Also available (user-initiated):
 - Same mistake recurring? If `hookify` plugin is installed, `/hookify` creates a prevention hook

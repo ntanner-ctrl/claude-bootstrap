@@ -1,0 +1,110 @@
+{
+  "blueprint_version": 2,
+  "name": "empirica-extraction",
+  "created_at": "2026-03-19T11:00:00Z",
+  "current_stage": "test",
+  "challenge_mode": "family",
+  "execution_preference": "auto",
+  "revision": 3,
+  "regressions": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "F1_critical_posttooluse_trigger_undefined",
+      "reason": "PostToolUse hooks cannot capture prose output. 6 findings addressed in rev 2.",
+      "timestamp": "2026-03-19T11:32:00Z",
+      "revision": 2
+    }
+  ],
+  "regression_count": 1,
+  "empirica_session_id": "e371226d-b22d-417a-a161-5f6bd340e10b",
+  "empirica_preflight_complete": true,
+  "manifest_stale": true,
+  "work_graph_stale": false,
+  "ambiguity_gate": {
+    "goal_clarity": 4,
+    "constraint_clarity": 5,
+    "success_criteria": 4,
+    "composite": 4.3,
+    "result": "pass",
+    "override": false
+  },
+  "prior_art_gate": {
+    "status": "complete",
+    "recommendation": "build",
+    "override": false,
+    "run_at": "2026-03-19T11:05:00Z"
+  },
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "started_at": "2026-03-19T11:00:00Z",
+      "completed_at": "2026-03-19T11:05:00Z",
+      "confidence": 0.85,
+      "confidence_note": "Clear problem definition from extensive conversation + source code review + vault context"
+    },
+    "specify": {
+      "status": "complete",
+      "started_at": "2026-03-19T11:32:00Z",
+      "completed_at": "2026-03-19T12:12:00Z",
+      "confidence": 0.92,
+      "confidence_note": "Revision 3 addresses all 20 adversarial findings. Null-safe computation, strict session pairing, fail-loudly, ordered deployment, rollback, smoke test."
+    },
+    "challenge": {
+      "status": "complete",
+      "started_at": "2026-03-19T11:12:00Z",
+      "completed_at": "2026-03-19T11:30:00Z",
+      "confidence": 0.85,
+      "confidence_note": "Family mode converged. All 6 spec-change findings addressed in rev 2."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "started_at": "2026-03-19T11:40:00Z",
+      "completed_at": "2026-03-19T11:55:00Z",
+      "confidence": 0.90,
+      "confidence_note": "Family mode converged. 7 findings, all addressed in rev 3."
+    },
+    "premortem": {
+      "status": "complete",
+      "started_at": "2026-03-19T12:00:00Z",
+      "completed_at": "2026-03-19T12:10:00Z",
+      "confidence": 0.85,
+      "confidence_note": "5 operational findings, all addressed in rev 3. Critical /end ordering dependency caught."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Thorough family-mode adversarial review across 3 stages produced 20 findings. External review not needed."
+    },
+    "test": {
+      "status": "complete",
+      "started_at": "2026-03-19T12:15:00Z",
+      "completed_at": "2026-03-19T12:25:00Z",
+      "confidence": 0.88,
+      "confidence_note": "36 spec-blind tests across 9 categories. Cover all 10 success criteria, 4 preservation invariants, 9 failure modes. Anti-tautology review: zero red flags. Some tests (T6, T7, T8, T20) need invocation syntax adapted once commands are implemented."
+    },
+    "execute": {
+      "status": "in_progress",
+      "started_at": "2026-03-20T07:40:00Z",
+      "units_complete": [
+        "schema-init",
+        "calibration-compute",
+        "feedback-templates",
+        "feedback-logic",
+        "hook-sessionstart",
+        "cmd-preflight",
+        "cmd-postflight",
+        "hook-sessionend",
+        "smoke-test",
+        "tests",
+        "install",
+        "claude-md"
+      ],
+      "units_remaining": [
+        "migration",
+        "deprecation"
+      ],
+      "notes": "Core system implemented and tested (68/68 test.sh, 13/13 smoke test). Migration and deprecation are the remaining units."
+    }
+  }
+}

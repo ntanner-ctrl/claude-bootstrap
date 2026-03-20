@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "blueprint": "empirica-extraction",
+  "title": "Native Epistemic Tracking for claude-sail",
+  "revision": 1,
+  "current_stage": "specify",
+  "empirica_session_id": "e371226d-b22d-417a-a161-5f6bd340e10b",
+  "spec_digest": "Replace Empirica MCP with native epistemic tracking. 13 vectors, rolling-average calibration, behavioral feedback, JSON+Obsidian storage, bash-only, fail-open hooks.",
+  "work_units": 10,
+  "critical_path_length": 6,
+  "max_parallelism": 3,
+  "key_decisions": [
+    "Rolling averages now, Bayesian upgrade later (data too sparse for Bayesian to earn its keep)",
+    "Behavioral instructions paired with every numeric correction",
+    "Context-sensitive calibration — project familiarity affects warnings",
+    "Keep all 13 vectors — understand before pruning",
+    "Single JSON file, no SQLite, no fragmentation",
+    "jq for computation, awk as fallback"
+  ],
+  "risk_flags": [
+    "user-facing behavior change (feedback format affects Claude session behavior)"
+  ],
+  "artifacts": {
+    "describe": "describe.md",
+    "spec": "spec.md",
+    "prior_art": "prior-art.md",
+    "work_graph": "work-graph.json"
+  }
+}

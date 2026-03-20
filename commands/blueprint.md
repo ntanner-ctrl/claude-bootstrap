@@ -46,7 +46,7 @@ Stage 7: Execute     → Implementation (with manifest handoff + work graph)
 Cross-cutting:
   - Feedback loops (regression from any stage to any earlier stage, max 3)
   - HALT state with escape hatches (when regressions exhausted + low confidence)
-  - Confidence scoring (per-stage, Empirica-backed, advisory + trigger gated)
+  - Confidence scoring (per-stage, epistemic-tracking-backed, advisory + trigger gated)
   - Manifest (token-dense recovery, updated every stage, corruption recovery)
   - Work graph (parallelization, computed in Stage 2, checksum validated)
   - Spec diffs (revision tracking on regression)
@@ -124,7 +124,7 @@ If `.claude/plans/` directory doesn't exist, bootstrap:
 1. Create `.claude/plans/` directory
 2. Create blueprint subdirectory
 3. Initialize state.json with defaults
-4. Create Empirica session
+4. Initialize epistemic session (auto-created by `epistemic-preflight.sh` hook)
 5. Proceed to Stage 1
 
 Each step is idempotent — check existence before creating.
@@ -157,7 +157,7 @@ When resuming a blueprint that lacks `blueprint_version` in state.json:
     - Challenge mode: vanilla (original behavior)
     - Pre-mortem: skipped (pre-v2 plan)
     - Manifest: generated from existing artifacts
-    - Empirica: not connected (optional for migrated plans)
+    - Epistemic tracking: not connected (optional for migrated plans)
 
   Your existing artifacts and progress are unchanged.
   The blueprint will continue from its current stage.
@@ -166,7 +166,7 @@ When resuming a blueprint that lacks `blueprint_version` in state.json:
 ```
 
 Apply defaults: `blueprint_version: 2`, `challenge_mode: "vanilla"`, `execution_preference: "auto"`,
-`empirica_session_id: null`, `manifest_stale: false`, `work_graph_stale: false`,
+`epistemic_session_id: null`, `manifest_stale: false`, `work_graph_stale: false`,
 `premortem: { "status": "skipped", "skip_reason": "created before blueprint-v2" }`.
 
 Generate manifest.json from existing artifacts. Set `blueprint_version: 2`.
@@ -334,36 +334,36 @@ After Stage 1 (Describe), the triage result determines the path:
 
 ---
 
-## EMPIRICA ENFORCEMENT
+## EPISTEMIC TRACKING ENFORCEMENT
 
-When this workflow is active, you MUST call Empirica at each stage transition.
+When this workflow is active, you MUST track epistemic state at each stage transition.
 This is not optional. The confidence data feeds regression decisions.
-The blueprint-stage-gate hook will flag missing Empirica data.
+The blueprint-stage-gate hook will flag missing epistemic data.
 
 **Before starting Stage 1:**
-- Call `session_create` with ai_id "claude-code"
-- Call `submit_preflight_assessment` with honest self-assessment
-- Store session_id in state.json under `empirica_session_id`
-- Store session_id in manifest.json under `empirica_session_id` (dual storage)
-- Set `empirica_preflight_complete: true` in state.json
+- The `epistemic-preflight.sh` SessionStart hook auto-creates a session in `~/.claude/.current-session`
+- Run `/epistemic-preflight` for honest self-assessment
+- Store session_id in state.json under `epistemic_session_id`
+- Store session_id in manifest.json under `epistemic_session_id` (dual storage)
+- Set `epistemic_preflight_complete: true` in state.json
 
 **After completing each stage:**
-- Call `finding_log` with a summary of what was learned
+- Append a finding summary to `.empirica/insights.jsonl`
 - Record confidence score (0.0-1.0) in state.json under `stages.[name].confidence`
 - Include `confidence_note` explaining the score
 - Update manifest.json
 
 **On regression:**
-- Call `mistake_log` if the regression was caused by an error in judgment
-- Call `deadend_log` if an approach was tried and failed
+- Log the mistake to `.empirica/insights.jsonl` with type "mistake" if caused by error in judgment
+- Log the dead-end to `.empirica/insights.jsonl` with type "deadend" if an approach failed
 
 **After Stage 7 complete (or workflow abandoned):**
-- Call `submit_postflight_assessment`
+- Run `/epistemic-postflight`
 
 **Session recovery:** If session_id is missing on resume:
 1. Check state.json first, then manifest.json
-2. If both missing: create continuation session via `session_create`
-3. Log discontinuity: `"empirica_session_note": "Continuation session — original lost"`
+2. If both missing: read `~/.claude/.current-session` for the active session
+3. Log discontinuity: `"epistemic_session_note": "Continuation session — original lost"`
 
 ---
 
@@ -398,7 +398,7 @@ A three-round sequential critique chain using subagents. Each round's agent sees
 prior rounds' output, creating escalating context.
 
 **Timeout protection:** Each debate subagent has a 5-minute timeout. Each stage (3 rounds)
-has a 15-minute total timeout. On timeout: log a dead-end via Empirica, fall back to
+has a 15-minute total timeout. On timeout: log a dead-end to `.empirica/insights.jsonl`, fall back to
 vanilla mode for the remainder of that stage, preserve any completed rounds.
 
 **Cascading timeout behavior:** The stage timeout (15 min) is the outer envelope. If Round 1
@@ -510,7 +510,7 @@ The Judge/Synthesizer output is processed as follows:
    - Extract numbered list items via pattern matching (`F[0-9]+`, `[0-9]+.`, `-`)
    - Assign all findings: severity=medium, convergence=newly-identified
    - If no list items found, wrap entire output as single finding
-   - Log warning via Empirica `deadend_log`
+   - Log warning to `.empirica/insights.jsonl` as dead-end
    - Flag all extracted findings for human review
 
 The curated output goes to `adversarial.md` (canonical source of truth).
@@ -754,7 +754,7 @@ The Elder Council's JSON output is processed with the same fallback chain as deb
    - Search for "CONVERGED" or "CONTINUE" keywords in raw output
    - If found: use keyword as verdict, set confidence to 0.5
    - If neither found: treat as CONVERGED with confidence 0.4 and flag for human review
-   - Log warning via Empirica `deadend_log`
+   - Log warning to `.empirica/insights.jsonl` as dead-end
 
 #### Family Mode Loop Control
 
@@ -781,7 +781,7 @@ Round N:
 - Total mode timeout: 25 minutes (all rounds combined)
 
 **Timeout behavior:**
-- If a single agent exceeds 3 minutes: kill agent, log dead-end via Empirica, skip that
+- If a single agent exceeds 3 minutes: kill agent, log dead-end to `.empirica/insights.jsonl`, skip that
   agent's contribution, continue with remaining agents
 - If round timeout exceeded: complete current agent, skip remaining agents in round,
   force Elder verdict with available data
@@ -802,7 +802,7 @@ against the surviving position.
 
 **Empty carry-forward guard:** If Elder Council issues CONTINUE but provides empty or null
 `carry_forward`, treat as CONVERGED. A CONTINUE without specific context for the next round
-would cause children to repeat themselves. Log via Empirica.
+would cause children to repeat themselves. Log to `.empirica/insights.jsonl`.
 
 #### Family Mode Output
 
@@ -1212,9 +1212,9 @@ Use `[PLUGIN]` prefix for all plugin-related operations:
 [PLUGIN] pr-review-toolkit:silent-failure-hunter timeout: 5m exceeded
 ```
 
-If Empirica session is active:
-- Log successful plugin insights via `finding_log`
-- Log failures via `deadend_log`
+If epistemic session is active:
+- Log successful plugin insights to `.empirica/insights.jsonl`
+- Log failures to `.empirica/insights.jsonl` as dead-ends
 
 ---
 
@@ -1487,7 +1487,7 @@ Written to `.claude/plans/[name]/reflect.md` with this structure:
 
 After writing `reflect.md`, execute this export sequence (NOT optional):
 
-1. **Empirica (mandatory if session active):** For each finding in "Assumptions Proven Wrong" and "Spec Gaps", call `finding_log` with prefix "[Reflection]". Each discrete finding gets its own log entry. If Empirica session is not active, write findings to `.empirica/insights.jsonl` as fallback.
+1. **Epistemic tracking (mandatory if session active):** For each finding in "Assumptions Proven Wrong" and "Spec Gaps", append to `.empirica/insights.jsonl` with prefix "[Reflection]". Each discrete finding gets its own log entry.
 
 2. **Vault (mandatory if vault available):** Export a summary finding to `Engineering/Findings/YYYY-MM-DD-reflect-[blueprint-name].md` using the finding template. ONE note per reflection (not per finding).
 
@@ -1629,4 +1629,4 @@ All artifacts saved to `.claude/plans/[name]/`:
 - **Status checked by:** `/status`
 - **Recovery format:** `manifest.json` (read at all recovery points)
 - **Work decomposition:** `work-graph.json` (consumed by `/delegate`)
-- **Enforcement:** `hooks/blueprint-stage-gate.sh` (checks Empirica data)
+- **Enforcement:** `hooks/blueprint-stage-gate.sh` (checks epistemic data)

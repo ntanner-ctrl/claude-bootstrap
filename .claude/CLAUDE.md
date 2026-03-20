@@ -15,7 +15,7 @@ This repo is a **distribution package** — not a runtime app. `install.sh` copi
 
 ```
 claude-sail/
-├── commands/          # 53 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
+├── commands/          # 55 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
 │   ├── templates/     # Stock elements installed by /bootstrap-project into target projects
 │   │   ├── stock-hooks/      # 6 prompt-based hooks for target projects
 │   │   ├── stock-agents/     # 3 agents for target projects
@@ -26,7 +26,7 @@ claude-sail/
 │   │   └── documentation/    # Diataxis doc templates
 │   └── *.md           # The actual toolkit commands
 ├── agents/            # 6 review agents (spec, quality, security, performance, architecture, CloudFormation)
-├── hooks/             # 18 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
+├── hooks/             # 17 shell hooks (*.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
 ├── hookify-rules/     # 7 YAML-based safety rules (*.local.md)
 ├── plugins/           # Session-start plugin (sail-toolkit)
 ├── evals/             # Behavioral eval fixtures (evals.json) — used by test.sh Category 8
@@ -192,7 +192,7 @@ bash test.sh
 - **_OLD/ is gitignored** — contains previous iterations for reference, not part of the distribution.
 - **.claude/ directory in this repo** — contains planning artifacts for the toolkit's own development. Not part of the install.
 - **install.sh has two paths** — local (if run from cloned repo) and remote (if piped via curl). Both must work.
-- **Empirica integration** — The blueprint workflow integrates with Empirica MCP for epistemic tracking. Session IDs are stored in `state.json`.
+- **Epistemic tracking** — The blueprint workflow integrates with native epistemic tracking (`~/.claude/epistemic.json`). Session IDs are stored in `state.json`.
 
 ## Do Not
 

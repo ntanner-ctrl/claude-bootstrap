@@ -14,7 +14,7 @@ Manages the lifecycle of findings from isolated observation to codified CLAUDE.m
 
 ```
 Tier 1: ISOLATED     — Single observation, one session
-                        Source: Empirica finding_log, vault notes
+                        Source: `.empirica/insights.jsonl`, vault notes
 
 Tier 2: CONFIRMED    — Observed 2+ times across sessions
                         Source: Cross-referencing vault findings by similarity
@@ -116,7 +116,7 @@ Search vault for ALL notes related to the selected finding:
 - Search by key phrases from the finding text
 - Search by matching tags
 - Search by related project names
-- Check Empirica findings if session is available
+- Check `.empirica/insights.jsonl` for additional findings
 
 ### Independence assessment
 
@@ -126,11 +126,11 @@ For each observation found, assess independence:
 |--------|----------|
 | INDEPENDENT | Different session AND different context (different blueprint, different task) |
 | CORRELATED | Same session as another observation, OR arose as a reflection/derivative of another observation |
-| DUPLICATE | Same finding logged to multiple systems (e.g., vault note + Empirica = 1 observation) |
+| DUPLICATE | Same finding logged to multiple systems (e.g., vault note + insights.jsonl = 1 observation) |
 
 **Correlation detection rules:**
 - A `reflect.md` entry that references a finding from the same session = CORRELATED
-- An Empirica `finding_log` and a vault note with identical text from the same session = DUPLICATE (count as 1)
+- An `insights.jsonl` entry and a vault note with identical text from the same session = DUPLICATE (count as 1)
 - A finding in session X that explicitly references a finding from session Y = CORRELATED with Y
 - Findings from different sessions about different tasks = INDEPENDENT even if the finding text is similar
 
@@ -143,7 +143,7 @@ Evidence trail for "[finding summary]":
       Source: Engineering/Findings/2026-02-15-hook-fail-open.md
 
   [2] 2026-02-28 — Session def456 — Blueprint: api-refactor    [INDEPENDENT]
-      Source: Empirica finding_log
+      Source: .empirica/insights.jsonl
 
   [3] 2026-03-01 — Session def456 — Reflection from [2]        [CORRELATED with #2]
       Source: Engineering/Findings/2026-03-01-hook-pattern-reflection.md
@@ -201,7 +201,7 @@ wc -l "$GIT_ROOT/.claude/CLAUDE.md" 2>/dev/null || wc -l "$GIT_ROOT/CLAUDE.md" 2
 
 Present retirement candidates. A CLAUDE.md entry is a candidate for retirement if:
 
-1. **Stale**: Added > 90 days ago AND no recent vault notes or Empirica findings reference the rule text (fuzzy search, last 60 days)
+1. **Stale**: Added > 90 days ago AND no recent vault notes or disk findings reference the rule text (fuzzy search, last 60 days)
 2. **Conflicting**: Contradicts the finding being promoted or a newer confirmed finding
 3. **Overly specific**: Applies to a narrow situation that no longer exists (deprecated feature, resolved bug, completed migration)
 
@@ -226,7 +226,7 @@ Select entry to retire [1-N, or 0]:
 A CLAUDE.md entry is "stale" if:
 - It was added > 90 days ago AND
 - No recent vault notes reference the rule text (fuzzy search, last 60 days) AND
-- No recent Empirica findings reference the rule text (fuzzy search, last 60 days)
+- No recent `.empirica/insights.jsonl` entries reference the rule text (fuzzy search, last 60 days)
 
 Staleness is advisory — the user decides what to retire.
 
@@ -322,10 +322,12 @@ promoted_to: "CLAUDE.md"
 promoted_rule: "[rule text summary]"
 ```
 
-### Log to Empirica (if session active)
+### Log to epistemic tracking (if session active)
 
-Call `mcp__empirica__finding_log` with:
-- finding: "[Promotion] Finding promoted to CLAUDE.md: [rule text summary]. Evidence: N independent observations across N sessions."
+Append to `.empirica/insights.jsonl`:
+```json
+{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Promotion] Finding promoted to CLAUDE.md: [rule text summary]. Evidence: N independent observations across N sessions."}}
+```
 
 ### Confirmation
 
@@ -356,9 +358,9 @@ Call `mcp__empirica__finding_log` with:
 
 | Available Systems | Behavior |
 |-------------------|----------|
-| Vault + Empirica | Full workflow — vault for evidence trail, Empirica for session correlation |
-| Vault only | Full workflow — evidence trail from vault notes only. Skip Empirica logging at end. |
-| Empirica only | Reduced workflow — search Empirica findings for evidence. No vault promotion record. Apply CLAUDE.md change only. |
+| Vault + disk insights | Full workflow — vault for evidence trail, `.empirica/insights.jsonl` for session correlation |
+| Vault only | Full workflow — evidence trail from vault notes only. Skip disk insight logging at end. |
+| Disk insights only | Reduced workflow — search `.empirica/insights.jsonl` for evidence. No vault promotion record. Apply CLAUDE.md change only. |
 | Neither available | Minimal workflow — user provides evidence verbally. Warn: "Limited evidence trail — promotion based on user attestation only." Apply CLAUDE.md change. No vault record. |
 
 ---
@@ -366,7 +368,7 @@ Call `mcp__empirica__finding_log` with:
 ## Fail-Soft Behavior
 
 - **No CLAUDE.md found**: Stop with error. "No CLAUDE.md found in project root or .claude/ directory."
-- **Vault unreachable**: Degrade to Empirica-only or user-attestation mode (see degradation paths).
-- **Empirica session unavailable**: Proceed without Empirica. Skip Empirica logging.
+- **Vault unreachable**: Degrade to disk-insights-only or user-attestation mode (see degradation paths).
+- **Epistemic session unavailable**: Proceed without epistemic tracking. Skip disk logging.
 - **CLAUDE.md write fails**: Show the drafted rule text and ask user to apply manually.
 - **Vault write fails**: Show the promotion record and ask user to create the note manually.

@@ -1,14 +1,14 @@
 ---
-description: Use when you want to flush pending insights to Obsidian vault and Empirica. Captures ★ Insight blocks and orphaned disk findings.
+description: Use when you want to flush pending insights to Obsidian vault and epistemic tracking. Captures ★ Insight blocks and orphaned disk findings.
 ---
 
 # Collect Insights
 
-Flush pending insights to both the Obsidian vault and Empirica. Reads orphaned disk findings from `.empirica/insights.jsonl`, captures any ★ Insight blocks from the current conversation, and dual-writes each to vault (as finding notes) and Empirica (as logged findings).
+Flush pending insights to both the Obsidian vault and epistemic tracking. Reads orphaned disk findings from `.empirica/insights.jsonl`, captures any ★ Insight blocks from the current conversation, and writes each to vault (as finding notes) and marks them as synced in the disk store.
 
 ## Why This Exists
 
-Insights accumulate in two places during a session: in-conversation ★ Insight blocks (ephemeral) and `.empirica/insights.jsonl` (disk safety net from the PostToolUse hook). Without explicit collection, these remain fragmented — vault has no record, and Empirica may have partial data. This command reconciles both stores.
+Insights accumulate in two places during a session: in-conversation ★ Insight blocks (ephemeral) and `.empirica/insights.jsonl` (disk safety net from the PostToolUse hook). Without explicit collection, these remain fragmented — vault has no record, and the disk store may have partial data. This command reconciles both stores.
 
 ## Process
 
@@ -20,24 +20,19 @@ Use the Bash tool to source vault-config.sh and extract config values:
 source ~/.claude/hooks/vault-config.sh 2>/dev/null && echo "VAULT_ENABLED=$VAULT_ENABLED" && echo "VAULT_PATH=$VAULT_PATH"
 ```
 
-Note the result. If vault is unavailable, continue anyway — Empirica writes can still proceed (fail-soft).
+Note the result. If vault is unavailable, continue anyway — disk writes can still proceed (fail-soft).
 
-### Step 2: Check for Active Empirica Session
+### Step 2: Check for Active Epistemic Session
 
 ```bash
-ACTIVE_SESSION_FILE=".empirica/active_session"
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-
-if [ -n "$GIT_ROOT" ] && [ -f "$GIT_ROOT/$ACTIVE_SESSION_FILE" ]; then
-    cat "$GIT_ROOT/$ACTIVE_SESSION_FILE"
-elif [ -f "$ACTIVE_SESSION_FILE" ]; then
-    cat "$ACTIVE_SESSION_FILE"
+if [ -f "$HOME/.claude/.current-session" ]; then
+    cat "$HOME/.claude/.current-session"
 else
     echo "NO_SESSION"
 fi
 ```
 
-Note the session ID. If no session, Empirica writes will be skipped (fail-soft).
+Note the session ID. If no session, session-linked writes will be skipped (fail-soft).
 
 ### Step 3: Gather Insights from Disk
 
@@ -51,7 +46,7 @@ Parse each line. Collect all entries that have NOT already been synced (check fo
 
 ### Step 4: Gather Insights from Conversation
 
-Scan the current conversation for any ★ Insight blocks that were NOT already captured to disk or Empirica. These are blocks formatted like:
+Scan the current conversation for any ★ Insight blocks that were NOT already captured to disk. These are blocks formatted like:
 
 ```
 ★ Insight: <title or summary>
@@ -95,7 +90,7 @@ mkdir -p "$VAULT_PATH/Engineering/Findings"
      - `{{description}}`: Full insight text
      - `{{session_link}}`: Session ID from Step 2 (or "no-session")
      - `{{implications}}`: Brief note on why this matters (Claude-generated from context)
-   - Add Empirica confidence frontmatter (conditional fields — omit line entirely if no value):
+   - Add epistemic confidence frontmatter (conditional fields — omit line entirely if no value):
      - `empirica_confidence`: From insight confidence value
      - `empirica_assessed`: Today's date (YYYY-MM-DD)
      - `empirica_session`: Session ID from Step 2
@@ -104,17 +99,17 @@ mkdir -p "$VAULT_PATH/Engineering/Findings"
 
 4. Use the Write tool for each note. Do NOT use Obsidian MCP for writes.
 
-If vault is unavailable, log: "Vault write skipped (vault disabled or not accessible). Empirica-only mode."
+If vault is unavailable, log: "Vault write skipped (vault disabled or not accessible). Disk-only mode."
 
-### Step 7: Write to Empirica
+### Step 7: Ensure Disk Capture
 
-If an active Empirica session exists (Step 2):
+Verify all insights are captured in `.empirica/insights.jsonl`. For any insight that was only in conversation (not already on disk), append it now:
 
-For each insight, call `mcp__empirica__finding_log` with:
-- `session_id`: Active session ID
-- `finding`: The insight text (prefix with "[Insight] " to distinguish from other findings)
+```json
+{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Insight] the insight text"}}
+```
 
-If no session exists, log: "Empirica write skipped (no active session). Vault-only mode."
+This ensures all insights survive session boundaries regardless of vault availability.
 
 ### Step 8: Mark Disk Entries as Synced
 
@@ -136,10 +131,10 @@ If the file contained ONLY the entries that were just processed, the file can be
 
   Written:
     Vault:    N notes → Engineering/Findings/
-    Empirica: N findings logged
+    Disk:     N findings captured
 
   Skipped:
-    [reason, if any — e.g., "Vault unavailable", "No active Empirica session"]
+    [reason, if any — e.g., "Vault unavailable"]
 
   Files:
     [list of vault note paths written]
@@ -155,10 +150,10 @@ If the file contained ONLY the entries that were just processed, the file can be
 
 ## Notes
 
-- This command dual-writes: Obsidian vault is the primary data store, Empirica is the analytical layer
-- Fail-soft: if vault is unavailable, Empirica writes still proceed (and vice versa)
-- If BOTH vault and Empirica are unavailable, the command reports what it found but cannot write
+- This command dual-writes: Obsidian vault is the primary data store, `.empirica/insights.jsonl` is the disk safety net
+- Fail-soft: if vault is unavailable, disk writes still proceed (and vice versa)
+- If vault is unavailable, insights are captured on disk only
 - All vault writes use the Write tool (no Obsidian MCP dependency)
 - Filenames use vault_sanitize_slug for NTFS safety
-- The PostToolUse hook (`empirica-insight-capture.sh`) is the write-through safety net that populates insights.jsonl
+- The PostToolUse insight hooks are the write-through safety net that populates insights.jsonl
 - **Relationship to `/end`:** The `/end` command runs this same insight sweep automatically (Step 3). Use `/collect-insights` for mid-session flushes; `/end` handles the final sweep at session close.

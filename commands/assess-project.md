@@ -4,7 +4,7 @@ description: "DEPRECATED: Use /bootstrap-project instead. This command is supers
 
 # Project Assessment & CLAUDE.md Generator
 
-> **Note:** This command has been superseded by `/bootstrap-project` (part of the Claude Sail toolkit), which includes all the functionality of `/assess-project` plus automatic installation of stock hooks, agents, and commands tailored to your project type, with optional Empirica, vault, and plugin integration.
+> **Note:** This command has been superseded by `/bootstrap-project` (part of the Claude Sail toolkit), which includes all the functionality of `/assess-project` plus automatic installation of stock hooks, agents, and commands tailored to your project type, with optional epistemic tracking, vault, and plugin integration.
 >
 > - Use `/bootstrap-project` for comprehensive project setup (CLAUDE.md + extensibility + integrations)
 > - Use `/assess-project` if you only want CLAUDE.md generation without any installation

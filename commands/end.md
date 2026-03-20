@@ -1,5 +1,5 @@
 ---
-description: Use when ending a session. Closes Empirica epistemic tracking with postflight assessment and exports session artifacts to Obsidian vault before exit.
+description: Use when ending a session. Runs epistemic postflight assessment and exports session artifacts to Obsidian vault before exit.
 ---
 
 # End Session
@@ -8,25 +8,18 @@ Graceful session closure that preserves epistemic data and exports session artif
 
 ## Why This Exists
 
-Without explicit closure, Empirica sessions become epistemically orphaned — the record gets closed (via SessionEnd hook) but no learning delta is captured. This command ensures the postflight self-assessment happens while you can still reflect on what you learned.
+Without explicit closure, sessions become epistemically orphaned — the SessionEnd hook fires but no learning delta is captured. This command ensures the postflight self-assessment happens while you can still reflect on what you learned.
 
 ## Process
 
-### Step 1: Check for Active Empirica Session
+### Step 1: Check for Active Epistemic Session
 
 ```bash
-# Read active session from project-scoped pointer
-ACTIVE_SESSION_FILE=".empirica/active_session"
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-
-if [ -n "$GIT_ROOT" ] && [ -f "$GIT_ROOT/$ACTIVE_SESSION_FILE" ]; then
-    SESSION_ID=$(cat "$GIT_ROOT/$ACTIVE_SESSION_FILE")
-elif [ -f "$ACTIVE_SESSION_FILE" ]; then
-    SESSION_ID=$(cat "$ACTIVE_SESSION_FILE")
-fi
+# Read active session from native epistemic tracking marker
+cat ~/.claude/.current-session 2>/dev/null || echo "NO_SESSION"
 ```
 
-If no active session is found, skip to Step 4 (just show the exit message).
+Extract `SESSION_ID` and `PROJECT` from the marker file. If no active session is found, skip to Step 4 (just show the exit message).
 
 ### Step 1.5: Reconcile Orphaned Insights
 
@@ -46,15 +39,15 @@ Reconcile insights that exist on disk but not in vault, or vice versa. This clos
 
 4. **Reconcile disk → vault**: For insights.jsonl entries with NO matching vault note:
    - Create a vault note using the finding template (`~/.claude/commands/templates/vault-notes/finding.md`)
-   - Populate Empirica fields: `empirica_confidence: 0.5` (default — not yet assessed), `empirica_assessed: today`, `empirica_session: SESSION_ID`, `empirica_status: active`
+   - Populate epistemic fields: `empirica_confidence: 0.5` (default — not yet assessed), `empirica_assessed: today`, `empirica_session: SESSION_ID`, `empirica_status: active`
    - Use vault_sanitize_slug for the filename
 
-5. **Reconcile vault → Empirica**: For vault finding notes (created this session via `/vault-save`) with NO matching insights.jsonl entry:
-   - Call `mcp__empirica__finding_log` with the finding text (prefix with "[Insight] " if from vault finding notes)
+5. **Reconcile vault → disk**: For vault finding notes (created this session via `/vault-save`) with NO matching insights.jsonl entry:
+   - Append a finding entry to `.empirica/insights.jsonl` with the finding text (prefix with "[Insight] " if from vault finding notes)
 
 6. **Report**:
    ```
-   Reconciled N orphaned insights (M→vault, K→Empirica)
+   Reconciled N orphaned insights (M→vault, K→disk)
    ```
    If nothing to reconcile, report: "No orphaned insights found."
 
@@ -62,11 +55,9 @@ Reconcile insights that exist on disk but not in vault, or vice versa. This clos
 
 ### Step 2: Run Postflight Assessment
 
-Call `mcp__empirica__execute_postflight` with:
-- `session_id`: The active session ID from Step 1
-- `task_summary`: A 2-3 sentence summary of ALL work completed this session (not just the last task)
+**Invoke `/epistemic-postflight`** to capture postflight vectors and compute calibration deltas. This is the primary mechanism for pairing sessions — it computes the delta between your preflight and current state.
 
-Then call `mcp__empirica__submit_postflight_assessment` with honest self-assessment vectors for your CURRENT epistemic state. Rate each of the 13 vectors (0.0-1.0) based on where you are NOW:
+Rate each of the 13 vectors (0.0-1.0) based on where you are NOW:
 
 | Vector | What to assess |
 |--------|---------------|
@@ -88,7 +79,7 @@ Then call `mcp__empirica__submit_postflight_assessment` with honest self-assessm
 
 ### Step 2.75: Confidence Writeback
 
-After postflight vectors are submitted, write Empirica confidence data back to vault findings. This closes the loop between epistemic self-assessment and persistent knowledge.
+After postflight vectors are submitted, write epistemic confidence data back to vault findings. This closes the loop between epistemic self-assessment and persistent knowledge.
 
 1. **Gather session findings**: Collect all findings logged this session from `.empirica/insights.jsonl` (filtered by session-start timestamp, same as Step 2.5.3).
 
@@ -146,9 +137,9 @@ Scope artifacts to "this session" using the session-start timestamp:
 
 1. Read session-start timestamp: `cat /tmp/.claude-session-start-$(id -u)` (ISO-8601).
    **Fallback:** If absent or empty, use `$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)`. Log: "Session-start timestamp missing — scoping artifacts to last 24 hours."
-2. Read `.empirica/active_session` for session ID. Fallback: `session-YYYY-MM-DD-HHMM`.
+2. Read `~/.claude/.current-session` for session ID. Fallback: `session-YYYY-MM-DD-HHMM`.
 3. **Decision records:** Read `.claude/decisions/*.md` files. Each has `date:` frontmatter in ISO-8601. Include where `date:` >= session-start timestamp.
-4. **Empirica findings:** Read `.empirica/insights.jsonl`. Each line has `timestamp` field in ISO-8601. Include where `timestamp` >= session-start timestamp.
+4. **Disk findings:** Read `.empirica/insights.jsonl`. Each line has `timestamp` field in ISO-8601. Include where `timestamp` >= session-start timestamp.
 5. Check for active blueprint progress (`.claude/plans/*/state.json` with `updated` after session start).
 6. Check `Ideas/` in vault for notes with `date:` matching today (these are `/vault-save` captures).
 
@@ -222,12 +213,12 @@ After export, scan vault findings for staleness. A finding is stale if its `empi
 
 Pair preflight and postflight vectors and export the learning delta.
 
-1. **Read preflight vectors**: Read `.empirica/preflight.jsonl`. Find the most recent entry matching the current session_id (from `input.session_id`). If no match, find the most recent entry by timestamp. If file missing or empty, skip with note: `"Epistemic delta skipped: preflight data not found"`.
+1. **Read vectors from epistemic.json**: Read `~/.claude/epistemic.json`. Find the session matching the current session_id. If file missing or session not found, skip with note: `"Epistemic delta skipped: session data not found"`.
 
-2. **Read postflight vectors**: Read `.empirica/postflight.jsonl`. Find the most recent entry. If file missing (postflight just submitted and hook hasn't fired yet), extract vectors from the postflight call made in Step 2.
+2. **Extract preflight and postflight**: From the matching session entry, read `.preflight` and `.postflight` objects. If either is null, skip delta computation.
 
-3. **Resolve paths [F14]**: Explicitly display the `.empirica/` path being read:
-   `"Reading epistemic data from: /path/to/project/.empirica/"`
+3. **Resolve paths**: Explicitly display the data path:
+   `"Reading epistemic data from: ~/.claude/epistemic.json"`
 
 4. **Calculate delta**: For each of the 13 vectors, compute `postflight - preflight`. Categorize:
    - Delta > +0.2: "Significant learning gain"
@@ -240,7 +231,7 @@ Pair preflight and postflight vectors and export the learning delta.
 5. **Create vault note**: If vault is available AND both preflight and postflight data exist, hydrate `~/.claude/commands/templates/vault-notes/epistemic-delta.md` template:
    - `date`: today (YYYY-MM-DD)
    - `project`: current project name (git repo basename)
-   - `session_id`: from `.empirica/active_session`
+   - `session_id`: from `~/.claude/.current-session`
    - `vector_rows`: table rows for all 13 vectors (one row per vector: dimension | pre | post | delta | assessment)
    - `key_movements`: top 3 biggest deltas (positive or negative) with brief explanation
    - `session_link`: link to session summary note if created in Step 2.5
@@ -272,7 +263,7 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
 
 1. **Scan conversation for unlogged `★ Insight` blocks**: Search your own output in this session for any `★ Insight` blocks. For each one, check if a corresponding `finding_log` call followed it (look for a finding_log tool call within ~2 messages after the insight).
 
-2. **For each unlogged insight**: Call `mcp__empirica__finding_log` with `session_id` and `finding` (the insight text, prefixed with "[Insight] "). Do NOT pass `category` — it is not a valid parameter. This is the safety net for the behavioral gap where insights get generated as text but never recorded.
+2. **For each unlogged insight**: Append to `.empirica/insights.jsonl` with a JSON line: `{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Insight] the insight text"}}`. This is the safety net for the behavioral gap where insights get generated as text but never recorded.
 
 3. **Final reflection**: Beyond `★ Insight` blocks, did you learn something significant that wasn't captured anywhere? If so, log it now.
 
@@ -290,9 +281,9 @@ This is your last chance to capture session knowledge. Do NOT skip this step.
   SESSION CLOSED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Empirica:     [session_id or "no active session"]
+  Epistemic:    [session_id or "no active session"]
   Postflight:   [completed / skipped]
-  Reconciled:   [N orphaned insights (M→vault, K→Empirica) / skipped]
+  Reconciled:   [N orphaned insights (M→vault, K→disk) / skipped]
   Confidence:   [N findings updated / skipped]
   Insights:     [N ★ blocks found, M already logged, K swept / skipped]
   Findings:     [N logged this session (total)]
@@ -315,8 +306,8 @@ Also available (user-initiated):
 ## Notes
 
 - This command does NOT automatically exit — the user must type `/exit` after
-- If no Empirica session is active, the command still works (just shows the exit prompt)
-- The SessionEnd hook (`session-end-empirica.sh`) acts as a safety net for cases where `/end` wasn't used
+- If no epistemic session is active, the command still works (just shows the exit prompt)
+- The SessionEnd hook (`epistemic-postflight.sh`) acts as a safety net — reminds about unpaired sessions
 - The SessionEnd hook (`session-end-vault.sh`) acts as a safety net for vault export when `/end` wasn't used
 - Vault export uses templates from `~/.claude/commands/templates/vault-notes/`
 - Pair with `/checkpoint` if you also want to save decision context for future sessions

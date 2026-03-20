@@ -46,7 +46,7 @@ Result: **WARNING**
 
 ### Category 4: MCP Availability (informational)
 
-- Empirica: connected
+- Epistemic tracking: active
 - Context7: not available
 - Obsidian: not configured
 

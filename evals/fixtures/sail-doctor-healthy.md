@@ -36,7 +36,7 @@ Result: **PASS**
 
 ### Category 4: MCP Availability (informational)
 
-- Empirica: connected
+- Epistemic tracking: active
 - Context7: connected
 - Obsidian: connected
 

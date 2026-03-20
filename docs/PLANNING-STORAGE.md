@@ -38,7 +38,7 @@ How Claude Sail stores planning state and artifacts.
 ## state.json Schema (v2)
 
 Tracks progress through the blueprint workflow. Blueprint v2 extends the original
-schema with challenge mode, confidence scoring, Empirica integration, and regression tracking.
+schema with challenge mode, confidence scoring, epistemic tracking integration, and regression tracking.
 
 ```json
 {
@@ -93,15 +93,15 @@ schema with challenge mode, confidence scoring, Empirica integration, and regres
       "default": 1,
       "description": "Spec revision number (increments on regression)"
     },
-    "empirica_session_id": {
+    "epistemic_session_id": {
       "type": ["string", "null"],
-      "description": "Empirica session UUID (primary storage)"
+      "description": "Epistemic session ID from ~/.claude/.current-session (primary storage)"
     },
-    "empirica_preflight_complete": {
+    "epistemic_preflight_complete": {
       "type": "boolean",
       "default": false
     },
-    "empirica_session_note": {
+    "epistemic_session_note": {
       "type": "string",
       "description": "Notes about session continuity (e.g., continuation session)"
     },
@@ -259,8 +259,8 @@ schema with challenge mode, confidence scoring, Empirica integration, and regres
   "challenge_mode": "debate",
   "execution_preference": "auto",
   "revision": 1,
-  "empirica_session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "empirica_preflight_complete": true,
+  "epistemic_session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "epistemic_preflight_complete": true,
   "manifest_stale": false,
   "work_graph_stale": false,
   "stages": {
@@ -307,7 +307,7 @@ in `state.json` under `stages.[name].confidence`.
 **suggested** (not auto-triggered) IF a trigger event also occurs (critical finding,
 schema validation failure, etc.). Confidence alone does NOT trigger regression.
 
-**Empirica vector mapping** — which vectors to focus on per stage:
+**Epistemic vector mapping** — which vectors to focus on per stage:
 
 | Stage | Primary Vectors | Focus |
 |-------|----------------|-------|
@@ -484,7 +484,7 @@ markdown) at recovery points. ~5-10x more token-efficient than reading all artif
         "timestamp": { "type": "string", "format": "date-time" }
       }
     },
-    "empirica_session_id": {
+    "epistemic_session_id": {
       "type": ["string", "null"],
       "description": "Redundant copy for cross-session recovery"
     },
@@ -538,7 +538,7 @@ The manifest MUST be **read** (not full markdown) at these recovery points:
 | `/checkpoint` | Checkpoint creation | Include in checkpoint |
 | `/dispatch --plan-context [name]` | Dispatch enrichment | Feed implementer with intelligence |
 | `/delegate --plan-context [name]` | Delegate enrichment | Feed orchestrator with intelligence |
-| Empirica `memory_compact` | Continuation session | Carry forward context |
+| Context compaction | Continuation session | Carry forward context |
 
 The manifest MUST be **written** (updated) at these points:
 
@@ -854,8 +854,8 @@ When `/blueprint` encounters a plan directory with state.json missing `blueprint
    - `blueprint_version: 2`
    - `challenge_mode: "vanilla"` (original behavior)
    - `execution_preference: "auto"`
-   - `empirica_session_id: null`
-   - `empirica_preflight_complete: false`
+   - `epistemic_session_id: null`
+   - `epistemic_preflight_complete: false`
    - `manifest_stale: false`
    - `work_graph_stale: false`
    - `premortem: { "status": "skipped", "skip_reason": "created before blueprint-v2" }`

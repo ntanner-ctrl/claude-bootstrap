@@ -121,7 +121,7 @@ Once the user confirms the requirements summary:
 
 - **Feeds into:** `/spec-change`, `/blueprint` Stage 2
 - **Fed by:** `/brainstorm` (if direction unclear), `/describe-change` (if requirements fuzzy)
-- **Insight capture:** Requirement gaps and stakeholder constraints are epistemic gold. Run `/collect-insights` to flush to vault + Empirica.
+- **Insight capture:** Requirement gaps and stakeholder constraints are epistemic gold. Run `/collect-insights` to flush to vault + epistemic tracking.
 
 ---
 

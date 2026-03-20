@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# backfill-vault.sh — One-time migration of existing blueprints and Empirica findings to Obsidian vault.
+# backfill-vault.sh — One-time migration of existing blueprints and epistemic findings to Obsidian vault.
 # LOCAL script, not distributed via install.sh.
 #
 # Usage: bash scripts/backfill-vault.sh
@@ -416,7 +416,7 @@ empirica_status: active
 ${FINDING_TEXT}
 
 ## Source
-- Imported from pre-vault Empirica disk cache
+- Imported from pre-vault epistemic disk cache
 
 ## Implications
 Review and assess — this finding was captured before vault integration.

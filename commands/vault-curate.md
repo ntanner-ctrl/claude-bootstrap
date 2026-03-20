@@ -4,7 +4,7 @@ description: Use when you need to review, triage, and maintain the Obsidian vaul
 
 # Vault Curate
 
-Interactive, multi-stage knowledge triage workflow for the Obsidian vault. Covers all 6 content types with type-specific health signals. Integrates Empirica calibration data when available. Self-tuning frequency recommendations.
+Interactive, multi-stage knowledge triage workflow for the Obsidian vault. Covers all 6 content types with type-specific health signals. Integrates epistemic tracking calibration data when available. Self-tuning frequency recommendations.
 
 Subsumes `/review-findings`, which is now a deprecated alias for `/vault-curate --quick --section findings`.
 
@@ -117,18 +117,17 @@ done
 
 Exclude any note whose frontmatter contains `archived: true` from all subsequent processing. Count them separately: `Archived (excluded): N notes`
 
-### 1.6 Check for active Empirica session
+### 1.6 Check for active epistemic session
 
 ```bash
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-if [ -n "$GIT_ROOT" ]; then
-  cat "$GIT_ROOT/.empirica/active_session" 2>/dev/null || echo "NO_SESSION"
+if [ -f "$HOME/.claude/.current-session" ]; then
+  cat "$HOME/.claude/.current-session"
 else
   echo "NO_SESSION"
 fi
 ```
 
-If session available, query `mcp__empirica__get_calibration_report` for calibration data.
+If session available, read `~/.claude/epistemic.json` for calibration data.
 
 ### 1.7 Apply filters
 
@@ -164,7 +163,7 @@ Consider: --section [type] or --quick for a shorter session.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Total notes: N
-  Empirica session: [session_id or "none — proceeding without calibration"]
+  Epistemic session: [session_id or "none — proceeding without calibration"]
 
   By type:
     Findings:    N
@@ -185,7 +184,7 @@ Consider: --section [type] or --quick for a shorter session.
     Aging (31-90d):    N
     Old (90+d):        N
 
-  Calibration: [adjustment note or "no Empirica data"]
+  Calibration: [adjustment note or "no epistemic data"]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -647,7 +646,7 @@ For each note with a verdict:
    superseded_date: YYYY-MM-DD
    ```
 
-7. **Log to Empirica** (if session active): `mcp__empirica__finding_log` for each updated note. For archived notes, prefix finding with "[Archived] " (NOT `deadend_log` — archiving is curation, not a dead end).
+7. **Log to epistemic tracking** (if session active): append to `.empirica/insights.jsonl` for each updated note. For archived notes, prefix finding with "[Archived] " (NOT as a dead-end — archiving is curation, not a dead end).
 
 ### Interruption Recovery
 
@@ -759,10 +758,12 @@ After report is generated, write the curation date for the bootstrap hook to che
 echo "$(date +%Y-%m-%d)" > "$VAULT_PATH/.vault-last-curated"
 ```
 
-### Log to Empirica
+### Log to Epistemic Tracking
 
-If session active, call `mcp__empirica__finding_log` with:
-- finding: "[Vault curation] Vault curation complete: N notes reviewed, health NN->NN, next curation ~YYYY-MM-DD"
+If session active, append to `.empirica/insights.jsonl`:
+```json
+{"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Vault curation] Vault curation complete: N notes reviewed, health NN->NN, next curation ~YYYY-MM-DD"}}
+```
 
 ---
 
@@ -782,8 +783,8 @@ When `--quick` is passed:
 ## Fail-Soft Behavior
 
 - **No vault**: Stop immediately with helpful error
-- **No Empirica session**: Proceed without calibration data. Skip calibration-dependent features. Note in inventory: "No Empirica session — proceeding without calibration data"
+- **No epistemic session**: Proceed without calibration data. Skip calibration-dependent features. Note in inventory: "No epistemic session — proceeding without calibration data"
 - **Vault on unreachable path**: Stop with error (e.g., NTFS path not mounted in WSL)
 - **Read-only vault**: Detected at Stage 1. Allow Stages 1-4 in review-only mode. Skip Stage 5 entirely: "Vault is read-only — changes were not applied. Verdicts are saved in the checkpoint file for when write access is restored."
 - **Individual note read failure**: Skip note, log warning, continue with remaining notes
-- **Empirica call failure mid-session**: Log warning, continue without Empirica for remainder
+- **Epistemic tracking failure mid-session**: Log warning, continue without epistemic tracking for remainder

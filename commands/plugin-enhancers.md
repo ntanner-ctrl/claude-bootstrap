@@ -375,9 +375,9 @@ The **workflow command** that invokes the plugin is responsible for logging. Nev
 ```
 
 ### Destinations
-1. **Empirica** (if session active): `deadend_log` for failures, `finding_log` for successful plugin insights
+1. **Epistemic tracking** (if session active): append to `.empirica/insights.jsonl` — dead-ends for failures, findings for successful plugin insights
 2. **User-facing**: One-line note in workflow output
-3. **If Empirica unavailable**: Stderr only (fail-open, no file creation)
+3. **If epistemic tracking unavailable**: Stderr only (fail-open, no file creation)
 
 ### What's NOT logged
 - Successful detection (silent — reduces noise)

@@ -153,13 +153,13 @@ Write to `.claude/error-logs/error-YYYY-MM-DD-HHMM.md`:
 [Actionable takeaway about prompting/context/harnessing — NOT about model behavior]
 ```
 
-### Step 6: Empirica Integration
+### Step 6: Epistemic Tracking
 
-If Empirica session is active:
-1. Call `mistake_log` with:
-   - `session_id`: active session
-   - `mistake`: One-line lesson from the log
-   - `impact`: Brief impact description
+If an epistemic session is active (`~/.claude/.current-session` exists):
+1. Append to `.empirica/insights.jsonl`:
+   ```json
+   {"timestamp": "ISO-8601", "type": "mistake", "input": {"mistake": "one-line lesson", "impact": "brief impact"}}
+   ```
 2. This feeds the calibration loop — preflight/postflight deltas show whether error patterns are improving
 
 ### Step 7: Vault Export (if available)
@@ -186,7 +186,7 @@ Display:
   Lesson:    [one-line lesson]
   Pattern:   [N previous errors in this category / first occurrence]
 
-  Empirica:  [logged / skipped]
+  Epistemic: [logged / skipped]
   Vault:     [exported / skipped]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

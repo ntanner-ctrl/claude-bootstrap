@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/worktree-cleanup.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/epistemic-preflight.sh"
           }
         ]
       }
@@ -57,33 +61,6 @@
             "command": "~/.claude/hooks/failure-escalation.sh"
           }
         ]
-      },
-      {
-        "matcher": "mcp__empirica__finding_log|mcp__empirica__mistake_log|mcp__empirica__deadend_log",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/empirica-insight-capture.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__empirica__submit_preflight_assessment",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/empirica-preflight-capture.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__empirica__submit_postflight_assessment",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/empirica-postflight-capture.sh"
-          }
-        ]
       }
     ],
     "PreToolUse": [
@@ -125,6 +102,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/session-end-cleanup.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/epistemic-postflight.sh"
           }
         ]
       }

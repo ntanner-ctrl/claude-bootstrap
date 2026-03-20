@@ -315,5 +315,5 @@ Start by detecting the project type and running the initial scans.
 
 ## Integration
 
-- **Insight capture:** Security findings are high-value epistemic data. Run `/collect-insights` after completing the checklist to flush findings to vault + Empirica.
+- **Insight capture:** Security findings are high-value epistemic data. Run `/collect-insights` after completing the checklist to flush findings to vault + epistemic tracking.
 - Also available (user-initiated): If `security-pro` plugin is installed, `/security-audit` provides comprehensive vulnerability assessment beyond this checklist.

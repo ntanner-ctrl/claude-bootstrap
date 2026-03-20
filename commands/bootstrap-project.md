@@ -16,7 +16,7 @@ allowed-tools:
 Complete claude-sail extensibility setup for any project. This command:
 1. Analyzes your project structure, type, maturity, and integrations
 2. Generates comprehensive CLAUDE.md documentation
-3. Initializes detected integrations (Empirica, Vault, Plugins)
+3. Initializes detected integrations (Epistemic Tracking, Vault, Plugins)
 4. Installs appropriate stock hooks, agents, and commands
 5. Tracks what's installed for future updates
 
@@ -104,11 +104,11 @@ source ~/.claude/hooks/vault-config.sh 2>/dev/null
 
 Record `VAULT_ENABLED` and `VAULT_PATH`. This informs Phase 4.
 
-## 1.6 Empirica Detection
+## 1.6 Epistemic Tracking Detection
 
-Check if the `empirica` CLI is available:
+Check if the native epistemic tracking system is available:
 ```bash
-which empirica 2>/dev/null
+test -f "$HOME/.claude/hooks/epistemic-preflight.sh" && echo "AVAILABLE" || echo "NOT_AVAILABLE"
 ```
 
 Record availability. This informs Phase 3.
@@ -198,12 +198,11 @@ Create or update `.claude/CLAUDE.md` with:
 [framework, location, conventions]
 
 ## Integrations
-[IF Empirica detected]
-### Empirica (Epistemic Tracking)
+[IF Epistemic Tracking detected]
+### Epistemic Tracking
 - Session tracking is available for this project
-- Use `finding_log` to capture discoveries during work
-- Use `mistake_log` to record errors for future prevention
-- Submit preflight/postflight assessments at session boundaries
+- Append to `.empirica/insights.jsonl` to capture discoveries during work
+- Run `/epistemic-preflight` and `/epistemic-postflight` at session boundaries
 
 [IF Vault detected]
 ### Obsidian Vault
@@ -221,39 +220,38 @@ Create or update `.claude/CLAUDE.md` with:
 
 ---
 
-# PHASE 3: Empirica Initialization
+# PHASE 3: Epistemic Tracking Initialization
 
-Only runs if Empirica CLI was detected in Phase 1.
+Only runs if epistemic tracking hooks were detected in Phase 1.
 
-## 3.1 If Empirica IS detected
+## 3.1 If Epistemic Tracking IS detected
 
 1. Check if `.empirica/` directory exists in project root
 2. If not, create it: `mkdir -p .empirica`
-3. Check if project is registered with Empirica:
+3. Verify hooks are wired:
    ```bash
-   empirica project-bootstrap --output json 2>/dev/null
+   test -f "$HOME/.claude/hooks/epistemic-preflight.sh" && echo "HOOKS_OK" || echo "HOOKS_MISSING"
    ```
-4. If registration fails or returns error, log and continue (fail-soft)
-5. Present to user:
+4. Present to user:
    ```
-   Empirica integration:
-     ✓ CLI available
-     [✓/✗] Project registered
+   Epistemic tracking:
+     ✓ Hooks available
+     [✓/✗] Data store initialized
 
-   Empirica enables epistemic tracking — it helps you (and Claude)
-   measure what you know vs. what you think you know across sessions.
+   Epistemic tracking helps you (and Claude) measure what you know
+   vs. what you think you know across sessions.
 
-   This is optional but recommended. See /toolkit for Empirica commands.
+   This is optional but recommended. Use /epistemic-preflight and /epistemic-postflight.
    ```
 
-## 3.2 If Empirica is NOT detected
+## 3.2 If Epistemic Tracking is NOT detected
 
 Present to user:
 ```
-Empirica integration:
-  ✗ CLI not found (optional — install via: pipx install empirica)
+Epistemic tracking:
+  ✗ Hooks not found (run install.sh to set up)
 
-  Empirica tracks confidence and learning across sessions.
+  Epistemic tracking measures confidence and learning across sessions.
   The toolkit works fine without it.
 ```
 
@@ -356,7 +354,7 @@ ELSE maturity = mature (7-10):
 
 ## 6.3 Conditional Hooks
 
-- `empirica-basics.md` - Simplified finding capture (only if Empirica detected in Phase 1)
+- `epistemic-basics.md` - Simplified finding capture (only if epistemic tracking detected in Phase 1)
 - `documentation-standards.md` - Documentation quality reminders (only if `docs/` directory exists)
 - `interface-validation.md` - Module pattern consistency (only if consistent module patterns detected)
 
@@ -466,7 +464,7 @@ Output a complete summary:
 ### Project Profile
 - **Type:** [detected types]
 - **Maturity:** [level] (score: N/10)
-- **Integrations:** Empirica [✓/✗] │ Vault [✓/✗] │ Plugins [N installed]
+- **Integrations:** Epistemic [✓/✗] │ Vault [✓/✗] │ Plugins [N installed]
 
 ### What Was Installed
 [organized by category with counts]
@@ -517,7 +515,7 @@ Stock element templates are stored at:
 │   ├── test-coverage-reminder.md
 │   ├── security-warning.md
 │   ├── compaction-safety.md
-│   ├── empirica-basics.md
+│   ├── epistemic-basics.md
 │   ├── documentation-standards.md
 │   └── interface-validation.md
 ├── stock-agents/

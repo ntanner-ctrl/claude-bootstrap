@@ -29,29 +29,22 @@ Quickly assess project state and recommend the optimal next task.
      - Present vault context summary (see output format below)
    - If vault is unavailable, note: "No vault configured — skipping prior knowledge lookup"
    - If vault is available but no matches found, note: "No prior vault knowledge for this project"
-   - If an Empirica session is active, suggest submitting preflight with vault context:
+   - If an epistemic session is active (`~/.claude/.current-session` exists), suggest submitting preflight with vault context:
      ```
-     Empirica session active. Submit preflight now with prior vault context:
+     Epistemic session active. Submit /epistemic-preflight now with prior vault context:
        - N findings (M high-confidence, K need verification)
        - P decisions
      ```
 
-3. **Query Empirica for cross-project insights** (fail-soft — skip if no session):
-   - Check for active Empirica session:
+3. **Check epistemic calibration** (fail-soft — skip if unavailable):
+   - Check for epistemic data:
      ```bash
-     GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
-     cat "$GIT_ROOT/.empirica/active_session" 2>/dev/null || echo "NO_SESSION"
+     cat ~/.claude/.current-session 2>/dev/null || echo "NO_SESSION"
+     jq -r '.calibration | to_entries[] | select((.value.observation_count >= 5) and ((.value.correction > 0.05) or (.value.correction < -0.05))) | "\(.key): correction \(.value.correction) — \(.value.behavioral_instruction)"' ~/.claude/epistemic.json 2>/dev/null || echo "NO_CALIBRATION"
      ```
-   - If session active, call `mcp__empirica__get_calibration_report` with the session ID
-     - Note any calibration adjustments (e.g., "You tend to overestimate `change` by 10%")
-   - Query global findings: call `mcp__empirica__query` or use Bash:
-     ```bash
-     empirica query findings --scope global --limit 5 --output json 2>/dev/null
-     ```
-   - Surface any high-impact findings (impact >= 0.7) from OTHER projects that might be relevant:
-     - Match by keyword overlap with current project's domain
-     - Present as "Cross-project insights that may apply here"
-   - If no Empirica session or CLI unavailable, skip silently
+   - If calibration data exists, note any corrections (e.g., "You tend to overestimate `know` — read more files before rating high")
+   - The SessionStart hook already injects calibration context, but `/start` provides a second chance to review it
+   - If no epistemic data available, skip silently
 
 4. **Assess current state** (in parallel):
    - `git status` - Check for uncommitted changes
@@ -90,12 +83,12 @@ Quickly assess project state and recommend the optimal next task.
 [If no matches: "No prior vault knowledge for this project"]
 
 ## Cross-Project Insights
-[If Empirica available and global findings found:]
+[If epistemic tracking available and global findings found:]
   Calibration: [adjustment summary, e.g., "you overestimate change by 10%"]
   From other projects:
   - [Finding summary] (project: X, impact: 0.Y)
   ...
-[If no Empirica or no relevant findings: omit section]
+[If no epistemic data or no relevant findings: omit section]
 
 ## Recommended Next Task
 **[Task description]**

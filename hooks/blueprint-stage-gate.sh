@@ -1,14 +1,14 @@
 #!/bin/bash
 # Blueprint Stage Gate - PostToolUse Hook (Edit|Write matcher)
-# Enforces Empirica integration during blueprint workflow.
+# Enforces epistemic integration during blueprint workflow.
 #
-# Checks for required Empirica data before allowing stage transitions.
-# Blocking (exit 2) — prevents stage transitions when Empirica data is missing.
+# Checks for required epistemic data before allowing stage transitions.
+# Blocking (exit 2) — prevents stage transitions when epistemic data is missing.
 # Promoted from advisory mode after initial confidence period.
 #
 # Fires on Write operations to state.json within .claude/plans/*/
 # Checks:
-#   1. empirica_session_id exists and is non-null
+#   1. epistemic_session_id (or legacy empirica_session_id) exists and is non-null
 #   2. Previous stage has a confidence score
 #   3. On Stage 1→2 transition: preflight assessment exists
 #   4. manifest_stale flag is not set [H5]
@@ -45,12 +45,12 @@ esac
 MISSING=()
 PRESENT=()
 
-# Check 1: Empirica session_id
-SESSION_ID=$(jq -r '.empirica_session_id // empty' "$FILE_PATH" 2>/dev/null)
+# Check 1: epistemic session_id
+SESSION_ID=$(jq -r '.epistemic_session_id // .empirica_session_id // empty' "$FILE_PATH" 2>/dev/null)
 if [ -z "$SESSION_ID" ] || [ "$SESSION_ID" = "null" ]; then
-    MISSING+=("empirica_session_id in state.json")
+    MISSING+=("epistemic_session_id in state.json")
 else
-    PRESENT+=("empirica_session_id in state.json")
+    PRESENT+=("epistemic_session_id in state.json")
 fi
 
 # Check 2: Previous completed stage has confidence score
@@ -79,7 +79,7 @@ done
 
 # Check 3: Preflight assessment (required before Stage 2)
 if [ "$CURRENT_STAGE" -ge 2 ] 2>/dev/null; then
-    PREFLIGHT=$(jq -r '.empirica_preflight_complete // false' "$FILE_PATH" 2>/dev/null)
+    PREFLIGHT=$(jq -r '.epistemic_preflight_complete // .empirica_preflight_complete // false' "$FILE_PATH" 2>/dev/null)
     if [ "$PREFLIGHT" = "true" ]; then
         PRESENT+=("preflight assessment")
     else
@@ -96,7 +96,7 @@ fi
 # Report if anything is missing
 if [ ${#MISSING[@]} -gt 0 ]; then
     echo ""
-    echo "BLOCKED: Blueprint stage gate — missing Empirica data."
+    echo "BLOCKED: Blueprint stage gate — missing epistemic data."
     for item in "${PRESENT[@]}"; do
         echo "  - [x] $item"
     done
@@ -104,7 +104,7 @@ if [ ${#MISSING[@]} -gt 0 ]; then
         echo "  - [ ] $item"
     done
     echo ""
-    echo "Run the required Empirica calls before advancing to the next stage."
+    echo "Run the required epistemic calls before advancing to the next stage."
     echo ""
     # Exit 2 = block the tool use (promoted from advisory)
     exit 2

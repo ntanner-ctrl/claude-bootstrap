@@ -68,7 +68,7 @@ Create JSON:
     "active_tdd_phase": "[phase or null]",
     "files_in_progress": ["file1.ts", "file2.ts"]
   },
-  "empirica": {
+  "epistemic": {
     "session_id": "uuid or null",
     "preflight_complete": true,
     "last_finding_count": 5
@@ -142,5 +142,5 @@ cat .claude/checkpoints/*.json | jq -s 'sort_by(.timestamp) | last'
 - Old checkpoints are NOT deleted (they're cheap and provide history)
 - The session-sail hook only shows the LATEST checkpoint
 - Pair with `/dashboard` to see full active state
-- **`empirica` field:** Captures Empirica session state so a resumed session can reconnect to the same epistemic tracking. `session_id` is the active Empirica session UUID (or null if none). `preflight_complete` indicates whether preflight assessment was submitted. `last_finding_count` is the number of findings logged so far (helps the resumed session gauge how much was captured).
+- **`epistemic` field:** Captures epistemic session state so a resumed session can reconnect to the same tracking. `session_id` is the active session ID from `~/.claude/.current-session` (or null if none). `preflight_complete` indicates whether preflight assessment was submitted. `last_finding_count` is the number of findings logged so far (helps the resumed session gauge how much was captured).
 - **`compaction_context` field:** Only populated when the checkpoint is triggered by the compaction guardian (context >= 75%). Contains `triggered_by_guardian` (boolean), `context_percentage_at_checkpoint` (integer), and `key_context` (object with `current_task`, `blocking_question`, `last_file_edited`, `next_intended_action`, and `confidence_caveat`). The `confidence_caveat` should note that high-context checkpoints may have lossy early-conversation recall.

@@ -103,12 +103,13 @@ Write to `.claude/success-logs/success-YYYY-MM-DD-HHMM.md`:
 [Actionable pattern for future prompting/context/harnessing]
 ```
 
-### Step 5: Empirica Integration
+### Step 5: Epistemic Tracking
 
-If Empirica session is active:
-1. Call `finding_log` with:
-   - `session_id`: active session
-   - `finding`: "[Success] " + one-line takeaway
+If an epistemic session is active (`~/.claude/.current-session` exists):
+1. Append to `.empirica/insights.jsonl`:
+   ```json
+   {"timestamp": "ISO-8601", "type": "finding", "input": {"finding": "[Success] one-line takeaway"}}
+   ```
 2. Successes are high-signal findings — they represent validated patterns
 
 ### Step 6: Vault Export (if available)
@@ -135,7 +136,7 @@ Display:
   Takeaway:  [one-line takeaway]
   Pattern:   [N previous successes in this category / first occurrence]
 
-  Empirica:  [logged / skipped]
+  Epistemic: [logged / skipped]
   Vault:     [exported / skipped]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
