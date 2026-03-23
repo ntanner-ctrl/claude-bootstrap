@@ -15,7 +15,7 @@ This repo is a **distribution package** — not a runtime app. `install.sh` copi
 
 ```
 claude-sail/
-├── commands/          # 62 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
+├── commands/          # 63 slash commands (*.md with YAML frontmatter, includes plugin-enhancers reference)
 │   ├── templates/     # Stock elements installed by /bootstrap-project into target projects
 │   │   ├── stock-hooks/      # 6 prompt-based hooks for target projects
 │   │   ├── stock-agents/     # 3 agents for target projects
@@ -25,7 +25,7 @@ claude-sail/
 │   │   ├── prompts/          # Shared prompt templates (dispatch/delegate review lenses)
 │   │   └── documentation/    # Diataxis doc templates
 │   └── *.md           # The actual toolkit commands
-├── agents/            # 6 review agents (spec, quality, security, performance, architecture, CloudFormation)
+├── agents/            # 12 agents: 6 review agents + 6 paradigm lens agents for /prism
 ├── hooks/             # 19 shell files: 18 hooks + 1 utility (_audit-log.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
 ├── hookify-rules/     # 7 YAML-based safety rules (*.local.md)
 ├── plugins/           # Session-start plugin (sail-toolkit)

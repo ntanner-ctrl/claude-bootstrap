@@ -26,8 +26,8 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 62 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
-| [**Agents**](agents/) | 6 specialized review agents (spec, quality, security, performance, architecture, CloudFormation) |
+| [**Commands**](commands/README.md) | 63 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
+| [**Agents**](agents/) | 12 agents: 6 specialized review agents + 6 paradigm lens agents for `/prism` |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Shell Hooks**](hooks/) | 19 shell files (18 hooks + 1 audit utility) for safety, session lifecycle, epistemic tracking, toolkit hardening |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
@@ -42,7 +42,7 @@ claude
 | **Workflow Wizards** | `/blueprint`, `/review`, `/test` |
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/brainstorm`, `/decision`, `/design-check`, `/requirements-discovery`, `/prior-art` |
 | **Adversarial** | `/devils-advocate`, `/overcomplicated`, `/edge-cases`, `/gpt-review` |
-| **Quality** | `/tdd`, `/quality-gate`, `/quality-sweep`, `/spec-to-tests`, `/security-checklist`, `/debug` |
+| **Quality** | `/tdd`, `/quality-gate`, `/quality-sweep`, `/prism`, `/spec-to-tests`, `/security-checklist`, `/debug` |
 | **Learning** | `/log-error`, `/log-success` |
 | **Execution** | `/dispatch`, `/delegate`, `/checkpoint`, `/end`, `/push-safe` |
 | **Vault** | `/vault-save`, `/vault-query`, `/vault-curate`, `/collect-insights`, `/promote-finding` |

@@ -53,6 +53,7 @@ Complete reference for all Claude Sail commands.
 | `/tdd` | TDD-enforced development with RED-GREEN-REFACTOR discipline |
 | `/quality-gate` | Quality threshold check before completing implementation |
 | `/quality-sweep` | Post-implementation review sweep with all reviewer agents |
+| `/prism [target]` | Holistic code health assessment — paradigm lens swarm + serial domain reviews |
 | `/spec-to-tests` | Generate tests from spec (spec-blind) |
 | `/security-checklist` | 8-point OWASP-style security audit |
 | `/debug` | Scientific debugging (OBSERVE-HYPOTHESIZE-PREDICT-EXPERIMENT-CONCLUDE) |
@@ -450,6 +451,29 @@ Enforcement modes:
 ```
 
 **When to use:** Before completing significant implementation. Blocks below-threshold work.
+
+---
+
+### `/prism [target]`
+
+**Holistic code health assessment.** Runs a parallel paradigm lens swarm (6 observation agents: DRY, YAGNI, KISS, consistency, cohesion, coupling) followed by serial domain reviews (architecture → CloudFormation → security → performance → quality) where each reviewer reads accumulated findings from prior stages.
+
+```
+/prism                    # Assess entire project
+/prism src/auth/          # Scope to a directory
+```
+
+Produces a **themed remediation plan** with:
+- **Discrete fixes** — specific file:line changes
+- **Nebulous patterns** — project-level issues requiring human judgment
+- **Ease/Impact/Risk scoring** — prioritized by composite score
+- **Constraint extraction audit** — shows what shaped downstream reviews
+
+Exports to Obsidian vault for longitudinal tracking if available.
+
+**Decision guide:** Use `/quality-sweep` for recent change review (parallel, independent agents). Use `/prism` for whole-project health (serial, linked reviewers with accumulated context).
+
+**When to use:** Periodic project assessment, before major refactoring, or when onboarding to an unfamiliar codebase.
 
 ---
 
