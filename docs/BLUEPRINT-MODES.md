@@ -21,7 +21,7 @@ The original behavior. A single agent reviews the spec from one perspective per 
 
 **Cost:** ~1 subagent call per stage (2 total for Stages 3+4).
 
-### Debate Mode (Default)
+### Debate Mode
 
 A three-round sequential critique chain. Each round's agent sees all prior output,
 creating escalating depth.
@@ -36,13 +36,14 @@ creating escalating depth.
 2. **Stress Tester** — Tests each boundary: just below, at, just above, far beyond
 3. **Synthesizer** — Prioritizes by impact x likelihood, flags architectural implications
 
-**When to use:** Default for most work. The debate structure catches issues that single-perspective
-review misses — the Defender's response to the Challenger is particularly valuable because
-it forces nuanced assessment instead of a raw list of complaints.
+**When to use:** Good for token-constrained reviews or when historical vault context isn't needed.
+The debate structure catches issues that single-perspective review misses — the Defender's
+response to the Challenger is particularly valuable because it forces nuanced assessment
+instead of a raw list of complaints.
 
 **Cost:** ~3 subagent calls per stage (6 total for Stages 3+4). Uses sonnet model.
 
-### Family Mode (Generational Debate)
+### Family Mode (Default — Generational Debate)
 
 A multi-round generational critique structure with five specialized agents. Each round
 builds on the previous, with an Elder Council that queries historical vault data to
@@ -101,6 +102,13 @@ convergence, confidence is set to 0.3 and regression is suggested if critical it
 by round), raw transcript to `debate-log.md`. Progress tracked via `family_progress` in
 `state.json`.
 
+### Guided Walkthrough (Planned — Not Yet Implemented)
+
+A future Stage 7 implementation option that would provide interactive human review at each
+work unit boundary. Deferred pending design of the interactive protocol (pause/resume state,
+permission inheritance, context accumulation management). When implemented, this would be
+the third implementation option alongside Sequential and Parallel dispatch.
+
 ### Team Mode (Experimental)
 
 Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Falls back to debate if not enabled.
@@ -128,8 +136,9 @@ perspectives justify the cost. Experimental — behavior may evolve.
 | Token cost | Low (~2 calls) | Medium (~6 calls) | High (~10-30 calls) | High (~6 agents) |
 | Depth | Surface | Deep (escalating context) | Deepest (historical + generational) | Broad (diverse views) |
 | Speed | Fast | Moderate | Slow (multi-round convergence) | Depends on agent coordination |
-| Best for | Quick reviews | Most work (default) | Deep specs with historical context | High-risk, security-critical |
+| Best for | Quick reviews | Token-constrained reviews | Most work (default) | High-risk, security-critical |
 | Requires | Nothing | Nothing | Obsidian vault (recommended) | Experimental flag |
+| Relative cost | 1x | 3x | 5-15x (complexity-adaptive) | 3x |
 
 ---
 
@@ -149,10 +158,10 @@ team mode produce structured JSON output that feeds automatic regression trigger
 ## Mode Selection
 
 ```bash
-/blueprint feature-auth                      # debate (default)
+/blueprint feature-auth                      # family mode (default)
 /blueprint feature-auth --challenge=vanilla  # single-agent
-/blueprint feature-auth --challenge=debate   # explicit debate
-/blueprint feature-auth --challenge=family   # generational debate (deep specs)
+/blueprint feature-auth --challenge=debate   # sequential debate chain
+/blueprint feature-auth --challenge=family   # explicit family (same as default)
 /blueprint feature-auth --challenge=team     # experimental teams
 ```
 
@@ -171,10 +180,19 @@ On regression, the same mode is reused — no re-prompting.
 
 ## FAQ
 
-**Q: Why is debate the default instead of vanilla?**
-A: The three-round chain catches significantly more issues than single-perspective review.
-The Defender round is particularly valuable — it prevents false positives by forcing each
-finding to withstand scrutiny, and it identifies things the Challenger missed.
+**Q: Why is family the default instead of debate?**
+A: Family mode catches significantly more critical bugs than debate — in testing, it found
+6 critical/high bugs that debate/vanilla would have missed (0.90 empirical confidence).
+The Mother's synthesis role catches compound failures where two individually-safe things
+interact dangerously. The token cost is managed by complexity-adaptive rounds (S-1):
+simple specs run only 1 round (~5 agent calls), comparable to debate's 3.
+
+**Q: Family mode is more expensive than debate. Why make it the default?**
+A: Complexity-adaptive rounds (S-1) scale cost to complexity: simple specs (≤3 WUs) get
+1 round, medium specs get 2, complex specs get 3. For simple specs, the cost difference
+vs debate is minimal (~5 agents vs ~3). For complex specs, the deeper analysis is worth
+the additional tokens — these are the specs where critical bugs are most likely to hide.
+Use `--challenge=debate` if you need to minimize token usage.
 
 **Q: Can I switch modes mid-blueprint?**
 A: No. The mode is locked at creation to ensure consistent adversarial depth across

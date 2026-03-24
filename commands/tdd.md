@@ -84,6 +84,14 @@ Enforce true RED-GREEN-REFACTOR discipline. Tests MUST exist and fail before imp
 
 ---
 
+### Work-Unit-Level Invocation
+
+TDD is also applied automatically at the work-unit level during blueprint execution. When a WU in the work graph has `tdd: true`, the implementation path (sequential or parallel dispatch) wraps that WU in RED-GREEN-REFACTOR. This happens transparently — the `/tdd` command does not need to be invoked manually for WU-level TDD. See `/delegate` Step 3 for the per-WU TDD enrichment mechanism.
+
+The standalone `/tdd` command remains available for ad-hoc TDD sessions outside of blueprint workflows.
+
+---
+
 ### Phase 1: SPEC
 
 **Goal:** Define behavior and acceptance criteria BEFORE writing any code.

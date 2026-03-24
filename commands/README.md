@@ -187,9 +187,9 @@ Stages:
 
 Challenge modes for Stages 3 and 4:
 ```
-/blueprint feature-auth                      # debate mode (default)
+/blueprint feature-auth                      # family mode (default)
 /blueprint feature-auth --challenge=vanilla  # single-agent
-/blueprint feature-auth --challenge=family   # generational debate (deep specs)
+/blueprint feature-auth --challenge=debate   # sequential debate chain
 /blueprint feature-auth --challenge=team     # agent teams (experimental)
 ```
 

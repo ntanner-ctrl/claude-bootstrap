@@ -74,9 +74,9 @@ Every change starts with `/describe-change`, which determines planning depth:
 Guided workflow through all stages with four challenge modes:
 
 ```
-/blueprint feature-auth                     # debate mode (default)
+/blueprint feature-auth                     # family mode (default)
 /blueprint feature-auth --challenge=vanilla # single-agent (original)
-/blueprint feature-auth --challenge=family  # generational debate (deep specs)
+/blueprint feature-auth --challenge=debate  # sequential debate chain
 /blueprint feature-auth --challenge=team    # agent teams (experimental)
 
 Stage 1: Describe     → Triage the change

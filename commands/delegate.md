@@ -137,9 +137,26 @@ Task(
   subagent_type: "general-purpose",
   model: [selected_model],
   max_turns: 15,
-  prompt: IMPLEMENTER_PROMPT + task_context
+  prompt: IMPLEMENTER_PROMPT + task_context + tdd_context
 )
 ```
+
+**TDD per-WU enrichment:** When `--plan-context [name]` is provided, check for TDD annotations:
+
+1. Read `.claude/plans/[name]/work-graph.json` if it exists
+2. For each task, match to the corresponding WU node by checking if any file in the task's target files appears in a WU node's `files` array (first match wins)
+3. If the matched WU has `tdd: true` (strict boolean equality — string `"true"` does NOT match), append TDD instructions to the implementer prompt:
+
+```
+TDD ENFORCEMENT (this work unit):
+  This work unit requires test-driven development.
+  1. RED: Write tests for the acceptance criteria. Tests MUST fail.
+  2. GREEN: Write minimal implementation to pass tests.
+  3. REFACTOR: Clean up while keeping tests green.
+  Do NOT write implementation before tests exist and fail.
+```
+
+4. If `tdd: false`, tdd field is absent, or work-graph.json not found: standard implementation (no TDD instructions appended)
 
 Display progress:
 ```

@@ -189,13 +189,28 @@ If tracking:
 After the spec is written and includes a Work Units table, generate `work-graph.json`:
 
 1. **Parse Work Units table** — Extract ID, Description, Files, Dependencies, Complexity from the spec's Work Units section
-2. **Validate dependencies** — Run topological sort to detect circular dependencies. If cycles found, halt with error listing the cycle members and prompt user to fix the dependency table.
-3. **Validate work unit count** — If zero work units found, block progression: "Spec requires at least one Work Unit."
-4. **Build dependency graph** — Create nodes and edges from the parsed data
-5. **Compute batches** — Group units into parallelizable batches using topological sort
-6. **Analyze** — Calculate max parallel width, critical path length, file conflicts
-7. **Compute checksum** — SHA-256 hash of the spec.md Work Units section content
-8. **Write work-graph.json** — Save to `.claude/plans/[name]/work-graph.json`
+2. **Annotate TDD per work unit** — For each WU, assign `tdd: true` or `tdd: false` using the module characteristic heuristic:
+
+   | Module Characteristic | TDD | Examples |
+   |----------------------|-----|----------|
+   | Clear I/O boundary | `true` | Parser, API client, transformer |
+   | Error contract / protocol | `true` | Protocol handlers, validators |
+   | API backward compatibility | `true` | Functions with existing callers |
+   | Gate / decision logic | `true` | Activation logic, state machines |
+   | Config / Docker / shell | `false` | docker-compose.yml, Dockerfile |
+   | Cloud infra / ETL | `false` | Terraform, PySpark, migrations |
+   | Simple wiring / glue | `false` | Dict assembly, config fields |
+   | Documentation only | `false` | README, comments, docs |
+
+   Add a `TDD` column to the Work Units table if not already present. The annotation is a recommendation — users can override conversationally during execution.
+
+3. **Validate dependencies** — Run topological sort to detect circular dependencies. If cycles found, halt with error listing the cycle members and prompt user to fix the dependency table.
+4. **Validate work unit count** — If zero work units found, block progression: "Spec requires at least one Work Unit."
+5. **Build dependency graph** — Create nodes and edges from the parsed data
+6. **Compute batches** — Group units into parallelizable batches using topological sort
+7. **Analyze** — Calculate max parallel width, critical path length, file conflicts
+8. **Compute checksum** — SHA-256 hash of the spec.md Work Units section content
+9. **Write work-graph.json** — Save to `.claude/plans/[name]/work-graph.json` (include `tdd` field per node)
 
 The work graph schema is defined in `docs/PLANNING-STORAGE.md`.
 

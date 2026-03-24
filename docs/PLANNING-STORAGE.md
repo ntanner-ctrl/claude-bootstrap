@@ -79,8 +79,8 @@ schema with challenge mode, confidence scoring, epistemic tracking integration, 
     "challenge_mode": {
       "type": "string",
       "enum": ["vanilla", "debate", "family", "team"],
-      "default": "debate",
-      "description": "Set once at creation, locked for blueprint lifecycle"
+      "default": "family",
+      "description": "Set once at creation, locked for blueprint lifecycle. Changed from debate to family in v3."
     },
     "execution_preference": {
       "type": "string",
@@ -519,7 +519,8 @@ markdown) at recovery points. ~5-10x more token-efficient than reading all artif
         "files": { "type": "array", "items": { "type": "string" } },
         "deps": { "type": "array", "items": { "type": "string" } },
         "complexity": { "type": "string", "enum": ["low", "medium", "high"] },
-        "status": { "type": "string", "enum": ["pending", "in_progress", "complete", "failed"] }
+        "status": { "type": "string", "enum": ["pending", "in_progress", "complete", "failed"] },
+        "tdd": { "type": "boolean", "default": false, "description": "TDD enforcement flag. Absent defaults to false." }
       }
     }
   }
@@ -598,7 +599,12 @@ Dependency graph of work units. Computed during Stage 2 (Specify), consumed by
           "label": { "type": "string" },
           "files": { "type": "array", "items": { "type": "string" } },
           "status": { "type": "string", "enum": ["pending", "in_progress", "complete", "failed"] },
-          "complexity": { "type": "string", "enum": ["low", "medium", "high"] }
+          "complexity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "tdd": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this WU should use TDD (RED-GREEN-REFACTOR). Assigned during Stage 2 via module characteristic heuristic. Absent field defaults to false for backward compatibility."
+          }
         }
       }
     },

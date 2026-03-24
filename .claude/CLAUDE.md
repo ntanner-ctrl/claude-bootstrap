@@ -151,9 +151,10 @@ Three layers (see `docs/SECURITY.md`):
 
 ### Blueprint Challenge Modes
 
-Default: **debate** (3-round sequential chain). See `docs/BLUEPRINT-MODES.md`:
+Default: **family** (generational debate with complexity-adaptive rounds). See `docs/BLUEPRINT-MODES.md`:
 - Vanilla: single perspective
 - Debate: Challenger → Defender → Judge (escalating depth)
+- Family: Children → Mother → Father → Elder Council (dialectical synthesis, vault-integrated)
 - Team: 3 concurrent agents (experimental, requires flag)
 
 ## Common Tasks

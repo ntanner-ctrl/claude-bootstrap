@@ -5,7 +5,7 @@ arguments:
     description: Name for this blueprint (required for new, optional to resume)
     required: false
   - name: challenge
-    description: "Challenge mode: vanilla, debate (default), family, team"
+    description: "Challenge mode: vanilla, debate, family (default), team"
     required: false
   - name: parallel
     description: "Parallelization: sequential, parallel, auto (default)"
@@ -36,8 +36,8 @@ Guided planning workflow that walks through all stages. Use this for full planni
 ```
 Stage 1: Describe    → /describe-change (triage, path, execution_preference)
 Stage 2: Specify     → /spec-change (spec + work units + work graph)
-Stage 3: Challenge   → Debate chain (default) / Vanilla / Family / Agent team
-Stage 4: Edge Cases  → Debate chain (default) / Vanilla / Family / Agent team
+Stage 3: Challenge   → Family (default) / Vanilla / Debate / Agent team
+Stage 4: Edge Cases  → Family (default) / Vanilla / Debate / Agent team
 Stage 4.5: Pre-Mortem → Operational failure exercise
 Stage 5: Review      → /gpt-review (external perspective) [optional]
 Stage 6: Test        → /spec-to-tests (spec-blind tests)
@@ -113,6 +113,7 @@ Creates `.claude/plans/feature-auth/` and starts at Stage 1.
 ```
 
 If blueprint exists, read `manifest.json` for efficient context recovery (NOT full markdown).
+**On resume, the challenge mode is ALWAYS read from `state.json` `challenge_mode` field, NOT from the command's YAML frontmatter default.** This ensures that a blueprint created with `--challenge=debate` before the default changed to family continues using debate mode.
 Show current stage and resume.
 
 **List all blueprints:**
@@ -138,7 +139,7 @@ The challenge mode is selected once at blueprint creation and **locked for the b
 It applies to both Stage 3 (Challenge) and Stage 4 (Edge Cases).
 
 ```
-/blueprint feature-auth                      # debate mode (DEFAULT)
+/blueprint feature-auth                      # family mode (DEFAULT)
 /blueprint feature-auth --challenge=vanilla  # original single-agent
 /blueprint feature-auth --challenge=debate   # sequential debate chain
 /blueprint feature-auth --challenge=family   # generational debate (deep specs)
@@ -395,7 +396,7 @@ and `/edge-cases` (Stage 4) sequentially. One perspective per stage.
 
 Output: Findings appended to `adversarial.md` as before.
 
-### Debate Mode (Default)
+### Debate Mode
 
 A three-round sequential critique chain using subagents. Each round's agent sees all
 prior rounds' output, creating escalating context.
@@ -519,7 +520,7 @@ The Judge/Synthesizer output is processed as follows:
 The curated output goes to `adversarial.md` (canonical source of truth).
 Raw debate transcript preserved in `debate-log.md` (debug artifact only).
 
-### Family Mode (Generational Debate)
+### Family Mode (Default — Generational Debate)
 
 A six-role generational debate architecture with three tiers. Designed for deep specification
 review where the dialectical (thesis/antithesis/synthesis) approach produces better results
@@ -558,22 +559,22 @@ than adversarial (winner/loser) debate. Best for major blueprints on the Full pa
 #### Family Mode Agent Specifications
 
 **Child-Defend** (subagent, sonnet):
-An earnest advocate who genuinely believes the spec is sound. Not a sycophant — believes
-because they've found real reasons. Receives `spec.md` independently.
+A steelman advocate who finds the strongest possible case FOR the spec. Not a sycophant —
+builds rigorous arguments from evidence. Receives `spec.md` independently.
 
 ```
-You are the Defender of this specification. You genuinely believe this
-plan is sound, and your job is to articulate WHY.
+You are the Defender of this specification. Your job is to steelman it —
+find the strongest possible case FOR this plan.
 
 For each major design decision in the spec:
-  - Why is this the RIGHT choice? What alternatives were implicitly
-    rejected, and why is this better?
+  - What design choices are correct that a casual reader might question?
+  - What constraints are handled that aren't obvious?
+  - What alternatives were implicitly rejected, and why is this better?
   - What strengths would be LOST if this section were changed?
-  - What subtle benefits does this approach have that a critic might miss?
 
 You are not a yes-man. If a section is genuinely weak, you may
-acknowledge it — but even then, find the kernel of good intent behind
-it and articulate why that intent matters.
+acknowledge it — but even then, articulate the intent behind it and
+why that intent matters, even if the execution needs work.
 
 Produce a numbered list of defended positions, each with:
   - The decision being defended
@@ -692,7 +693,10 @@ If no relevant vault results are found for any query:
 
 If the Obsidian vault is unavailable (MCP error, vault not mounted):
   - Note: "Historical review limited — vault unavailable"
-  - Proceed with analysis based on spec content only
+  - Compensate by drawing on general software engineering principles
+    and common failure patterns for this type of system. Ask:
+    "What patterns from software engineering generally apply here?"
+    "What are the common failure modes for this kind of change?"
   - Do NOT block the review
 
 WITH HISTORICAL CONTEXT (or without, if unavailable):
@@ -777,21 +781,35 @@ Round N:
             Children receive: refined spec + elder's carry_forward context
 ```
 
-**Hard limits:**
-- Maximum rounds: 3 (hardcoded)
-- Per-agent timeout: 3 minutes (individual agent cutoff)
-- Round timeout: 10 minutes (all 5 agents combined per round)
-- Total mode timeout: 25 minutes (all rounds combined)
+**Complexity-adaptive round limits:**
 
-**Timeout behavior:**
-- If a single agent exceeds 3 minutes: kill agent, log dead-end to `.epistemic/insights.jsonl`, skip that
-  agent's contribution, continue with remaining agents
-- If round timeout exceeded: complete current agent, skip remaining agents in round,
-  force Elder verdict with available data
-- If total timeout exceeded: force CONVERGED with `confidence: 0.4` and note
-  "timeout — forced convergence"
-- On any timeout: fall back to vanilla mode is NOT applied (family mode either completes
-  within limits or forces convergence — no mid-stream mode switch)
+The maximum number of rounds scales with spec complexity, derived from the work graph:
+
+| Signal | Condition | Max Rounds |
+|--------|-----------|------------|
+| Simple | ≤3 WUs AND no High-complexity WUs | 1 |
+| Medium | 4-5 WUs OR 1+ High-complexity WU | 2 |
+| Complex | ≥6 WUs | 3 |
+
+The signal is computed from `work-graph.json` at the start of Stage 3/4.
+Users can override with `--rounds=N` if needed.
+
+**Progress checks (liveness probes):**
+
+Family mode uses progress checks instead of hard timeouts for rounds and totals.
+The design principle: don't cap how long the cooking takes — verify the cooking continues.
+
+- **Per-agent liveness check:** 3 minutes. An individual agent that produces nothing for
+  3 minutes is stuck, not thorough. On timeout: kill agent, log dead-end to
+  `.epistemic/insights.jsonl`, skip that agent's contribution, continue with remaining agents.
+- **Between agents:** After each agent completes (or times out), verify output was produced.
+  Output received → progress confirmed, continue to next agent. No output (timeout) → skip + log.
+- **Between rounds:** The Elder Council's convergence verdict (CONVERGED/CONTINUE) is itself
+  a progress check. CONVERGED stops the loop. CONTINUE advances to the next round.
+- **Round count limit:** Bounds total work by the complexity-adaptive table above, not wall time.
+  On max rounds exhausted without convergence: force CONVERGED with `confidence: 0.3`.
+- **No per-round or total hard timeouts.** A round that takes 15 minutes because the Elder
+  Council did a thorough vault search is fine if it's producing output.
 
 **Convergence conditions** (Elder Council must satisfy ALL):
 1. No historical red flags remain unaddressed
@@ -1563,10 +1581,12 @@ After presenting the completion summary, export blueprint to vault if available:
     /preflight              — Safety check for risky operations
     /freeze [dir]           — Lock directories you don't want touched during implementation
 
+  TDD enforcement: [N] of [M] work units annotated tdd:true
+    (TDD applied per-WU automatically — not a path choice)
+
   Implementation options:
-    [1] Standard implementation (sequential)
-    [2] TDD-enforced → /tdd --plan-context [name]
-    [3] Parallel dispatch → /delegate --plan .claude/plans/[name]/spec.md --review
+    [1] Sequential — work units executed one at a time
+    [2] Parallel dispatch → /delegate --plan .claude/plans/[name]/spec.md --review
         [parallelization recommendation based on work graph + execution_preference]
 
   Post-implementation:
