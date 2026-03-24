@@ -6,6 +6,16 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "The blueprint already challenged this thoroughly" | Blueprint challenges the PLAN. Review challenges the IMPLEMENTATION. Different artifacts, different failure modes. |
+| "I'll just do a quick look instead of running the full workflow" | A "quick look" misses what structured adversarial review catches: the things you don't think to look for. |
+| "This is a small change, review is overkill" | Small changes in critical paths cause the biggest incidents. The review is proportional to risk, not size. |
+
 # Review
 
 Focused adversarial review workflow. Use this when you have a blueprint or implementation and want to systematically challenge it without going through full planning stages.
@@ -24,11 +34,26 @@ Stage 5 only appears when specialized review plugins are detected.
 
 ## Process
 
+### Vault Check
+
+Before starting the review, check for prior work:
+
+```bash
+source ~/.claude/hooks/vault-config.sh 2>/dev/null
+```
+
+If vault is available (`VAULT_ENABLED=1`, `VAULT_PATH` non-empty, `[ -d "$VAULT_PATH" ]`):
+- Search for prior reviews, decisions, or findings related to the target
+- If matches found: "Vault has N notes related to this review target:" [list with 1-line summaries]
+- If no matches: proceed silently
+
+If vault unavailable: skip silently (fail-open).
+
 ### Step 1: Identify Target
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  REVIEW │ Stage 1 of 4: Setup
+  REVIEW │ Stage 1 of 5: Setup
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 What are you reviewing?
@@ -45,7 +70,7 @@ What are you reviewing?
 **Stage 1: Devil's Advocate**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  REVIEW │ Stage 1 of 4: Devil's Advocate
+  REVIEW │ Stage 1 of 5: Devil's Advocate
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Challenging assumptions...
@@ -53,10 +78,12 @@ Challenging assumptions...
 
 Run `/devils-advocate` on the target.
 
+> Stage 1 complete: [N] assumption gaps found. Proceeding to Stage 2 (Simplify).
+
 **Stage 2: Simplify**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  REVIEW │ Stage 2 of 4: Simplify
+  REVIEW │ Stage 2 of 5: Simplify
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Questioning complexity...
@@ -64,10 +91,12 @@ Questioning complexity...
 
 Run `/overcomplicated` on the target.
 
+> Stage 2 complete: [N] simplification opportunities found. Proceeding to Stage 3 (Edge Cases).
+
 **Stage 3: Edge Cases**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  REVIEW │ Stage 3 of 4: Edge Cases
+  REVIEW │ Stage 3 of 5: Edge Cases
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Probing boundaries...
@@ -75,10 +104,12 @@ Probing boundaries...
 
 Run `/edge-cases` on the target.
 
+> Stage 3 complete: [N] unhandled edge cases found. Proceeding to Stage 4 (External Review).
+
 **Stage 4: External Review (Optional)**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  REVIEW │ Stage 4 of 4: External Review
+  REVIEW │ Stage 4 of 5: External Review
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Would you like an external perspective via /gpt-review?
@@ -91,6 +122,8 @@ This can catch blind spots that local review missed.
 ```
 
 If yes, run `/gpt-review` with all local findings included.
+
+> Stage 4 complete: external review [included/skipped]. Proceeding to Stage 5 (Deep Analysis).
 
 **Stage 5: Deep Analysis (Optional)**
 
@@ -197,6 +230,23 @@ Options are dynamically numbered based on detected plugins. Multiple can be sele
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+## Failure Modes
+
+| What Could Fail | Detection | Recovery |
+|-----------------|-----------|----------|
+| Devil's advocate finds nothing to challenge | Stage 1 output is empty | Target may be genuinely solid, or scope is too narrow. Try broadening scope or running `/edge-cases` directly. |
+| Plugin agents fail or timeout | Plugin dispatch returns error or no output within 5 minutes | Circuit breaker activates after 3 failures. Fall back to GPT review. See Graceful Degradation section. |
+| Target scope too broad | Review produces generic findings without specific file:line references | Narrow scope to a specific blueprint, directory, or component. |
+| External review (GPT) unavailable | `/gpt-review` reports WebSearch or proxy unavailable | Skip Stage 4. Local adversarial stages (1-3) provide substantial coverage. |
+| All stages produce contradictory findings | Stage 2 (Simplify) recommends removing what Stage 1 flagged as critical | This is signal, not failure. Present contradictions explicitly for user judgment. |
+
+## Known Limitations
+
+- **Implementation-blind when pre-implementation** — Review is most valuable when implementation artifacts exist. Pre-implementation review is based on spec prose only, which limits specificity.
+- **Plugin availability varies** — Stages 4-5 depend on optional plugins. Not all environments have the same review capabilities.
+- **Single-pass review** — Each stage runs once. Unlike /blueprint's family debate, /review does not iterate on its findings.
+- **No automated regression tracking** — Review findings are presented but not automatically wired into blueprint regression loops. User must decide whether to act on findings.
 
 ## Quick Mode
 

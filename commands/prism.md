@@ -6,6 +6,16 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "The project is too small for a full prism" | Small projects have the highest concentration of patterns — prism catches them early before they scale. |
+| "I already know what's wrong" | You know what's VISIBLE. Prism's value is cross-cutting themes that emerge from 11 independent perspectives. |
+| "This will take too long" | Prism runs agents in parallel. The time cost is less than the cost of missing a systemic pattern. |
+
 # Prism — Holistic Code Health Assessment
 
 Assesses code health through a parallel paradigm lens swarm (6 observation agents) followed by serial domain reviews (5 existing reviewers), where each domain reviewer reads accumulated findings from all prior stages. Produces a themed remediation plan with discrete and nebulous fix categories.

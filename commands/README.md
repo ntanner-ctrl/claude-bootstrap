@@ -20,6 +20,7 @@ Complete reference for all Claude Sail commands.
 |---------|-----------|
 | `/clarify [topic]` | Pre-planning — walks through what's fuzzy before you plan |
 | `/blueprint [name]` | Full planning workflow — walks through all stages |
+| `/prism [target]` | Holistic code health — parallel paradigm lens swarm + serial domain reviews |
 | `/review [target]` | Adversarial review workflow — challenge a blueprint |
 | `/test [name]` | Testing workflow — spec to tests to verification |
 
@@ -53,7 +54,7 @@ Complete reference for all Claude Sail commands.
 | `/tdd` | TDD-enforced development with RED-GREEN-REFACTOR discipline |
 | `/quality-gate` | Quality threshold check before completing implementation |
 | `/quality-sweep` | Post-implementation review sweep with all reviewer agents |
-| `/prism [target]` | Holistic code health assessment — paradigm lens swarm + serial domain reviews |
+| `/prism [target]` | Holistic code health assessment — paradigm lens swarm + serial domain reviews (also in Workflow Wizards) |
 | `/spec-to-tests` | Generate tests from spec (spec-blind) |
 | `/security-checklist` | 8-point OWASP-style security audit |
 | `/debug` | Scientific debugging (OBSERVE-HYPOTHESIZE-PREDICT-EXPERIMENT-CONCLUDE) |

@@ -56,6 +56,22 @@ Provide the specification to test from:
 >
 ```
 
+#### Vault Check
+
+Before reviewing the spec, check for prior test work:
+
+```bash
+source ~/.claude/hooks/vault-config.sh 2>/dev/null
+```
+
+If vault is available (`VAULT_ENABLED=1`, `VAULT_PATH` non-empty, `[ -d "$VAULT_PATH" ]`):
+- Search for prior test specs, edge case discoveries, or findings related to the feature
+- If matches found: "Vault has N notes related to testing this feature:" [list with 1-line summaries]
+- These may contain edge cases or failure modes discovered in prior sessions
+- If no matches: proceed silently
+
+If vault unavailable: skip silently (fail-open).
+
 Once spec is loaded, verify testability:
 
 ```
@@ -89,6 +105,8 @@ Resolve issues before proceeding? [y/n]
 >
 ```
 
+  Stage 1 complete: [N] criteria reviewed, [N] issues found. Proceeding to Stage 2 (Generate).
+
 ### Stage 2: Generate Tests
 
 ```
@@ -115,6 +133,8 @@ Total: 6 tests
 Proceed to verification? [y/n]
 >
 ```
+
+  Stage 2 complete: [N] tests generated. Proceeding to Stage 3 (Verify).
 
 ### Stage 3: Verify
 
@@ -203,6 +223,16 @@ If implementation exists:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
+## Failure Modes
+
+| What Could Fail | Detection | Recovery |
+|-----------------|-----------|----------|
+| Spec has no testable criteria | Stage 1 finds 0 testable items | Return to spec author. Suggest concrete acceptance criteria. Cannot generate meaningful tests from vague specs. |
+| /spec-to-tests produces no tests | Stage 2 output is empty | Spec criteria may be too abstract. Break into smaller, more concrete assertions. |
+| All tests pass trivially | Stage 3 anti-tautology check flags majority of tests | Tests are checking implementation, not behavior. Rewrite to test observable outcomes, not internal state. |
+| Implementation doesn't exist yet | Stage 3 "run tests" finds no code | Expected state for test-first workflows. Save tests, implement until they pass. |
+| Tests require mocks that don't exist | Stage 2 generates tests referencing unavailable dependencies | Use integration tests instead, or stub the dependency interface first. |
+
 ## Red Flags
 
 Watch for these anti-patterns:
@@ -213,6 +243,13 @@ Watch for these anti-patterns:
 | Implementation coupling | Test checks internal calls | Rewrite to test behavior |
 | Mock everything | All dependencies mocked | Use integration test instead |
 | Test modification | Changed test to pass | Review spec vs implementation |
+
+## Known Limitations
+
+- **Spec-dependent quality** — Test quality is bounded by spec quality. Vague specs produce vague tests. /test cannot compensate for a weak specification.
+- **No runtime environment awareness** — Tests are generated from spec text, not from runtime context. Environment-specific failures (OS, network, permissions) are not covered unless the spec mentions them.
+- **Single test framework assumption** — /spec-to-tests generates tests in the project's detected framework. Projects with multiple test frameworks may need manual adjustment.
+- **Anti-tautology is heuristic** — The Stage 3 tautology check uses pattern matching, not formal verification. Some trivially-passing tests may slip through.
 
 ## Integration
 

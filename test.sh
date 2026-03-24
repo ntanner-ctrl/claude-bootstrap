@@ -161,6 +161,26 @@ for f in "$SCRIPT_DIR"/commands/templates/stock-pipelines/*.yaml; do
     fi
 done
 
+# Wizard structural section checks
+WIZARD_FILES="blueprint.md prism.md clarify.md review.md test.md"
+WIZARD_SECTIONS="Cognitive Traps:Failure Modes|What Could Fail:Known Limitations:vault-config.sh"
+
+wizard_ok=true
+IFS=':' read -ra SECTIONS <<< "$WIZARD_SECTIONS"
+for wf in $WIZARD_FILES; do
+    filepath="$SCRIPT_DIR/commands/$wf"
+    [ -f "$filepath" ] || { fail "Wizard file missing: $wf"; wizard_ok=false; continue; }
+    for section in "${SECTIONS[@]}"; do
+        if ! grep -qE "$section" "$filepath"; then
+            fail "$wf — missing required wizard section: $section"
+            wizard_ok=false
+        fi
+    done
+done
+if $wizard_ok; then
+    pass "All wizard commands have required structural sections"
+fi
+
 echo ""
 
 # ─── 5. Hook Conventions ─────────────────────────────────────────

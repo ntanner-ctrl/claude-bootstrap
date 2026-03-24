@@ -1,0 +1,60 @@
+{
+  "blueprint_version": 2,
+  "name": "wizard-standardization",
+  "path": "full",
+  "challenge_mode": "family",
+  "execution_preference": "auto",
+  "current_stage": "challenge",
+  "revision": 0,
+  "regression_count": 0,
+  "regression_log": [],
+  "epistemic_session_id": null,
+  "epistemic_preflight_complete": false,
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "completed",
+      "started_at": "2026-03-24T22:00:00Z",
+      "completed_at": "2026-03-24T22:05:00Z",
+      "confidence": 0.9,
+      "confidence_note": "Clear goal, well-defined scope from conversation"
+    },
+    "specify": {
+      "status": "completed",
+      "started_at": "2026-03-24T22:05:00Z",
+      "completed_at": "2026-03-24T22:15:00Z",
+      "confidence": 0.85,
+      "confidence_note": "Spec covers all wizards with concrete checklist. Minor uncertainty: exact wording of cognitive traps for each wizard."
+    },
+    "challenge": {
+      "status": "in_progress",
+      "started_at": "2026-03-24T22:15:00Z"
+    },
+    "edge_cases": {
+      "status": "pending"
+    },
+    "premortem": {
+      "status": "pending"
+    },
+    "review": {
+      "status": "pending"
+    },
+    "test": {
+      "status": "pending"
+    },
+    "execute": {
+      "status": "pending"
+    }
+  },
+  "ambiguity_gate": {
+    "goal_clarity": 5,
+    "constraint_clarity": 4,
+    "success_criteria": 4,
+    "composite": 4.4,
+    "result": "pass",
+    "override": false
+  },
+  "work_units": 8,
+  "work_graph_width": 5
+}

@@ -190,7 +190,7 @@ Stages:
   ✓ 2. Specify      [completed timestamp]  (rev [N])
   → 3. Challenge    ← You are here
   ○ 4. Edge Cases
-  ○ 4.5 Pre-Mortem  (optional)
+  ○ 4.5 Pre-Mortem
   ○ 5. Review       (optional)
   ○ 6. Test
   ○ 7. Execute
@@ -216,7 +216,7 @@ Each stage invokes its corresponding command or inline logic:
 | 2. Specify | `/spec-change` | Yes | Light path |
 | 3. Challenge | See Challenge Modes below | Yes | Light/Standard path |
 | 4. Edge Cases | See Challenge Modes below | Yes | Light/Standard path |
-| 4.5. Pre-Mortem | Inline (see below) | Yes | Light/Standard path |
+| 4.5. Pre-Mortem | Inline (see below) | Recommended | Light/Standard path |
 | 5. Review | `/gpt-review` | Yes | Always optional |
 | 6. Test | `/spec-to-tests` | Yes | Light path |
 | 7. Execute | Exit wizard | No | Never |
@@ -333,7 +333,7 @@ After Stage 1 (Describe), the triage result determines the path:
 
 **Full Path:** 1 → 2 → 3 → 4 → 4.5 → 5 → 6 → 7 (all stages)
 - Stage 5 (Review) always optional
-- Stage 4.5 (Pre-Mortem) recommended, skippable
+- Stage 4.5 (Pre-Mortem) elevated — skip triggers regression warning before Stage 5
 - Other stages recommended
 
 ---
@@ -1000,12 +1000,23 @@ For each pre-mortem finding, check adversarial.md for same failure category + sa
 affected component:
 - If match found → mark as COVERED
 - If (COVERED count / total findings) > 0.8 → note `"premortem_overlap": "high"` in state.json
-- On future blueprints with similar scope, suggest skipping pre-mortem
+- On future blueprints with similar scope, note high overlap as a quality signal — prior rounds were thorough
 
 ### Skippability
 
-Skippable (with reason logged) on all paths. Recommended on Full path, suggested on
-Standard path, not shown on Light path.
+Skippable on all paths with reason required. On Full path, skipping triggers a regression warning displayed before Stage 5 proceeds. On Standard path, skip is permitted without warning. Not shown on Light path.
+
+### Skip Warning (Full Path Only)
+
+When pre-mortem is skipped on the Full path, display this warning before Stage 5:
+
+```
+⚠️ Pre-mortem was skipped on Full path.
+  Stage 4.5 surfaces operational failures that design review (Stages 3-4) doesn't catch.
+  Reason logged: "[user's skip reason]"
+
+  Proceed to Stage 5 anyway? (Y/n)
+```
 
 ---
 
@@ -1647,6 +1658,24 @@ All artifacts saved to `.claude/plans/[name]/`:
 - `spec.diff.md` — Revision history (created on first regression)
 - `preflight.md` — Pre-flight checklist
 - `tests.md` — Generated test specs
+
+## Failure Modes
+
+| What Could Fail | Detection | Recovery |
+|-----------------|-----------|----------|
+| Debate agent timeout (>5 min) | Agent returns no result | Fall back to vanilla mode for remainder of stage. Preserve completed rounds. |
+| Manifest corruption on resume | manifest.json unparseable | Regenerate from source artifacts (describe.md + spec.md + adversarial.md + state.json). |
+| Regression loop exhaustion (3/3) | state.json regression_count = 3, confidence <0.5 | HALT state with escape hatches: override, simplify scope, or abandon. |
+| Elder Council vault unavailable | Obsidian MCP error or vault not mounted | Compensate with analytical reasoning. Note "Historical review limited." |
+| Work graph stale after regression | work_graph_stale = true in state.json | Stage 2 re-completion regenerates work-graph.json. Block execution until resolved. |
+| Context compaction mid-family-debate | Agent output lost to compression | debate-log.md preserves each agent's output immediately on completion. Resume from disk. |
+
+## Known Limitations
+
+- **Markdown-only enforcement** — Blueprint stages are guided by prose, not shell hooks. "Required" stages can still be skipped by a determined user. The regression warning is the highest enforcement tier available.
+- **Context pressure on long blueprints** — Full-path blueprints with family mode can consume significant context. Blueprint.md itself is 1600+ lines; Claude may need multiple reads to find edit points.
+- **Vault awareness depends on vault availability** — If the Obsidian vault is not configured or the path is invalid, vault-related features silently degrade. This is intentional fail-open behavior.
+- **Cognitive trap staleness** — Trap rows are contextual snapshots. They may become less relevant as the toolkit evolves. Review periodically.
 
 ## Integration
 

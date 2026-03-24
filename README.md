@@ -39,10 +39,10 @@ claude
 | Category | Commands |
 |----------|----------|
 | **Start Here** | `/start`, `/describe-change`, `/toolkit` |
-| **Workflow Wizards** | `/blueprint`, `/review`, `/test` |
+| **Workflow Wizards** | `/blueprint`, `/prism`, `/clarify`, `/review`, `/test` |
 | **Planning** | `/spec-change`, `/spec-agent`, `/spec-hook`, `/preflight`, `/brainstorm`, `/decision`, `/design-check`, `/requirements-discovery`, `/prior-art` |
 | **Adversarial** | `/devils-advocate`, `/overcomplicated`, `/edge-cases`, `/gpt-review` |
-| **Quality** | `/tdd`, `/quality-gate`, `/quality-sweep`, `/prism`, `/spec-to-tests`, `/security-checklist`, `/debug` |
+| **Quality** | `/tdd`, `/quality-gate`, `/quality-sweep`, `/spec-to-tests`, `/security-checklist`, `/debug` |
 | **Learning** | `/log-error`, `/log-success` |
 | **Execution** | `/dispatch`, `/delegate`, `/checkpoint`, `/end`, `/push-safe` |
 | **Vault** | `/vault-save`, `/vault-query`, `/vault-curate`, `/collect-insights`, `/promote-finding` |

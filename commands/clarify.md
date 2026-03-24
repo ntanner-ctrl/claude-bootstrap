@@ -6,6 +6,16 @@ arguments:
     required: false
 ---
 
+## Cognitive Traps
+
+Before skipping or simplifying this command, check yourself:
+
+| Rationalization | Why It's Wrong |
+|----------------|---------------|
+| "I already know what I need — just let me plan" | If you knew, you wouldn't be uncertain. /clarify exists because "I know" and "I can articulate it precisely" are different things. |
+| "This will slow me down — I'll figure it out during implementation" | Ambiguity discovered during implementation costs 10x more to resolve than ambiguity discovered during clarification. |
+| "The requirements are clear enough" | "Clear enough" is the most expensive phrase in engineering. What's obvious to you may be ambiguous to the spec. |
+
 # Clarify
 
 Guided pre-planning workflow that walks through clarification steps based on what's actually unclear. Not every step runs every time — assess the situation and skip what's already resolved.
@@ -24,6 +34,27 @@ Step 6: Summary    → Present what was clarified and recommend next action
 ## Process
 
 ### Step 1: Assess What's Fuzzy
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 1 of 6: Assess
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### Vault Check
+
+Before assessing, check for prior work on this topic:
+
+```bash
+source ~/.claude/hooks/vault-config.sh 2>/dev/null
+```
+
+If vault is available (`VAULT_ENABLED=1`, `VAULT_PATH` non-empty, `[ -d "$VAULT_PATH" ]`):
+- Search for prior brainstorms, decisions, or findings related to the topic
+- If matches found: "Vault has N notes related to this topic:" [list with 1-line summaries]
+- If no matches: proceed silently
+
+If vault unavailable: skip silently (fail-open). When `$ARGUMENTS` is empty, use conversation context keywords as search terms.
 
 Before running anything, assess which dimensions are unclear. Ask the user:
 
@@ -52,6 +83,12 @@ Does this match your sense of what's fuzzy?
 
 ### Step 2: Brainstorm (if approaches are unclear)
 
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 2 of 6: Brainstorm
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 **Trigger:** User selected [A] or you assessed multiple viable approaches exist.
 **Skip if:** The approach is obvious or already decided.
 
@@ -62,7 +99,15 @@ After brainstorm completes, capture the key output:
 - Constraints identified
 - Questions surfaced
 
+  Step 2 complete: [outcome summary]. Proceeding to Step 3.
+
 ### Step 3: Requirements Discovery (if requirements are unclear)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 3 of 6: Requirements Discovery
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **Trigger:** User selected [B] or requirements lack testable acceptance criteria.
 **Skip if:** Requirements are already concrete and testable.
@@ -74,7 +119,15 @@ After discovery completes, capture:
 - Assumptions that were surfaced and resolved
 - Remaining open questions
 
+  Step 3 complete: [outcome summary]. Proceeding to Step 4.
+
 ### Step 4: Design Check (if boundaries are fuzzy)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 4 of 6: Design Check
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **Trigger:** User selected [C] or scope/components are uncertain.
 **Skip if:** Architecture, interfaces, and error strategy are already clear.
@@ -85,7 +138,15 @@ After check completes, capture:
 - READY or BLOCKED verdict
 - Specific gaps identified (if any)
 
+  Step 4 complete: [outcome summary]. Proceeding to Step 5.
+
 ### Step 5: Prior Art Search (if building something new)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 5 of 6: Prior Art Search
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 **Trigger:** User selected [D] or the work involves building a component that might already exist as a library/tool.
 **Skip if:** This is clearly project-specific work with no general-purpose equivalent.
@@ -96,7 +157,15 @@ After search completes, capture:
 - Build vs. adopt recommendation
 - Top candidates (if any)
 
+  Step 5 complete: [outcome summary]. Proceeding to Step 6.
+
 ### Step 6: Summary & Next Action
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY: [topic] │ Step 6 of 6: Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
 Present a structured summary of everything that was clarified:
 
@@ -129,6 +198,23 @@ Present a structured summary of everything that was clarified:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+## Failure Modes
+
+| What Could Fail | Detection | Recovery |
+|-----------------|-----------|----------|
+| Brainstorm produces no viable approaches | Step 2 output is empty or single generic option | Rephrase the problem. Try `/requirements-discovery` to uncover hidden constraints. |
+| Prior-art search unavailable (no WebSearch) | `/prior-art` reports tool unavailable | Skip Step 5, note in summary. User can search manually. |
+| Requirements discovery stalls (user can't articulate criteria) | Step 3 loops without converging | Suggest concrete examples: "What would a successful version look like?" Break into sub-problems. |
+| Vault search returns excessive results (50+) | Result list dominates context | Show only top 5 most recent. Note: "[N] additional results not shown." |
+| All dimensions assessed as "clear" | Step 1 finds nothing fuzzy | This is a valid outcome. Recommend proceeding directly to `/describe-change`. |
+
+## Known Limitations
+
+- **Pre-planning only** — /clarify assesses what's fuzzy; it does not resolve ambiguity itself. Resolution happens in the sub-commands it invokes (/brainstorm, /requirements-discovery, etc.).
+- **Single-topic scope** — Designed for one topic at a time. Cross-cutting concerns that span multiple systems should be decomposed first.
+- **Vault search is keyword-based** — May miss relevant prior work if vocabulary differs from stored notes. Not a semantic search.
+- **Conditional steps may under-explore** — If the initial assessment (Step 1) misjudges which dimensions are fuzzy, downstream steps are skipped. User can override by selecting dimensions manually.
 
 ## Integration
 
