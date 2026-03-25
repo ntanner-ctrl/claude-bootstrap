@@ -14,7 +14,7 @@ tags: [blueprint]
 {{summary}}
 
 ## Current Status
-Stage {{stage}}/7 — {{stage_name}}
+Stage {{stage}}/8 — {{stage_name}}
 Path: {{path_type}} | Mode: {{challenge_mode}}
 
 ## Key Decisions

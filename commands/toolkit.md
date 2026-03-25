@@ -104,7 +104,7 @@ If `.claude/plans/` exists and contains in-progress blueprints, append:
 ```
 ACTIVE BLUEPRINTS
 ━━━━━━━━━━━━
-  [name]    Stage [N]/7    Last: [time ago]
+  [name]    Stage [N]/8    Last: [time ago]
   ...
 
   Resume with: /blueprint [name]

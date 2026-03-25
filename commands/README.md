@@ -102,6 +102,7 @@ Complete reference for all Claude Sail commands.
 | `/dashboard` | Aggregated view of all active work (blueprints, TDD, checkpoints) |
 | `/overrides` | Review override patterns |
 | `/approve [blueprint]` | Approve a planning stage |
+| `/link-blueprint [name]` | Declare parent/child relationships between blueprints for meta-coordination |
 
 ### Integration
 

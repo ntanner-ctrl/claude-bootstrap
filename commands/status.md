@@ -75,9 +75,9 @@ Completed (last 30 days): 5
 Stale (>7 days inactive): 1
 
 In Progress:
-  feature-auth     Stage 3/7 (Challenge)    2 hours ago
-  bugfix-login     Stage 2/7 (Specify)      yesterday
-  refactor-db      Stage 1/7 (Describe)     9 days ago ⚠️
+  feature-auth     Stage 3/8 (Challenge)    2 hours ago
+  bugfix-login     Stage 2/8 (Specify)      yesterday
+  refactor-db      Stage 1/8 (Describe)     9 days ago ⚠️
 
 Recently Completed:
   api-update       Complete                  3 days ago

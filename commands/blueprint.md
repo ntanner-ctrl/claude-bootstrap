@@ -42,6 +42,7 @@ Stage 4.5: Pre-Mortem → Operational failure exercise
 Stage 5: Review      → /gpt-review (external perspective) [optional]
 Stage 6: Test        → /spec-to-tests (spec-blind tests)
 Stage 7: Execute     → Implementation (with manifest handoff + work graph)
+Stage 8: Debrief     → Completion ceremony (ship ref, spec delta, discoveries)
 
 Cross-cutting:
   - Feedback loops (regression from any stage to any earlier stage, max 3)
@@ -181,7 +182,7 @@ Present the current stage header:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  BLUEPRINT: [name] │ Stage [N] of 7: [Stage Name]
+  BLUEPRINT: [name] │ Stage [N] of 8: [Stage Name]
   Mode: [vanilla/debate/team] │ Revision: [N] │ Confidence: [score]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -194,6 +195,7 @@ Stages:
   ○ 5. Review       (optional)
   ○ 6. Test
   ○ 7. Execute
+  ○ 8. Debrief
 
 Commands:
   'next'     Advance to next stage (requires current stage complete)
@@ -220,6 +222,7 @@ Each stage invokes its corresponding command or inline logic:
 | 5. Review | `/gpt-review` | Yes | Always optional |
 | 6. Test | `/spec-to-tests` | Yes | Light path |
 | 7. Execute | Exit wizard | No | Never |
+| 8. Debrief | Inline (see below) | No | Never |
 
 ### Ambiguity Gate (Between Stage 1 → Stage 2)
 
@@ -1040,7 +1043,7 @@ Present options in this order:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  BLUEPRINT: [name] │ Stage 5 of 7: External Review
+  BLUEPRINT: [name] │ Stage 5 of 8: External Review
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   External review options:
@@ -1449,87 +1452,177 @@ Skips are logged in `state.json` and visible in `/overrides`.
 
 ---
 
-## Post-Implementation Reflection (Stage 7 Completion)
+## Debrief (Stage 8 — Completion Ceremony)
 
-When Stage 7 (Execute) is about to be marked complete, fire this reflection step inline. This is NOT a separate stage — it's part of Stage 7 completion.
+Debrief is the final stage of every blueprint. It captures what shipped, what changed,
+what was learned, and closes the blueprint with `completed: true`.
+
+> **Enforcement tier:** Debrief uses `"skippable": false` in the stage schema and a
+> regression-warning prompt at Stage 7 completion. This is tier 2.5 enforcement —
+> stronger than prose, weaker than a shell hook. We do NOT claim debrief is "mandatory"
+> (that implies hook enforcement). We claim it is "structurally expected."
+
+### Prerequisites
+
+- `stages.execute.status` MUST be `"complete"` before debrief can start
+- If debrief is attempted on an un-executed blueprint: "Debrief requires Stage 7 (Execute)
+  to be complete. Current status: [execute.status]"
+
+### Session Recovery
+
+On blueprint resume (`/blueprint [name]`), if `stages.execute.status === "complete"` and
+(`stages.debrief` is absent OR `stages.debrief.status !== "complete"`), display the
+transition prompt as if Stage 7 had just completed. This ensures session breaks between
+execute and debrief are recoverable.
+
+When writing Stage 7 completion to state.json, also write
+`stages.debrief: { "status": "pending" }` to create a persistent breadcrumb.
+
+### Context-Aware Mode
+
+If the session has been through >5 blueprint stages, prefer manual input over
+auto-detection for debrief steps 1-2 (ship reference, spec delta). Ask the user to
+provide commit hashes and spec delta directly rather than attempting to auto-read and
+synthesize from files that may have been compacted. Auto-detection is a convenience,
+not a requirement — manual fallbacks are first-class.
+
+### Debrief Flow
+
+When Stage 7 (Execute) is marked complete, the blueprint transitions to Stage 8.
+The transition prompt appears AFTER the implementation options block, with a clear separator:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  POST-IMPLEMENTATION REFLECTION │ [blueprint name]
+  BLUEPRINT: [name] │ Stage 8 of 8: Debrief
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Implementation is complete. Before closing this blueprint,
-  capture what was learned.
+  Completing this blueprint. Capturing final state.
 
-  WONDER — What surprised you?
-  1. What assumption from the spec turned out to be wrong?
-  2. What was harder than expected? What was easier?
-  3. What would you add to the spec if starting over?
-  4. Did any adversarial finding turn out to be more (or less)
-     important than rated?
+  1. SHIP REFERENCE
+     Commit hash(es) that delivered this work:
+     [Auto-detected from .claude/plans/[name]/commits.jsonl
+      if available, otherwise prompt user]
 
-  REFLECT — What should change for next time?
-  1. Which spec sections were most useful during implementation?
-  2. Which were ignored or irrelevant?
-  3. What's one thing the blueprint process missed?
-  4. If a similar feature were planned tomorrow, what would you
-     tell the planner?
+  2. SPEC DELTA
+     What changed from the original specification?
+     [Read spec.diff.md if it exists (created on regression),
+      otherwise summarize regression_log entries from state.json.
+      If neither exists: "no tracked changes — spec stable
+      through implementation."]
+
+  3. DEFERRED ITEMS
+     What was explicitly punted and why?
+     > [user input — list items with reasons]
+
+  4. DISCOVERIES
+     What did this blueprint reveal that wasn't anticipated?
+     > [user input — things learned during implementation]
+
+  5. REFLECTION (what was learned)
+     - What assumption from the spec turned out to be wrong?
+     - What was harder/easier than expected?
+     - What would you tell the next planner?
+     - Which spec sections were most/least useful?
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Reflection Output
+### Debrief for Linked Blueprints (Meta-Aware)
 
-Written to `.claude/plans/[name]/reflect.md` with this structure:
+When `state.json` has a `parent` field (this is a sub-blueprint), debrief adds two
+additional steps after step 5:
+
+```
+  6. SIBLING IMPACT
+     Do any sibling blueprints need to know about your discoveries?
+     [List siblings from parent's meta_units map]
+     > [user selects affected siblings + describes impact]
+
+  7. META UPDATE
+     Before attempting parent update, verify bidirectional consistency.
+     If half-linked (child has parent ref but parent's meta_units
+     doesn't list this child), repair the link first.
+
+     Updating parent blueprint manifest...
+     [Auto-update parent's meta_units with:
+       - this blueprint's status → complete
+       - ship_commit from step 1
+       - discoveries from step 4
+       - sibling impacts from step 6]
+
+     If parent blueprint's state.json is unreachable or parent
+     has completed: true, META UPDATE is skipped with warning:
+       "Parent [name] is unreachable/completed — update recorded
+        locally in debrief.md but parent was not modified."
+```
+
+### Debrief Output
+
+Written to `.claude/plans/[name]/debrief.md`:
 
 ```markdown
-# Post-Implementation Reflection
+# Debrief: [blueprint name]
 
-## Wonder (Surprises)
+## Ship Reference
+- Commit(s): [hash list]
+- Date: [completion date]
 
-### Assumptions Proven Wrong
+## Spec Delta
+[Summary of what changed from original spec]
+- Revisions: [count]
+- Key changes: [list]
+
+## Deferred Items
+- [item]: [reason]
+
+## Discoveries
+- [discovery]
+
+## Reflection
+### Wrong Assumptions
 - [list]
-
 ### Difficulty Calibration
-- Harder than expected: [list]
-- Easier than expected: [list]
-
-### Spec Gaps (would add if starting over)
-- [list]
-
-### Adversarial Finding Recalibration
-- [finding] (rated [severity]) was actually [higher/lower] because [reason]
-
-## Reflect (Process Improvements)
-
-### Most Useful Spec Sections
-- [list]
-
-### Least Useful Spec Sections
-- [list]
-
-### Blueprint Process Gap
-- [description]
-
+- Harder: [list]
+- Easier: [list]
 ### Advice for Next Planner
 - [guidance]
+
+## Sibling Impact (if linked)
+- [sibling]: [impact description]
 ```
 
-### Reflection Export (Mandatory)
+### Debrief Export
 
-After writing `reflect.md`, execute this export sequence (NOT optional):
+After writing `debrief.md`, execute this export sequence:
 
-1. **Epistemic tracking (mandatory if session active):** For each finding in "Assumptions Proven Wrong" and "Spec Gaps", append to `.epistemic/insights.jsonl` with prefix "[Reflection]". Each discrete finding gets its own log entry.
+1. **Epistemic tracking (if session active):** For each finding in "Wrong Assumptions",
+   "Discoveries", and "Spec Gaps", append to `.epistemic/insights.jsonl` with prefix
+   "[Debrief]". Each discrete finding gets its own log entry.
 
-2. **Vault (mandatory if vault available):** Export a summary finding to `Engineering/Findings/YYYY-MM-DD-reflect-[blueprint-name].md` using the finding template. ONE note per reflection (not per finding).
+2. **Vault (if vault available):** Export a summary finding to
+   `Engineering/Findings/YYYY-MM-DD-debrief-[blueprint-name].md` using the finding template.
+   ONE note per debrief (not per finding).
 
-3. **If both unavailable:** Write findings to `reflect.md` only and log a warning.
+3. **If both unavailable:** Write findings to `debrief.md` only and log a warning.
+
+### State Transitions
+
+1. `stages.debrief.status` → `"complete"`
+2. `stages.debrief.completed_at` → timestamp
+3. `stages.debrief.ship_commits` → list of commit hashes
+4. `stages.debrief.discoveries` → list of discovery strings
+5. `completed` → `true` at state.json root
+6. `completed_at` → timestamp at state.json root
+7. If linked: update parent's `meta_units[this_blueprint].status` → `"complete"`
+
+**Invariant:** `completed: true` is ONLY valid when BOTH `stages.execute.status === "complete"`
+AND `stages.debrief.status === "complete"`. Any other write path is a schema violation.
 
 ### Skippability
 
-The reflection is prompted but skippable. When skipped: `"reflection": { "status": "skipped", "reason": "[user reason]" }` in state.json.
-
-On Light/Standard paths, it's suggested but brief. On Full path, the full prompt is shown.
+Debrief is NOT skippable (`"skippable": false` in schema). On Light/Standard paths, the flow
+is abbreviated (steps 1-2 auto-populated where possible, steps 3-5 brief). On Full path,
+the full prompt is shown.
 
 ---
 
@@ -1546,7 +1639,7 @@ Planning complete! Summary:
 
   Path: [Light/Standard/Full]
   Mode: [vanilla/debate/team]
-  Stages completed: [N]/7 (+ skipped: [list])
+  Stages completed: [N]/8 (+ skipped: [list])
   Revisions: [N] (regressions: [N])
   Confidence: [min - max across stages]
 
@@ -1658,6 +1751,8 @@ All artifacts saved to `.claude/plans/[name]/`:
 - `spec.diff.md` — Revision history (created on first regression)
 - `preflight.md` — Pre-flight checklist
 - `tests.md` — Generated test specs
+- `debrief.md` — Completion ceremony output (Stage 8)
+- `commits.jsonl` — Commit log (if SAIL_BLUEPRINT_ACTIVE was set during execution)
 
 ## Failure Modes
 
@@ -1669,6 +1764,10 @@ All artifacts saved to `.claude/plans/[name]/`:
 | Elder Council vault unavailable | Obsidian MCP error or vault not mounted | Compensate with analytical reasoning. Note "Historical review limited." |
 | Work graph stale after regression | work_graph_stale = true in state.json | Stage 2 re-completion regenerates work-graph.json. Block execution until resolved. |
 | Context compaction mid-family-debate | Agent output lost to compression | debate-log.md preserves each agent's output immediately on completion. Resume from disk. |
+| Session break between Stage 7→8 | Execute complete, debrief pending, session ends | `stages.debrief: { "status": "pending" }` breadcrumb written at Stage 7 completion. Resume surfaces transition prompt. |
+| Parent unreachable during debrief META UPDATE | Parent state.json deleted/archived/completed | Warning displayed, debrief completes locally. Parent not modified. Manual reconciliation needed. |
+| Half-linked state at debrief time | Child has parent ref, parent's meta_units missing child | Debrief step 7 detects and repairs before attempting update. |
+| Context exhaustion confabulates debrief data | Session >5 stages, auto-detection unreliable | Context-aware mode: prefer manual input when session is heavy. |
 
 ## Known Limitations
 

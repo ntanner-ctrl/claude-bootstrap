@@ -44,7 +44,7 @@ For each active item, determine:
   DASHBOARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Active:
-  Blueprint: [name]  Stage [N]/7  [time] ago
+  Blueprint: [name]  Stage [N]/8  [time] ago
   TDD:  [target]  [PHASE]    [status]
 
 Context:
@@ -66,8 +66,8 @@ Tips:
   No active work detected.
 
   Recent blueprints:
-    [name]  Stage 7/7  completed [date]
-    [name]  Stage 4/7  paused [date]
+    [name]  Stage 8/8  completed [date]
+    [name]  Stage 4/8  paused [date]
 
   Start something:
     /blueprint [name]     New planning workflow

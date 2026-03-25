@@ -60,6 +60,7 @@ Abstract capabilities that plugins can fill at workflow seams:
 | `execute:backend` | Backend-guided implementation | Phase 2 | Blueprint Stage 7, `/describe-change` |
 | `execute:feature` | Technology-agnostic guided dev | Phase 2 | Blueprint Stage 7, `/describe-change` |
 | `test:quality` | Test engineering and quality analysis | Phase 2 | `/test` Stage 3, `/tdd`, `/quality-gate` |
+| `lifecycle:commit-signal` | Blueprint-aware commit enhancement | Phase 2 | `/commit` (commit-commands plugin) |
 | `search:semantic` | Semantic code search | Phase 3 | `/bootstrap-project` setup |
 | `iterate:loop` | Self-referential iteration loops | Phase 2 | Blueprint Stage 7 |
 
@@ -239,6 +240,35 @@ Results: markdown format, advisory only.
 
 **Workflow seams (Wired):**
 - `/blueprint` Stage 7 (Execute) — Verification checkpoints during long implementations
+
+### commit-commands (Phase 2 — lifecycle only)
+
+**Fills:** `lifecycle:commit-signal`
+**Tested with:** N/A (pending verification)
+**Detection:** Check installed_plugins.json for key with prefix "commit-commands"
+
+**Enhancement:**
+When commit-commands plugin is detected AND the session-level flag `SAIL_BLUEPRINT_ACTIVE` is set:
+
+The commit signal uses a **session-flag opt-in** model, not universal polling. This avoids prompt fatigue from interrupting every commit (10-20 per sprint) which trains users to dismiss reflexively.
+
+**Activation:** User sets `SAIL_BLUEPRINT_ACTIVE=blueprint-name` at session start (or blueprint's execute stage suggests it). The flag is session-scoped — it does not persist across sessions.
+
+1. After commit executes successfully:
+   - Read `SAIL_BLUEPRINT_ACTIVE` environment variable
+   - If set, append to `.claude/plans/[name]/commits.jsonl`:
+     ```json
+     {"hash": "<commit-hash>", "message": "<first-line>", "timestamp": "<ISO-8601>", "work_units": []}
+     ```
+   - Optionally prompt for work unit IDs if the commit message doesn't contain them
+
+2. If `SAIL_BLUEPRINT_ACTIVE` is not set: no prompt, no logging, zero friction
+
+**Directory validation:** If `.claude/plans/$SAIL_BLUEPRINT_ACTIVE/` does not exist when the commit signal fires, log a warning and skip the append. Do not create the directory.
+
+**Deduplication:** On read (during debrief), deduplicate entries by commit hash before presenting. If commits.jsonl exists but is empty or contains unparseable lines, treat as missing.
+
+**Graceful degradation:** If commit-commands plugin is not installed, this enhancement is silently skipped. Blueprint debrief will fall back to asking for commit hashes manually.
 
 ### commit-commands (Wired — commit workflow)
 

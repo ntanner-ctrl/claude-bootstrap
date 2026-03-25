@@ -26,7 +26,7 @@ claude
 
 | Component | Purpose |
 |-----------|---------|
-| [**Commands**](commands/README.md) | 63 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
+| [**Commands**](commands/README.md) | 64 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
 | [**Agents**](agents/) | 12 agents: 6 specialized review agents + 6 paradigm lens agents for `/prism` |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Wizard State**](docs/WIZARD-STATE.md) | Persistent state for workflow wizards — resume-on-compaction, content contracts, vault checkpoints |

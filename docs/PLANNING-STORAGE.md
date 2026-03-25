@@ -72,9 +72,9 @@ schema with challenge mode, confidence scoring, epistemic tracking integration, 
       "enum": ["light", "standard", "full"]
     },
     "current_stage": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 7
+      "type": "string",
+      "enum": ["describe", "specify", "challenge", "edge_cases", "premortem", "review", "test", "execute", "debrief"],
+      "description": "Stage name string. Note: this was documented as integer in pre-v3 schema but has always been stored as a string in practice."
     },
     "challenge_mode": {
       "type": "string",
@@ -125,8 +125,40 @@ schema with challenge mode, confidence scoring, epistemic tracking integration, 
         "premortem": { "$ref": "#/$defs/stage" },
         "review": { "$ref": "#/$defs/stage" },
         "test": { "$ref": "#/$defs/stage" },
-        "execute": { "$ref": "#/$defs/stage" }
+        "execute": { "$ref": "#/$defs/stage" },
+        "debrief": { "$ref": "#/$defs/stage_debrief" }
       }
+    },
+    "parent": {
+      "type": ["object", "null"],
+      "description": "Parent blueprint reference (set by /link-blueprint)",
+      "properties": {
+        "blueprint": { "type": "string", "description": "Parent blueprint name" },
+        "unit_id": { "type": ["string", "null"], "description": "Work unit ID from parent's spec" }
+      }
+    },
+    "meta_units": {
+      "type": "object",
+      "description": "Sub-blueprint tracking map (set by /link-blueprint). Keys are child blueprint names.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "unit_id": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["not_started", "in_progress", "complete"] },
+          "linked_at": { "type": "string", "format": "date-time" },
+          "discoveries": { "type": "array", "items": { "type": "string" } },
+          "ship_commit": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Blueprint completion flag. INVARIANT: only valid when stages.execute.status === 'complete' AND stages.debrief.status === 'complete'. Any other write path is a schema violation."
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
     },
     "skipped": {
       "type": "array",
@@ -193,6 +225,37 @@ schema with challenge mode, confidence scoring, epistemic tracking integration, 
         },
         "confidence_note": { "type": "string" }
       }
+    },
+    "stage_debrief": {
+      "allOf": [
+        { "$ref": "#/$defs/stage" },
+        {
+          "properties": {
+            "skippable": { "type": "boolean", "const": false, "description": "Debrief is never skippable" },
+            "ship_commits": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Commit hashes from implementation"
+            },
+            "spec_delta_summary": { "type": ["string", "null"], "description": "Summary of spec changes" },
+            "deferred_items": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Items explicitly punted with reasons"
+            },
+            "discoveries": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Unanticipated findings during implementation"
+            },
+            "sibling_impacts": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Sibling blueprints affected by discoveries (linked blueprints only)"
+            }
+          }
+        }
+      ]
     },
     "stage_with_debate": {
       "allOf": [
@@ -492,6 +555,21 @@ markdown) at recovery points. ~5-10x more token-efficient than reading all artif
       "type": "object",
       "description": "Last-modified timestamps per artifact for staleness detection",
       "additionalProperties": { "type": "string", "format": "date-time" }
+    },
+    "debrief_digest": {
+      "type": "object",
+      "description": "Debrief summary for token-efficient recovery",
+      "properties": {
+        "ship_commits": { "type": "array", "items": { "type": "string" } },
+        "spec_revisions": { "type": "integer" },
+        "deferred_count": { "type": "integer" },
+        "discovery_count": { "type": "integer" },
+        "sibling_impacts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Blueprint names of impacted siblings. Full descriptions require reading debrief.md."
+        }
+      }
     }
   },
   "$defs": {
@@ -800,6 +878,7 @@ Project-level tracking of when users override recommended planning depth.
 | 5 | Review | `/gpt-review` | Yes (optional) | None |
 | 6 | Test | `/spec-to-tests` | Yes (with reason) | Full |
 | 7 | Execute | Implementation | No | All paths |
+| 8 | Debrief | `/blueprint` (inline) | No | All paths |
 
 Stages are tracked by **name** in state.json, not by number. The "4.5" label is
 human-readable only — no schema dependency on numbering.
@@ -811,12 +890,14 @@ human-readable only — no schema dependency on numbering.
 ### Light Path
 - Stage 1: Describe (required)
 - Stage 7: Execute
+- Stage 8: Debrief (structurally expected — tier 2.5 enforcement)
 - Preflight recommended but not tracked
 
 ### Standard Path
 - Stage 1: Describe (required)
 - Stage 2: Specify (required)
 - Stage 7: Execute
+- Stage 8: Debrief (structurally expected)
 - Other stages optional
 
 ### Full Path
@@ -825,6 +906,7 @@ human-readable only — no schema dependency on numbering.
 - Stages 3-6 recommended, tracked if skipped
 - Stage 4.5 (Pre-Mortem) recommended, skippable
 - Stage 5 (External Review) always optional
+- Stage 8 (Debrief) structurally expected, not skippable
 
 ---
 
@@ -844,6 +926,8 @@ human-readable only — no schema dependency on numbering.
 | External review | `review.md` | `/gpt-review` |
 | Test specifications | `tests.md` | `/spec-to-tests` |
 | Decision records | `decisions/[name].md` | `/decision` |
+| Debrief output | `debrief.md` | `/blueprint` (Stage 8) |
+| Commit log | `commits.jsonl` | Commit-time signal (plugin-enhancer, opt-in via `SAIL_BLUEPRINT_ACTIVE`) |
 
 `adversarial.md` is the **canonical source of truth** for all findings.
 `debate-log.md` is the debug artifact (raw transcript). Manifest digests are

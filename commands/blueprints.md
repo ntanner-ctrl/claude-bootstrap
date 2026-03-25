@@ -20,11 +20,11 @@ Display all in-progress blueprints in the current project.
                      ACTIVE BLUEPRINTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  [name]          Stage [N]/7 ([stage name])   [mode] Last: [time ago]
-  [name]          Stage [N]/7 ([stage name])   [mode] Last: [time ago]
+  [name]          Stage [N]/8 ([stage name])   [mode] Last: [time ago]
+  [name]          Stage [N]/8 ([stage name])   [mode] Last: [time ago]
   [name]          Complete                             Last: [time ago]
   [name]          HALTED (3/3 regressions)             Last: [time ago]
-  [name]          Stage [N]/7 ([stage name])   [mode] Last: [time ago] ⚠️ stale
+  [name]          Stage [N]/8 ([stage name])   [mode] Last: [time ago] ⚠️ stale
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -40,7 +40,7 @@ Commands:
 
 Mark blueprints as stale if no activity in 7+ days:
 ```
-  feature-x       Stage 3/7 (Challenge)   debate  Last: 9 days ago ⚠️ stale
+  feature-x       Stage 3/8 (Challenge)   debate  Last: 9 days ago ⚠️ stale
 ```
 
 ## Override Summary
