@@ -1,0 +1,223 @@
+{
+  "nodes": [
+    {
+      "id": "W1",
+      "label": "Design & document shared wizard state schema + content contracts",
+      "files": [
+        "docs/WIZARD-STATE.md"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W2",
+      "label": "Add state management to /prism",
+      "files": [
+        "commands/prism.md"
+      ],
+      "status": "pending",
+      "complexity": "high",
+      "tdd": false
+    },
+    {
+      "id": "W3",
+      "label": "Add state management to /review",
+      "files": [
+        "commands/review.md"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W4",
+      "label": "Add state management to /test",
+      "files": [
+        "commands/test.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "W5",
+      "label": "Add state management to /clarify",
+      "files": [
+        "commands/clarify.md"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W6",
+      "label": "Add stage progression display to all wizards",
+      "files": [
+        "commands/prism.md",
+        "commands/review.md",
+        "commands/test.md",
+        "commands/clarify.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "W7",
+      "label": "Update test.sh with wizard state validation",
+      "files": [
+        "test.sh"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "W8",
+      "label": "Update CLAUDE.md and READMEs",
+      "files": [
+        "CLAUDE.md",
+        "README.md",
+        "commands/README.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "W9",
+      "label": "Add cleanup logic (archive sessions >7 days)",
+      "files": [
+        "commands/prism.md",
+        "commands/review.md",
+        "commands/test.md",
+        "commands/clarify.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "W1",
+      "to": "W2",
+      "type": "blocks"
+    },
+    {
+      "from": "W1",
+      "to": "W3",
+      "type": "blocks"
+    },
+    {
+      "from": "W1",
+      "to": "W4",
+      "type": "blocks"
+    },
+    {
+      "from": "W1",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W4",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W5",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W4",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W5",
+      "to": "W9",
+      "type": "blocks"
+    },
+    {
+      "from": "W6",
+      "to": "W8",
+      "type": "blocks"
+    },
+    {
+      "from": "W7",
+      "to": "W8",
+      "type": "blocks"
+    },
+    {
+      "from": "W9",
+      "to": "W8",
+      "type": "blocks"
+    }
+  ],
+  "batches": [
+    {
+      "batch": 1,
+      "units": [
+        "W1"
+      ],
+      "parallel": false
+    },
+    {
+      "batch": 2,
+      "units": [
+        "W2",
+        "W3",
+        "W4",
+        "W5",
+        "W7"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 3,
+      "units": [
+        "W6",
+        "W9"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 4,
+      "units": [
+        "W8"
+      ],
+      "parallel": false
+    }
+  ],
+  "analysis": {
+    "total_units": 9,
+    "max_parallel_width": 5,
+    "critical_path_length": 4,
+    "file_conflicts": [],
+    "parallelization_recommendation": "strong"
+  },
+  "spec_work_units_checksum": "revision-1",
+  "generated_at": "2026-03-25T00:58:00Z"
+}

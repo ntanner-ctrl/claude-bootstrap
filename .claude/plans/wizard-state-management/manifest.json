@@ -1,0 +1,208 @@
+{
+  "blueprint_version": 2,
+  "name": "wizard-state-management",
+  "challenge_mode": "family",
+  "epistemic_session_id": "d6ca2510-5ee1-499d-9639-387418b33bbf",
+  "path": "full",
+  "revision": 1,
+  "stages_complete": [
+    "describe",
+    "specify",
+    "challenge",
+    "edge_cases",
+    "premortem",
+    "test"
+  ],
+  "stages_pending": [
+    "execute"
+  ],
+  "stages_skipped": [
+    "review"
+  ],
+  "describe_summary": "Add state tracking, resumability, vault checkpoints to all 4 non-blueprint wizards (prism, review, test, clarify). Design shared schema accommodating linear, parallel, conditional progression shapes. 8 steps decomposed.",
+  "spec_digest": {
+    "changes": [
+      {
+        "action": "create",
+        "target": "docs/WIZARD-STATE.md",
+        "desc": "Shared wizard state schema documentation"
+      },
+      {
+        "action": "modify",
+        "target": "commands/prism.md",
+        "desc": "Add state init, step transitions, resume, vault checkpoints"
+      },
+      {
+        "action": "modify",
+        "target": "commands/review.md",
+        "desc": "Add state init, step transitions, resume"
+      },
+      {
+        "action": "modify",
+        "target": "commands/test.md",
+        "desc": "Add state init, step transitions, resume"
+      },
+      {
+        "action": "modify",
+        "target": "commands/clarify.md",
+        "desc": "Add state init, step transitions, resume"
+      },
+      {
+        "action": "modify",
+        "target": "test.sh",
+        "desc": "Add wizard state JSON validation + structural checks"
+      },
+      {
+        "action": "modify",
+        "target": "CLAUDE.md",
+        "desc": "Document .claude/wizards/ directory"
+      },
+      {
+        "action": "modify",
+        "target": "README.md",
+        "desc": "Update architecture overview"
+      }
+    ],
+    "preserve": [
+      "Blueprint state.json schema unchanged",
+      "Blueprint manifest.json unchanged",
+      ".claude/plans/ directory structure unchanged",
+      "Existing wizard command behavior when no state exists"
+    ],
+    "success_criteria": [
+      "Resume works after compaction with <500 tokens context reconstruction",
+      "state.json valid JSON for all wizard states",
+      "All 4 wizards show stage progression headers",
+      "Vault checkpoints fire at configured moments",
+      "Single active session enforced per wizard",
+      "test.sh passes with new wizard state checks",
+      "No blueprint breakage"
+    ]
+  },
+  "work_units": [
+    {
+      "id": "W1",
+      "desc": "Design shared wizard state schema",
+      "files": [
+        "docs/WIZARD-STATE.md"
+      ],
+      "deps": [],
+      "complexity": "medium"
+    },
+    {
+      "id": "W2",
+      "desc": "Add state to /prism",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [
+        "W1"
+      ],
+      "complexity": "high"
+    },
+    {
+      "id": "W3",
+      "desc": "Add state to /review",
+      "files": [
+        "commands/review.md"
+      ],
+      "deps": [
+        "W1"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W4",
+      "desc": "Add state to /test",
+      "files": [
+        "commands/test.md"
+      ],
+      "deps": [
+        "W1"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "W5",
+      "desc": "Add state to /clarify",
+      "files": [
+        "commands/clarify.md"
+      ],
+      "deps": [
+        "W1"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "id": "W6",
+      "desc": "Add stage progression display",
+      "files": [
+        "commands/prism.md",
+        "commands/review.md",
+        "commands/test.md",
+        "commands/clarify.md"
+      ],
+      "deps": [
+        "W2",
+        "W3",
+        "W4",
+        "W5"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "W7",
+      "desc": "Update test.sh",
+      "files": [
+        "test.sh"
+      ],
+      "deps": [
+        "W1"
+      ],
+      "complexity": "low"
+    },
+    {
+      "id": "W8",
+      "desc": "Update CLAUDE.md and READMEs",
+      "files": [
+        "CLAUDE.md",
+        "README.md",
+        "commands/README.md"
+      ],
+      "deps": [
+        "W6",
+        "W7"
+      ],
+      "complexity": "low"
+    }
+  ],
+  "work_graph": {
+    "width": 5,
+    "critical_path": 4,
+    "recommendation": "strong"
+  },
+  "key_decisions": [
+    {
+      "topic": "Storage location",
+      "chosen": ".claude/wizards/ (separate from .claude/plans/)",
+      "reason": "Different artifact shapes, avoids confusing blueprints command"
+    },
+    {
+      "topic": "No manifest for wizards",
+      "chosen": "state.json only",
+      "reason": "State is <500 tokens, self-contained — nothing to compress"
+    },
+    {
+      "topic": "Dynamic step keys",
+      "chosen": "additionalProperties instead of fixed keys",
+      "reason": "Each wizard has different steps; schema must accommodate all shapes"
+    },
+    {
+      "topic": "output_summary per step",
+      "chosen": "Inline compressed context in state.json",
+      "reason": "Enables resume without reading external artifacts; applies serial context compression finding"
+    }
+  ],
+  "adversarial_findings": [],
+  "updated_at": "2026-03-25T00:00:00Z"
+}

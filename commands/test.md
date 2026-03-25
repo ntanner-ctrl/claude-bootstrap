@@ -6,6 +6,83 @@ arguments:
     required: false
 ---
 
+## State Management
+
+At the start of this wizard, initialize or resume persistent state in `.claude/wizards/`.
+
+### State Initialization
+
+```
+1. Ensure .claude/wizards/ exists (mkdir -p .claude/wizards/)
+2. Check for active session: ls .claude/wizards/test-*/state.json
+   - If multiple matches: select most recent by created_at timestamp, archive others
+3. If active session found (status == "active"):
+   - Validate version == 1 (if mismatch: treat as corrupt, start fresh)
+   - Compute session age from created_at
+   - If age > 4 hours: prefix display with ⚠️  "Note: session is [age] old — may be stale"
+   - Display stage progression header (see Stage Progression below)
+   - Prompt:
+       Previous test session from [age ago] — paused at [current_step].
+         [1] Resume from [current_step]
+         [2] Abandon and start fresh
+   - If status == "error": show "Previous session errored at [step]." then same [1]/[2] prompt
+   - On Resume: reconstruct context from output_summaries + context object (see Resume Protocol below)
+   - On Abandon: set status: "abandoned", create new session
+4. If no active/error session → create new directory + state.json:
+   - session_id: "test-YYYYMMDD-HHMMSS" (current timestamp)
+   - wizard: "test", version: 1, status: "active"
+   - current_step: "tdd_check"
+   - steps: { tdd_check: {status:"pending"}, spec_review: {status:"pending"}, generate_tests: {status:"pending"}, verify: {status:"pending"} }
+   - context: { spec_source: null, blueprint_name: null, tdd_active: null }
+5. Cleanup: for each .claude/wizards/test-*/state.json where age > 7 days AND status in (complete, abandoned, error):
+   move directory to .claude/wizards/_archive/ (fail-open: skip if error)
+6. Display stage progression header
+```
+
+### Stage Progression Display
+
+Render this header at each stage transition (read from state.json):
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TEST │ Stage: [current stage name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [status] TDD Check
+  [status] Spec Review
+  [status] Generate Tests
+  [status] Verify
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Status symbols: `✓` complete, `→` active, `○` pending, `—` skipped
+
+### Resume Protocol
+
+On resume, reconstruct working context from state.json before continuing:
+
+- Read `context` object: `spec_source`, `blueprint_name`, `tdd_active`
+- Read `output_summary` from each completed step:
+  - `tdd_check`: TDD active (yes/no), phase if active — skip pre-check logic, use stored result
+  - `spec_review`: spec source, work unit count, testability verdict — skip re-loading spec
+  - `generate_tests`: test count, coverage areas, anti-tautology results — tests already generated
+- Resume from `current_step`, briefing user on prior progress from the summaries
+
+### State Write Points
+
+After each step completes, update state.json with:
+- step status: "complete", completed_at: ISO timestamp
+- output_summary per the Test Content Contract (see docs/WIZARD-STATE.md)
+- current_step: next step name
+- updated_at: ISO timestamp
+
+On completion: status: "complete", current_step: null
+
+**Vault checkpoint:** After generate_tests completes, if vault is configured, export test specifications (fail-open — vault unavailability does not block wizard progress).
+
+---
+
 ## Cognitive Traps
 
 Before skipping or simplifying this command, check yourself:
@@ -37,6 +114,8 @@ cat .claude/tdd-sessions/active.json 2>/dev/null
 
 - **If active TDD session exists** → Validate phase progression (tests should already exist from RED phase). Skip to Stage 3 (Verify).
 - **If no TDD session** → Proceed normally. For NEW features, suggest: "Consider `/tdd` for test-first development."
+
+**State update:** Mark `tdd_check` complete. output_summary: "TDD active: [yes/no][, phase: [phase] if yes]". Set `context.tdd_active`. Set `current_step: "spec_review"` (or `"verify"` if skipping to Stage 3).
 
 ## Process
 
@@ -107,6 +186,8 @@ Resolve issues before proceeding? [y/n]
 
   Stage 1 complete: [N] criteria reviewed, [N] issues found. Proceeding to Stage 2 (Generate).
 
+**State update:** Mark `spec_review` complete. output_summary: "Spec from [source], [N] work units/criteria, testability: [high/medium/low with issue count]". Set `context.spec_source`, `context.blueprint_name`. Set `current_step: "generate_tests"`.
+
 ### Stage 2: Generate Tests
 
 ```
@@ -135,6 +216,8 @@ Proceed to verification? [y/n]
 ```
 
   Stage 2 complete: [N] tests generated. Proceeding to Stage 3 (Verify).
+
+**State update:** Mark `generate_tests` complete. output_summary: "[N] tests generated: [N] behavior, [N] contract, [N] failure mode; anti-tautology: [N]/[N] clean". Set `current_step: "verify"`. Trigger vault checkpoint if configured (fail-open).
 
 ### Stage 3: Verify
 
@@ -189,6 +272,8 @@ If implementation IS complete, these failures indicate spec/impl mismatch.
 ```
 
 ### Completion
+
+**State update:** Mark `verify` complete. output_summary: "Tests run: [yes/no][; passed: N, failed: N if run]". Set `status: "complete"`, `current_step: null`, `updated_at: ISO timestamp`.
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

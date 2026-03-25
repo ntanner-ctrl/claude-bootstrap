@@ -181,6 +181,23 @@ if $wizard_ok; then
     pass "All wizard commands have required structural sections"
 fi
 
+# Check all wizard commands reference state management
+for wizard in prism review test clarify; do
+    grep -q "wizards/" "$SCRIPT_DIR/commands/${wizard}.md" || warn "${wizard}.md missing wizard state reference"
+done
+
+# Check all wizard commands have stage progression display
+for wizard in prism review test clarify; do
+    grep -q '✓' "$SCRIPT_DIR/commands/${wizard}.md" && grep -q '→' "$SCRIPT_DIR/commands/${wizard}.md" && grep -q '○' "$SCRIPT_DIR/commands/${wizard}.md" \
+        || warn "${wizard}.md missing stage progression markers"
+done
+
+# Check all wizard commands have resume protocol
+for wizard in prism review test clarify; do
+    grep -q 'Resume' "$SCRIPT_DIR/commands/${wizard}.md" && grep -q 'Abandon' "$SCRIPT_DIR/commands/${wizard}.md" \
+        || warn "${wizard}.md missing resume/abandon protocol"
+done
+
 echo ""
 
 # ─── 5. Hook Conventions ─────────────────────────────────────────
@@ -236,6 +253,18 @@ if command -v jq &>/dev/null; then
 
     # Check any other JSON files in .claude/plans/
     for f in $(find "$SCRIPT_DIR/.claude" -name "*.json" -type f 2>/dev/null | head -10); do
+        name=$(echo "$f" | sed "s|$SCRIPT_DIR/||")
+        if jq empty "$f" 2>/dev/null; then
+            pass "$name"
+        else
+            fail "$name — invalid JSON"
+        fi
+    done
+
+    # Validate wizard state.json files if any exist
+    # Note: validates JSON syntax only. Schema structure relies on Content Contracts.
+    for f in "$SCRIPT_DIR"/.claude/wizards/*/state.json; do
+        [ -f "$f" ] || continue
         name=$(echo "$f" | sed "s|$SCRIPT_DIR/||")
         if jq empty "$f" 2>/dev/null; then
             pass "$name"

@@ -4,7 +4,7 @@ Structured workflows, safety guardrails, and planning discipline for Claude Code
 
 ## Quick Reference
 
-- **Run tests:** `bash test.sh` (~67 checks: syntax, counts, lint, JSON, install dry-run, behavioral evals)
+- **Run tests:** `bash test.sh` (~75 checks: syntax, counts, lint, JSON, install dry-run, behavioral evals)
 - **Install locally:** `bash install.sh` (copies to `~/.claude/`)
 - **Verify install:** `ls ~/.claude/commands/blueprint.md`
 - **Run from repo:** `cd /path/to/project && claude` then `/bootstrap-project`
@@ -32,7 +32,7 @@ claude-sail/
 ├── evals/             # Behavioral eval fixtures (evals.json) — used by test.sh Category 8
 ├── scripts/           # Utility scripts (not hooks) — may use strict error modes (behavioral-smoke.sh)
 ├── ops-starter-kit/   # Domain extension example for infrastructure teams
-├── docs/              # Architecture explanations (Diataxis: explanation type)
+├── docs/              # Architecture explanations (Diataxis: explanation type) + WIZARD-STATE.md
 ├── plans/             # Legacy planning directory (pre-.claude/ era)
 ├── _OLD/              # Archived iterations (gitignored)
 ├── VERSION            # Current toolkit version (semver)

@@ -6,6 +6,117 @@ arguments:
     required: false
 ---
 
+## State Management
+
+### State Initialization
+
+At wizard entry, before any other work:
+
+```
+1. Ensure .claude/wizards/ exists (mkdir -p equivalent)
+2. Check for active session: glob .claude/wizards/clarify-*/state.json
+   - Exclude _archive/ paths (active glob matches clarify-<id>/state.json at top level only)
+   - If multiple matches: select most recent by session_id timestamp, archive others
+3. If active session found:
+   a. Read state.json — if version != 1, treat as corrupt → start fresh
+   b. Display stage progression header with session age:
+      "Previous clarify session from [N hours/minutes ago]"
+      If age > 4 hours: prominently note staleness
+   c. Prompt:
+        [1] Resume from [current_step]
+        [2] Abandon and start fresh
+4. If error session found (status == "error"):
+   Display:
+     Previous session errored at [step name].
+       [1] Resume from last complete step
+       [2] Abandon and start fresh
+   On resume: set current_step to step AFTER the last complete step (do not re-run the failed step automatically)
+5. If no active/error session (or prior session was complete/abandoned):
+   Create .claude/wizards/clarify-<YYYYMMDD-HHMMSS>/state.json with:
+   {
+     "wizard": "clarify",
+     "version": 1,
+     "session_id": "clarify-<YYYYMMDD-HHMMSS>",
+     "status": "active",
+     "current_step": "vault_check",
+     "steps": {
+       "vault_check":   { "status": "pending" },
+       "assess":        { "status": "pending" },
+       "brainstorm":    { "status": "pending", "conditional": true },
+       "requirements":  { "status": "pending", "conditional": true },
+       "design_check":  { "status": "pending", "conditional": true },
+       "prior_art":     { "status": "pending", "conditional": true },
+       "summary":       { "status": "pending" }
+     },
+     "context": {
+       "topic": "<$ARGUMENTS or inferred topic>",
+       "selected_paths": [],
+       "vault_findings": []
+     },
+     "vault_checkpoints": [],
+     "created_at": "<ISO-8601>",
+     "updated_at": "<ISO-8601>"
+   }
+6. Run cleanup: for each .claude/wizards/clarify-*/state.json where age > 7 days
+   AND status in (complete, abandoned, error): move directory to .claude/wizards/_archive/
+   If age > 7 days AND status == "active": log warning, do NOT auto-archive
+7. Display initial stage progression header (see Stage Progression Display below)
+```
+
+### Stage Progression Display
+
+Render after each step transition and on resume:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CLARIFY │ [topic] │ Step: [current step label]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Vault Check
+  ✓ Assess
+  → Brainstorm
+  ○ Requirements
+  — Design Check  (not selected)
+  — Prior Art     (not selected)
+  ○ Summary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Status symbols: `✓` complete, `→` active, `○` pending, `—` skipped (conditional, not selected).
+Generate display from state.json steps object — read status values, render accordingly.
+
+### Resume Protocol
+
+On resume (user chose [1]):
+
+```
+1. Reconstruct context from state.json:
+   - topic: from context.topic
+   - selected_paths: from context.selected_paths (which A/B/C/D were chosen)
+   - vault_findings: from context.vault_findings
+   - Prior step outcomes: from output_summary of each complete step
+2. For conditional steps (brainstorm/requirements/design_check/prior_art):
+   - If status == "skipped": do not re-run
+   - If status == "active": treat as pending, re-run from start of that step
+3. Continue from current_step
+4. All prior output_summaries serve as compressed context — do not re-run complete steps
+```
+
+Content contract for output_summaries (per WIZARD-STATE.md):
+
+| Step | output_summary MUST include | Budget |
+|------|---------------------------|--------|
+| vault_check | Related finding count, relevant titles | ~50 tokens |
+| assess | Which paths selected (A/B/C/D) and one-sentence rationale for each | ~100 tokens |
+| brainstorm | Approach count, recommended approach, key trade-off | ~150 tokens |
+| requirements | Requirement count, ambiguity count, key gaps | ~150 tokens |
+| design_check | Prerequisites met/missing, key concern | ~100 tokens |
+| prior_art | Recommendation (adopt/adapt/inform/build), top candidate | ~100 tokens |
+| summary | Key outcomes, recommended next action | ~100 tokens |
+
+---
+
 ## Cognitive Traps
 
 Before skipping or simplifying this command, check yourself:
@@ -56,6 +167,13 @@ If vault is available (`VAULT_ENABLED=1`, `VAULT_PATH` non-empty, `[ -d "$VAULT_
 
 If vault unavailable: skip silently (fail-open). When `$ARGUMENTS` is empty, use conversation context keywords as search terms.
 
+**After vault_check completes:** Update state.json:
+- Set `steps.vault_check.status` = "complete", record `completed_at`
+- Write `steps.vault_check.output_summary`: related finding count + relevant titles (~50 tokens)
+- Update `context.vault_findings`: array of finding slugs found (empty array if none)
+- Set `current_step` = "assess", `updated_at` = now
+- Display updated stage progression header
+
 Before running anything, assess which dimensions are unclear. Ask the user:
 
 ```
@@ -81,6 +199,15 @@ Based on "[topic]", it looks like:
 Does this match your sense of what's fuzzy?
 ```
 
+**After assess completes (user confirms which paths):** Update state.json:
+- Set `steps.assess.status` = "complete", record `completed_at`
+- Write `steps.assess.output_summary`: list selected paths with one-sentence rationale each (~100 tokens)
+- Update `context.selected_paths`: array of selected letters (e.g., ["A", "B"])
+- For each conditional step NOT selected: set status = "skipped", add `skip_reason` = "Not selected in assessment"
+- Set `current_step` = first selected conditional step (or "summary" if none selected)
+- Update `updated_at`
+- Display updated stage progression header showing skipped steps as `—`
+
 ### Step 2: Brainstorm (if approaches are unclear)
 
 ```
@@ -100,6 +227,13 @@ After brainstorm completes, capture the key output:
 - Questions surfaced
 
   Step 2 complete: [outcome summary]. Proceeding to Step 3.
+
+**After brainstorm completes:** Update state.json:
+- Set `steps.brainstorm.status` = "complete", record `completed_at`
+- Write `steps.brainstorm.output_summary`: approach count, recommended approach, key trade-off (~150 tokens)
+- Set `current_step` = next selected step or "summary" if no more selected conditional steps remain
+- Update `updated_at`
+- Display updated stage progression header
 
 ### Step 3: Requirements Discovery (if requirements are unclear)
 
@@ -121,6 +255,13 @@ After discovery completes, capture:
 
   Step 3 complete: [outcome summary]. Proceeding to Step 4.
 
+**After requirements completes:** Update state.json:
+- Set `steps.requirements.status` = "complete", record `completed_at`
+- Write `steps.requirements.output_summary`: requirement count, ambiguity count, key gaps (~150 tokens)
+- Set `current_step` = next selected step or "summary" if no more selected conditional steps remain
+- Update `updated_at`
+- Display updated stage progression header
+
 ### Step 4: Design Check (if boundaries are fuzzy)
 
 ```
@@ -140,6 +281,13 @@ After check completes, capture:
 
   Step 4 complete: [outcome summary]. Proceeding to Step 5.
 
+**After design_check completes:** Update state.json:
+- Set `steps.design_check.status` = "complete", record `completed_at`
+- Write `steps.design_check.output_summary`: prerequisites met/missing, key concern (~100 tokens)
+- Set `current_step` = next selected step or "summary" if no more selected conditional steps remain
+- Update `updated_at`
+- Display updated stage progression header
+
 ### Step 5: Prior Art Search (if building something new)
 
 ```
@@ -158,6 +306,13 @@ After search completes, capture:
 - Top candidates (if any)
 
   Step 5 complete: [outcome summary]. Proceeding to Step 6.
+
+**After prior_art completes:** Update state.json:
+- Set `steps.prior_art.status` = "complete", record `completed_at`
+- Write `steps.prior_art.output_summary`: recommendation (adopt/adapt/inform/build), top candidate (~100 tokens)
+- Set `current_step` = "summary"
+- Update `updated_at`
+- Display updated stage progression header
 
 ### Step 6: Summary & Next Action
 
@@ -198,6 +353,17 @@ Present a structured summary of everything that was clarified:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**After summary completes (wizard completion):** Update state.json:
+- Set `steps.summary.status` = "complete", record `completed_at`
+- Write `steps.summary.output_summary`: key outcomes, recommended next action (~100 tokens)
+- Set `status` = "complete", `current_step` = null
+- Update `updated_at`
+- Vault checkpoint: if vault is available (`VAULT_ENABLED=1`), export clarification outcomes to vault
+  - On success: append to `vault_checkpoints`: `{ "step": "summary", "exported_at": "<ISO-8601>", "vault_path": "<path>" }`
+  - On failure: log warning, continue (fail-open)
+
+---
 
 ## Failure Modes
 

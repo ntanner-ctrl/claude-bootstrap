@@ -34,6 +34,119 @@ Stage 5 only appears when specialized review plugins are detected.
 
 ## Process
 
+### State Initialization
+
+Before doing anything else, initialize or resume wizard state:
+
+```
+1. Ensure .claude/wizards/ exists (mkdir -p equivalent)
+2. Check for active session: look for .claude/wizards/review-*/state.json
+   - If multiple matches: select most recent by created_at timestamp, archive others
+3. Dispatch based on session status:
+```
+
+**If active session found (`status == "active"`):**
+
+Compute session age from `created_at`. Validate `version == 1` — if not, treat as corrupt (start fresh).
+
+Display progress header:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  REVIEW │ Resuming session from [N hours/minutes ago]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [staleness warning if session > 4 hours old]
+
+  [✓/→/○] Vault Check
+  [✓/→/○] Identify Target
+  [✓/→/○] Devil's Advocate
+  [✓/→/○] Simplify
+  [✓/→/○] Edge Cases
+  [✓/→/○/—] External Review
+  [✓/→/○/—] Deep Analysis
+  [✓/→/○] Compile Summary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [1] Resume from [current_step]
+  [2] Abandon and start fresh
+
+>
+```
+
+On **Resume**: reconstruct context from `output_summary` fields of completed steps + `context` object, then skip to `current_step`. Any substep with `status: active` is treated as `pending` — re-run it.
+
+On **Abandon**: set `status: abandoned` in state.json, create new session (continue to new session flow below).
+
+**If error session found (`status == "error"`):**
+
+```
+Previous review session errored at [step name].
+  [1] Resume from last complete step
+  [2] Abandon and start fresh
+
+>
+```
+
+On Resume: set `current_step` to the step after the last complete step. Do NOT re-run the failed step automatically.
+
+**If no active/error session (or prior session was complete/abandoned):**
+
+Create `.claude/wizards/review-<YYYYMMDD-HHMMSS>/state.json` with:
+
+```json
+{
+  "wizard": "review",
+  "version": 1,
+  "session_id": "review-<YYYYMMDD-HHMMSS>",
+  "status": "active",
+  "current_step": "vault_check",
+  "steps": {
+    "vault_check": { "status": "pending" },
+    "identify_target": { "status": "pending" },
+    "devils_advocate": { "status": "pending" },
+    "simplify": { "status": "pending" },
+    "edge_cases": { "status": "pending" },
+    "external_review": { "status": "pending", "conditional": true },
+    "deep_analysis": { "status": "pending", "conditional": true },
+    "compile": { "status": "pending" }
+  },
+  "context": {
+    "target_type": null,
+    "target_description": null,
+    "blueprint_name": null
+  },
+  "vault_checkpoints": [],
+  "created_at": "<ISO-8601 timestamp>",
+  "updated_at": "<ISO-8601 timestamp>"
+}
+```
+
+Then run cleanup: for each `.claude/wizards/review-*/state.json`, if `created_at` age > 7 days and `status` is `complete`, `abandoned`, or `error`, move the directory to `.claude/wizards/_archive/`. If age > 7 days and `status == "active"`, log a warning but do NOT archive.
+
+Display initial stage progression header:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  REVIEW │ Starting new session
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  → Vault Check
+  ○ Identify Target
+  ○ Devil's Advocate
+  ○ Simplify
+  ○ Edge Cases
+  ○ External Review
+  ○ Deep Analysis
+  ○ Compile Summary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+State writes are fail-open — if state.json cannot be written, log a warning and continue without state.
+
+---
+
 ### Vault Check
 
 Before starting the review, check for prior work:
@@ -48,6 +161,14 @@ If vault is available (`VAULT_ENABLED=1`, `VAULT_PATH` non-empty, `[ -d "$VAULT_
 - If no matches: proceed silently
 
 If vault unavailable: skip silently (fail-open).
+
+**State transition — vault_check complete:**
+Update state.json:
+- `steps.vault_check.status` → `"complete"`
+- `steps.vault_check.output_summary` → prior review count found, relevant finding titles (~50 tokens)
+- `steps.identify_target.status` → `"active"`
+- `current_step` → `"identify_target"`
+- `updated_at` → current timestamp
 
 ### Step 1: Identify Target
 
@@ -65,6 +186,17 @@ What are you reviewing?
 >
 ```
 
+**State transition — identify_target complete:**
+Update state.json:
+- `steps.identify_target.status` → `"complete"`
+- `steps.identify_target.output_summary` → target type, target description, scope (~50 tokens)
+- `context.target_type` → one of `"blueprint"` / `"implementation"` / `"idea"`
+- `context.target_description` → brief description of what is being reviewed
+- `context.blueprint_name` → blueprint name if target_type is `"blueprint"`, otherwise `null`
+- `steps.devils_advocate.status` → `"active"`
+- `current_step` → `"devils_advocate"`
+- `updated_at` → current timestamp
+
 ### Step 2: Run Adversarial Stages
 
 **Stage 1: Devil's Advocate**
@@ -80,6 +212,14 @@ Run `/devils-advocate` on the target.
 
 > Stage 1 complete: [N] assumption gaps found. Proceeding to Stage 2 (Simplify).
 
+**State transition — devils_advocate complete:**
+Update state.json:
+- `steps.devils_advocate.status` → `"complete"`
+- `steps.devils_advocate.output_summary` → finding count with severity breakdown, top 2 findings (~150 tokens)
+- `steps.simplify.status` → `"active"`
+- `current_step` → `"simplify"`
+- `updated_at` → current timestamp
+
 **Stage 2: Simplify**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -93,6 +233,14 @@ Run `/overcomplicated` on the target.
 
 > Stage 2 complete: [N] simplification opportunities found. Proceeding to Stage 3 (Edge Cases).
 
+**State transition — simplify complete:**
+Update state.json:
+- `steps.simplify.status` → `"complete"`
+- `steps.simplify.output_summary` → simplification count, top opportunity (~100 tokens)
+- `steps.edge_cases.status` → `"active"`
+- `current_step` → `"edge_cases"`
+- `updated_at` → current timestamp
+
 **Stage 3: Edge Cases**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -105,6 +253,14 @@ Probing boundaries...
 Run `/edge-cases` on the target.
 
 > Stage 3 complete: [N] unhandled edge cases found. Proceeding to Stage 4 (External Review).
+
+**State transition — edge_cases complete:**
+Update state.json:
+- `steps.edge_cases.status` → `"complete"`
+- `steps.edge_cases.output_summary` → unhandled edge case count, top 2 boundaries (~150 tokens)
+- `steps.external_review.status` → `"active"` (conditional: if skipped, set to `"skipped"` with `skip_reason: "User declined"`)
+- `current_step` → `"external_review"`
+- `updated_at` → current timestamp
 
 **Stage 4: External Review (Optional)**
 ```
@@ -124,6 +280,14 @@ This can catch blind spots that local review missed.
 If yes, run `/gpt-review` with all local findings included.
 
 > Stage 4 complete: external review [included/skipped]. Proceeding to Stage 5 (Deep Analysis).
+
+**State transition — external_review complete:**
+Update state.json:
+- `steps.external_review.status` → `"complete"` (or `"skipped"` if user declined, already set above)
+- `steps.external_review.output_summary` → "included, N findings" or "skipped: user declined" (~50 tokens)
+- `steps.deep_analysis.status` → `"active"` (or `"skipped"` if no plugins detected or `/review --quick`)
+- `current_step` → `"deep_analysis"`
+- `updated_at` → current timestamp
 
 **Stage 5: Deep Analysis (Optional)**
 
@@ -187,6 +351,14 @@ Options are dynamically numbered based on detected plugins. Multiple can be sele
 
 6. Quick mode (`/review --quick`) skips this stage entirely.
 
+**State transition — deep_analysis complete:**
+Update state.json:
+- `steps.deep_analysis.status` → `"complete"` (or `"skipped"` if no plugins detected / user skipped / `--quick` mode)
+- `steps.deep_analysis.output_summary` → plugin findings count, top concerns (~100 tokens); or `"skipped: no plugins detected"` / `"skipped: --quick mode"`
+- `steps.compile.status` → `"active"`
+- `current_step` → `"compile"`
+- `updated_at` → current timestamp
+
 ### Step 3: Compile Summary
 
 ```
@@ -230,6 +402,20 @@ Options are dynamically numbered based on detected plugins. Multiple can be sele
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+**State transition — compile complete (session end):**
+Update state.json:
+- `steps.compile.status` → `"complete"`
+- `steps.compile.output_summary` → total findings count, critical count, action items (~100 tokens)
+- `status` → `"complete"`
+- `current_step` → `null`
+- `updated_at` → current timestamp
+
+Then attempt vault checkpoint (fail-open): export review findings summary to vault if configured. On success, append to `vault_checkpoints`:
+```json
+{ "step": "compile", "exported_at": "<ISO-8601>", "vault_path": "<path>" }
+```
+On vault unavailable or failure: log warning, continue.
 
 ## Failure Modes
 

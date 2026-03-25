@@ -1,0 +1,111 @@
+{
+  "blueprint_version": 2,
+  "name": "wizard-state-management",
+  "challenge_mode": "family",
+  "execution_preference": "auto",
+  "current_stage": "execute",
+  "revision": 1,
+  "regression_count": 0,
+  "regression_log": [],
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "epistemic_session_id": "d6ca2510-5ee1-499d-9639-387418b33bbf",
+  "epistemic_preflight_complete": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed_at": "2026-03-24T19:41:00Z",
+      "confidence": 0.8,
+      "confidence_note": "Thorough describe with clear decomposition, design questions identified, vault references included. Carried from prior session.",
+      "path": "full"
+    },
+    "specify": {
+      "status": "complete",
+      "completed_at": "2026-03-25T00:00:00Z",
+      "confidence": 0.8,
+      "confidence_note": "Clear schema design, all 5 design questions answered, work units well-decomposed. Success criteria from ambiguity gate gap now addressed. Prism findings-summary deferred to implementation."
+    },
+    "challenge": {
+      "status": "complete",
+      "started_at": "2026-03-25T00:02:00Z",
+      "completed_at": "2026-03-25T00:20:00Z",
+      "mode": "family",
+      "confidence": 0.88,
+      "confidence_note": "Elder converged at 0.88. 9 findings (1 critical, 2 high, 3 medium, 2 low, 1 medium from vault). Architecture validated by 8 vault findings. No regression needed.",
+      "verdict": "PASS_WITH_NOTES"
+    },
+    "edge_cases": {
+      "status": "complete",
+      "started_at": "2026-03-25T00:22:00Z",
+      "completed_at": "2026-03-25T00:45:00Z",
+      "mode": "family",
+      "confidence": 0.91,
+      "confidence_note": "Elder converged at 0.91. 30 boundaries → 5 genuine gaps, 5 acceptable risks, 20 declined. All triage historically validated. No regression needed.",
+      "verdict": "PASS_WITH_NOTES"
+    },
+    "premortem": {
+      "status": "complete",
+      "completed_at": "2026-03-25T00:50:00Z",
+      "confidence": 0.85,
+      "confidence_note": "5 NEW operational findings (PM1-PM3, PM6-PM7), 2 COVERED. Low overlap (0.29) confirms different failure class. PM1 critical — reinforces F1 as load-bearing."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Family debate (10 agents) + pre-mortem provided comprehensive coverage. Three independent lenses converged on F1. External review unlikely to surface new critical findings."
+    },
+    "test": {
+      "status": "complete",
+      "completed_at": "2026-03-25T00:55:00Z",
+      "confidence": 0.85,
+      "confidence_note": "26 test specs across 6 categories. Categories A-B automatable in test.sh. Categories C-F behavioral — require manual verification or eval fixtures. D1-D2 highest value (validate F1/G1/G2)."
+    },
+    "execute": {
+      "status": "pending"
+    }
+  },
+  "ambiguity_gate": {
+    "goal_clarity": 4,
+    "constraint_clarity": 4,
+    "success_criteria": 3,
+    "composite": 3.7,
+    "result": "pass",
+    "override": false,
+    "override_reason": null,
+    "notes": "Success criteria gap — tighten acceptance criteria in Stage 2"
+  },
+  "prior_art_gate": {
+    "status": "complete",
+    "recommendation": "build",
+    "override": false,
+    "run_at": "2026-03-24T23:55:00Z",
+    "patterns_borrowed": [
+      "complexity-adaptive branching",
+      "resume-from-disk",
+      "blocker tracking"
+    ]
+  },
+  "premortem": {
+    "status": "complete",
+    "premortem_overlap": "low",
+    "new_findings": 5,
+    "covered_findings": 2
+  },
+  "created_at": "2026-03-24T19:41:00Z",
+  "updated_at": "2026-03-25T00:02:00Z",
+  "family_progress": {
+    "stage": "edge_cases",
+    "round": 1,
+    "agents_completed": [
+      "child_defend",
+      "child_assert",
+      "mother",
+      "father",
+      "elder"
+    ],
+    "current_agent": null,
+    "rounds_total": 1,
+    "elder_verdicts": [
+      "CONVERGED"
+    ]
+  }
+}

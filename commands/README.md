@@ -146,7 +146,7 @@ Stock pipelines (run via `/pipeline run <name>`):
 
 ## Workflow Wizards
 
-Guided paths through the toolkit for common scenarios.
+Guided paths through the toolkit for common scenarios. All wizards support persistent state management — resume-on-compaction, stage progression display, and vault checkpoints. See [docs/WIZARD-STATE.md](/docs/WIZARD-STATE.md) for the shared schema.
 
 ### `/clarify [topic]`
 

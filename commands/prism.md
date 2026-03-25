@@ -31,6 +31,63 @@ Assesses code health through a parallel paradigm lens swarm (6 observation agent
 
 ## Process
 
+### State Initialization
+
+Before beginning any analysis, initialize wizard state:
+
+```
+1. Ensure .claude/wizards/ exists (mkdir -p)
+2. Check for active session: ls .claude/wizards/prism-*/state.json
+   - If multiple matches: select most recent by created_at, archive others
+3. If active session found (status == "active"):
+   - Validate version field — if mismatch, treat as corrupt and start fresh
+   - Display session age and stage progression header (✓/→/○ per step status)
+   - Prompt:
+       Previous prism session from [age]. Resume or start fresh?
+         [1] Resume from [current_step]
+         [2] Abandon and start fresh
+   - On Resume: reconstruct context from output_summaries + context object,
+     then skip to current_step. Any substep with status "active" is re-run as "pending".
+   - On Abandon: set status "abandoned", create new session.
+4. If error session found (status == "error"):
+   - Display:
+       Previous session errored at [step name].
+         [1] Resume from last complete step
+         [2] Abandon and start fresh
+5. If no active/error session:
+   - Create .claude/wizards/prism-YYYYMMDD-HHMMSS/state.json
+   - Initialize with wizard "prism", version 1, status "active",
+     current_step "context", all steps pending
+   - context object: { target_path, scope_files: null, paradigm_summary: null, cf_detected: false }
+6. Run cleanup: for sessions older than 7 days with status complete/abandoned/error,
+   move to .claude/wizards/_archive/. Log warning for old "active" sessions but do NOT archive.
+7. Display initial stage progression header.
+```
+
+**Session ID format:** `prism-YYYYMMDD-HHMMSS` (second precision). Steps: `context`, `scope`, `wave1`, `architecture`, `cloudformation`, `security`, `performance`, `quality`, `synthesis`, `report`. See `docs/WIZARD-STATE.md` for schema details.
+
+**Stage Progression Header format:**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PRISM │ Stage: [current stage name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ Context Brief        ← complete
+  → Scope Detection      ← active (current)
+  ○ Wave 1: Paradigm Lenses
+  ○ Architecture Review
+  ○ CloudFormation Review
+  ○ Security Review
+  ○ Performance Review
+  ○ Quality Review
+  ○ Synthesis
+  ○ Report & Export
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Skipped conditional steps use `—` (dash). For Wave 1, show `[N/6 agents complete]` on the active line.
+
+---
+
 ### Stage 0: Project Context Brief
 
 Build a ~500 token context brief for all downstream agents.
@@ -60,6 +117,8 @@ Build a ~500 token context brief for all downstream agents.
 
 **Output:** Project Context Brief (~500 tokens max). If it exceeds budget, truncate to key sections: stack, conventions, known constraints.
 
+**State update:** Mark step `context` complete. Write `output_summary`: project name, stack, file counts (commands/agents/hooks). Update `context.target_path`. Set `current_step` to `scope`. Display updated stage progression header.
+
 ### Stage 1: Scope Detection
 
 **Default (no target specified):** Scan the entire project.
@@ -86,6 +145,8 @@ Prism scope covers only [N] files. The full 11-agent pipeline
 may be disproportionate. Consider /quality-sweep for small scopes.
 Proceed anyway? (Y/n)
 ```
+
+**State update:** Mark step `scope` complete. Write `output_summary`: file count in scope, filters applied, scope warnings if any. Update `context.scope_files`. Set `current_step` to `wave1`. Display updated stage progression header.
 
 ### Wave 1: Paradigm Lens Swarm (Parallel)
 
@@ -137,6 +198,8 @@ Compress all lens observations into a **Paradigm Summary** (~300-500 tokens). Th
     cohesion-lens:    [N] observations
     coupling-lens:    [N] observations
 ```
+
+**State update:** Mark step `wave1` complete. Write `output_summary`: issue count per paradigm (DRY: N, YAGNI: N, KISS: N, consistency: N, cohesion: N, coupling: N), top 3 critical findings with affected files, pattern-level diagnosis. Update `context.paradigm_summary` with the compressed Paradigm Summary. Set `current_step` to `architecture`. Display updated stage progression header. **Vault checkpoint:** export paradigm summary if vault available (fail-open). Record in `vault_checkpoints` if successful.
 
 ### Serial Domain Reviews (Stages 2-5)
 
@@ -218,6 +281,8 @@ CLEARED (explicitly not a concern for this project):
 
 Uses: `architecture-reviewer` agent. Reads: Project Context Brief + Paradigm Summary. Orchestrator extracts constraint summary after completion.
 
+**State update:** Mark step `architecture` complete. Write `output_summary`: finding count, top concerns with severity, cross-cutting themes. Set `current_step` to `cloudformation`. Display updated stage progression header.
+
 #### Stage 2.5: CloudFormation Review (Conditional)
 
 Only runs if CF/SAM/CDK templates are detected in the project. Check for:
@@ -237,6 +302,8 @@ If no templates detected:
 
 Uses: `cloudformation-reviewer` agent. Reads: context + paradigm + architecture constraints. Orchestrator extracts constraint summary.
 
+**State update:** Mark step `cloudformation` complete (or `skipped` with `skip_reason: "no CF templates detected"` and `conditional: true`). Write `output_summary`: finding count + top concerns, or "skipped: no CF detected". Set `current_step` to `security`. Display updated stage progression header. (Skipped cloudformation shows as `—` in the progress display.)
+
 #### Stage 3: Security Review
 
 ```
@@ -246,6 +313,8 @@ Uses: `cloudformation-reviewer` agent. Reads: context + paradigm + architecture 
 
 Uses: `security-reviewer` agent. Reads: context + paradigm + cumulative constraints. Orchestrator extracts constraint summary.
 
+**State update:** Mark step `security` complete. Write `output_summary`: finding count, top concerns with severity. Set `current_step` to `performance`. Display updated stage progression header.
+
 #### Stage 4: Performance Review
 
 ```
@@ -254,6 +323,8 @@ Uses: `security-reviewer` agent. Reads: context + paradigm + cumulative constrai
 ```
 
 Uses: `performance-reviewer` agent. Reads: context + paradigm + cumulative constraints. Orchestrator extracts constraint summary.
+
+**State update:** Mark step `performance` complete. Write `output_summary`: finding count, top concerns with severity. Set `current_step` to `quality`. Display updated stage progression header.
 
 #### Stage 5: Quality Review
 
@@ -265,6 +336,8 @@ Uses: `performance-reviewer` agent. Reads: context + paradigm + cumulative const
 Uses: `quality-reviewer` agent. Reads: context + paradigm + cumulative constraints (fullest picture). No constraint extraction — last serial stage.
 
 **Error path coverage note:** Error handling completeness is covered by domain reviewers, not a dedicated paradigm lens. quality-reviewer is primary (catches error handling inconsistency, unhandled exceptions, missing null checks). security-reviewer is secondary (catches security-relevant error suppression). cohesion-lens is tertiary (flags error-routing logic mixed into business logic).
+
+**State update:** Mark step `quality` complete. Write `output_summary`: finding count, top concerns with severity. Set `current_step` to `synthesis`. Display updated stage progression header.
 
 ### Stage 6: Synthesis
 
@@ -298,6 +371,8 @@ Performed by the orchestrator (this command), not a separate agent. Two explicit
    - These scores are heuristic estimates for relative ranking within a single run, not precise measurements.
 9. **Prioritize** by composite: Risk x Impact / Ease (higher = fix first). Themes flagged by multi-lens density (step 3) receive +1 to Risk score (capped at 5). **Tie-breaking:** Equal composite scores break by: (1) Risk score descending, then (2) number of contributing sources descending.
 10. **Confidence filter** — Paradigm observations tagged `low` confidence are included but marked `[low confidence — verify before acting]`
+
+**State update:** Mark step `synthesis` complete. Write `output_summary`: theme count, remediation priorities (top 3 themes with composite scores), confidence score. Set `current_step` to `report`. Display updated stage progression header.
 
 ### Stage 7: Report & Export
 
@@ -426,6 +501,20 @@ If vault available:
 5. Report: `Vault: Prism report exported to Engineering/Findings/`
 
 If vault unavailable, skip silently. Report is always displayed inline regardless.
+
+**State update (completion):** Mark step `report` complete. Write `output_summary`: export status, vault path if exported. Set `status` to `"complete"`, `current_step` to `null`. Display final stage progression header with all steps marked `✓`. **Vault checkpoint:** export final report if vault available (fail-open). Record in `vault_checkpoints` if successful.
+
+### Resume Protocol
+
+When invoked with an active session, context is reconstructed from disk before any analysis runs:
+
+1. Read `output_summary` from each completed step — these are the compressed findings budget. See `docs/WIZARD-STATE.md` for per-step content contracts and token budgets (~800-1,450 tokens total for a full prism resume).
+2. Read `context` object for `target_path`, `scope_files`, `paradigm_summary`, `cf_detected`.
+3. For `wave1` with substeps: any substep with `status: active` is treated as `pending` and re-run (retrying read-only analysis agents is always safe).
+4. **Freshness:** Sessions older than 24 hours MUST display a prominent staleness warning in the resume prompt — the codebase may have changed significantly.
+5. Resume picks up from `current_step` with full prior-stage context reconstructed from summaries.
+
+> Schema details and full content contracts: `docs/WIZARD-STATE.md`
 
 ## Failure Modes
 
