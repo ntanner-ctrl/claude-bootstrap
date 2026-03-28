@@ -18,3 +18,6 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+
+# Git worktrees
+.worktrees/
