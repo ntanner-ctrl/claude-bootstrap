@@ -135,9 +135,23 @@ fi
 
 # =============================================================================
 # POTENTIAL EXFILTRATION
+# Scope: only match sensitive file extensions as arguments to network tools,
+# not as substrings in piped commands or inline scripts.
+# Split on pipes first, only check the segment containing the network tool.
 # =============================================================================
 
-if [[ "$cmd" =~ (curl|wget|nc|netcat)[[:space:]].*\.(env|pem|key|secret|credentials|p12|pfx) ]]; then
+# Extract the first pipe segment containing a network tool
+exfil_segment=""
+while IFS='|' read -ra PIPE_SEGMENTS; do
+    for seg in "${PIPE_SEGMENTS[@]}"; do
+        if [[ "$seg" =~ (curl|wget|nc|netcat)[[:space:]] ]]; then
+            exfil_segment="$seg"
+            break
+        fi
+    done
+done <<< "$cmd"
+
+if [[ -n "$exfil_segment" ]] && [[ "$exfil_segment" =~ \.(env|pem|key|secret|credentials|p12|pfx)([[:space:]]|$|[\"\']) ]]; then
     block_with_feedback "SECURITY" \
         "Refusing potential secret exfiltration over network" \
         "Use encrypted channels (scp, rsync over SSH) or secrets managers for credential transfer"

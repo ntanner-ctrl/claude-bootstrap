@@ -41,6 +41,17 @@ if ! echo "$cmd" | grep -qE 'git\s+(commit|push)'; then
     exit 0  # Not a commit/push, allow
 fi
 
+# Per-commit override: if SAIL_SECRET_OVERRIDE is set to the current short SHA
+# (or "FORCE"), skip scanning. This allows Claude to proceed after the user
+# acknowledges a false positive, without disabling the hook for the whole session.
+if [[ -n "$SAIL_SECRET_OVERRIDE" ]]; then
+    current_sha=$(git rev-parse --short HEAD 2>/dev/null || echo "none")
+    if [[ "$SAIL_SECRET_OVERRIDE" == "FORCE" || "$SAIL_SECRET_OVERRIDE" == "$current_sha" ]]; then
+        audit_block "$HOOK_NAME" "OVERRIDE" "Secret scan overridden (SAIL_SECRET_OVERRIDE=$SAIL_SECRET_OVERRIDE)" "Bash" "${cmd:0:100}"
+        exit 0
+    fi
+fi
+
 # Check if we're in a git repo
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     exit 0  # Not a git repo, allow
