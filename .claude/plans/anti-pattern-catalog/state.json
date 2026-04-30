@@ -67,19 +67,20 @@
       "confidence_note": "Spec-blind tests generated covering all 14 ACs + 7 preservation contracts + 13 failure modes. Bash-based, slot into existing test.sh + evals/evals.json + scripts/behavioral-smoke.sh infrastructure. AC14 explicitly flagged as partially spec-blind (form-1 unit-testable, form-2 requires harness-empirical verification — gating step before WU6). Test execution order suggested for Execute stage."
     },
     "execute": {
-      "status": "pending",
-      "blocked_reason": "AC14 form-2 verification revealed exit 0 + stderr does NOT propagate to Claude (rev3 spec design failed). additionalContext via stdout JSON is the correct mechanism (docs confirm, in-session unverifiable due to settings cache). Spec needs rev4 polish: change hook output from stderr to stdout JSON. Other WUs unblocked. See ac14-verification.md.",
-      "gating_findings": [
-        "DA-1 confirmed: warn-only stderr invisible to Claude",
-        "Path C (additionalContext) is documented mechanism",
-        "rev4 polish required on spec.md hook contract section + tests.md AC14 unit-test form"
-      ],
+      "status": "complete",
+      "completed_at": "2026-04-30T21:25:00Z",
+      "ship_commit": "36bff79",
+      "confidence": 0.85,
+      "confidence_note": "All 7 WUs implemented. test.sh: 104 passed / 0 failed / 3 warnings (preexisting). Live behavioral checks (Cat 9) verify AC2/AC3/AC8/AC9/AC11/AC13/AC14-form-1. AC14 form-2 (live-session hook propagation) is a deferred manual gate per spec — confidence reflects pending fresh-session empirical confirmation.",
       "unblocked_at": "2026-04-30T20:29:41Z",
       "gating_verification": {
         "ac14_form1_via_additionalContext_unit_testable": true,
         "ac14_form2_manual_in_fresh_session_required": true,
         "rev4_applied": true
-      }
+      },
+      "deferred_verification": [
+        "AC14 form-2: in a fresh Claude Code session, attempt a Write whose content matches a catalog fixture_bad. Confirm tool feedback contains 'Catalog: <id>'. If form-2 fails, redesign per spec Decisions section."
+      ]
     },
     "debrief": {
       "status": "pending"
@@ -89,5 +90,5 @@
     "status": "complete",
     "overlap": "low (0%)"
   },
-  "updated_at": "2026-04-30T20:29:41Z"
+  "updated_at": "2026-04-30T21:25:00Z"
 }
