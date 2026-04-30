@@ -258,3 +258,80 @@ are flagged (potential regression triggers). This pass found none.
 **Verdict: READY** — no critical findings; four low-severity findings to fold into spec's "Known Limitations" section without regression.
 
 **No edge case implies architectural change.** The fail-open semantics from rev2 cover most edges; the four flagged findings are documentation tasks, not design changes.
+
+---
+
+## Stage 6 — Review (Stage 6 of blueprint workflow, run 2026-04-30)
+
+Standalone /review wizard run. Pre-implementation spec-prose review with explicit
+hunting for what the prior 3 passes (Challenge, Edge Cases, Pre-Mortem) missed.
+External lens substituted /prior-art for /gpt-review at user request.
+
+### Lens 1 — Devil's Advocate (re-review)
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| DA-1 | Shell-hook first-consumer is `action: warn`, exit 0 — warnings may be invisible to Claude's tool-feedback path. AC4 mechanically passes but enforcement could be theater. | **HIGH** |
+| DA-2 | Vault export ships in WU3 alongside core sweep. With 3 patterns and one consumer, vault aggregation has nothing to aggregate yet. Decoupling option: ship as separate `/anti-pattern-export` command, sweep stays project-local. | MEDIUM |
+| DA-3 | "Project SoT, vault mirror" assumes single-direction edits — Obsidian users editing patterns in the vault will have edits silently overwritten. Add `<!-- AUTO-GENERATED MIRROR -->` header so contract is visible. | MEDIUM |
+| DA-4 | `bash-missing-fail-fast` has the same multi-line-analysis problem F3 was dropped for. Fixture self-test loop will frequently fail; pattern will be skipped; AC1 mechanically passes but coverage is 2-pattern not 3. | LOW |
+
+### Lens 2 — Simplify / Overcomplicated
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| S-1 | Heartbeat + nudge + summary triplet (rev2 pre-mortem additions) is ceremony-heavy for a 3-pattern v1. Consider: collapse heartbeat-and-nudge into single inline check in `/end`. Counter: pre-mortem found this *because* claude-sail has silent-decay history — preventive value is empirically grounded. | **HIGH** |
+| S-2 | Two sweep modes (`--session` and `--full`) double surface area for one actually-used path. `--full` use case is "initial seeding + periodic reconciliation" — verify demand before shipping; could replace with documented `git ls-files \| anti-pattern-sweep.sh --stdin`. | MEDIUM |
+| S-3 | `bash-rm-rf-with-variable` is included specifically to "exercise the recent_hits=0 path" — synthetic test fixture mixed into real catalog. Better: cover that path via `evals/evals.json` fixture, ship 2 incident-derived patterns. | LOW |
+| S-4 | `recent_window_days` has 3 layers of configurability (per-pattern frontmatter + future config override + 60-day default) before any user has asked for it. Hard-code in v1; add knobs when first user asks. | LOW |
+
+### Lens 3 — Edge Cases (re-review)
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| E20 | Manual `--full` sweep then `/end` session sweep within 30s produces double-attribution: same `(id, file, line)` tuple gets two events. `total_hits` double-counts; `locations_remedied` math gets confused. **Fix:** dedupe events by tuple in counter recomputation, keep most recent timestamp only. | MEDIUM |
+| E21 | Pattern's `detection_regex` mutated between sweeps; old events in `.events.jsonl` remain tagged with that id, but were matched by old regex. `recent_hits` becomes mix of old-regex and new-regex matches. Document or invalidate-on-regex-change. | LOW |
+| E22 | Pattern entry deleted from catalog; orphaned events for that id still in `.events.jsonl`, contributing to F4's unbounded-growth concern indirectly. Log + (eventually) prune on `--full`. | LOW |
+| E23 | Vault export inside the 5s session timeout. Network-mounted vault path can blow the budget; F-PM-1's heartbeat doesn't help (timeout fires before heartbeat write). **Fix:** vault export runs *outside* the timeout-wrapped sweep core. | LOW |
+| E24 | `git diff --name-only @{1.hour.ago}` reflog reference ambiguous after rebase/cherry-pick. Phantom events from now-orphaned commits. Prefer explicit fallback or use uncommitted-only mode. | LOW |
+
+### Lens 4 — Prior Art (substituted for /gpt-review)
+
+Full report at `.claude/plans/anti-pattern-catalog/prior-art.md`. Recommendation:
+**Inform** (continue blueprint with framing fixes). 4 candidates evaluated
+(semgrep, ast-grep, shellcheck, comby); none solve the temporal-observability +
+cross-project-aggregation half of the problem; toolkit's bash+curl-only
+constraint forecloses adoption.
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| PA-1 | describe.md frames the catalog as detection — semgrep does that better. Real differentiator is **temporal observability of anti-pattern decay across projects**. Without reframing, every reviewer asks "why not semgrep?" with no good answer. | **HIGH** |
+| PA-2 | Spec frames regex as a simplicity choice; it's actually a constraint choice (bash+curl only). Add a "Decisions" section documenting "why regex over AST" honestly. | MEDIUM |
+| PA-3 | Add optional `references: []` field to schema (links to incidents/PRs/CVEs) — costs nothing, aligns with semgrep's `metadata.references` for future portability. | LOW |
+
+### Lens 5 — Deep Analysis (skipped)
+
+Pre-implementation spec-prose review. Plugin agents (pr-review-toolkit,
+security-pro, superpowers, etc.) defer to post-Execute when actual sweep/hook
+scripts exist. Skip preserves the option without burning tokens on
+implementation-blind passes.
+
+### Review Verdict: **PROCEED with 3 spec edits + describe.md reframing**
+
+| Severity | Count | Disposition |
+|---|---|---|
+| HIGH | 3 | DA-1, S-1, PA-1 — discuss with user before Execute |
+| MEDIUM | 4 | DA-2, DA-3, E20, PA-2 — fold into spec or accept as known |
+| LOW | 9 | DA-4, S-2/S-3/S-4, E21/E22/E23/E24, PA-3 — document, defer, or accept |
+
+**No regression to Stage 2 (Specify).** None of the HIGH findings imply architectural changes; all three are framing/positioning issues that resolve via prose edits to spec.md and describe.md, not new mechanism design.
+
+**Recommended pre-Execute actions:**
+
+1. **describe.md reframe (PA-1)**: Add paragraph naming "temporal observability of anti-pattern decay across projects" as the differentiator. Contrast explicitly with detection-only tools (semgrep et al.).
+2. **spec.md "Decisions" section (PA-2)**: Document why regex over AST (toolkit constraint). Document why warn-only PreToolUse (DA-1) — and verify the warning visibility path before Execute. Document why heartbeat+nudge (S-1) — anchor in pre-mortem evidence.
+3. **spec.md schema extension (PA-3)**: Add optional `references: []` to frontmatter spec — 1-line addition, forward-compat win.
+4. **DA-1 verification (HIGH)**: Before WU6 implementation, run a sanity test that a PreToolUse hook's stderr-during-warn is actually surfaced to Claude. If not, the first-consumer wire-up is broken in a different way than F1 caught — needs a different action (e.g., emit a warning marker file Claude can grep).
+5. **E20 dedupe (MEDIUM)**: Add to sweep algorithm step 5: dedupe events by `(id, file, line)` tuple, keep latest timestamp.
+6. **MEDIUM/LOW findings**: Update spec's "Known Limitations" section with E21, E22, E23, E24, DA-3 contract header, S-2 deferral note.
+

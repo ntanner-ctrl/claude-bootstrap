@@ -11,6 +11,21 @@ Across recent sessions, the same kinds of dangerous code idioms have bitten us �
 
 The gap: a **catalog** of dangerous idioms — small, curated, structured — that multiple consumers (hookify, reviewers, future prism lens) can pull from. Without the catalog as a first-class artifact, every new consumer reinvents its own checklist.
 
+## Positioning vs. External Detection Tools
+
+**This is not a detection tool.** Tools like `semgrep`, `ast-grep`, and `shellcheck` already do regex/AST-based detection better than we ever will, with massive community rule libraries. If detection sophistication were the product, the answer would be "install semgrep, write a `.semgrep.yml`, done."
+
+The catalog's actual product is **temporal observability of anti-pattern decay across projects** — bookkeeping that detection tools intentionally don't provide:
+
+- **`recent_hits` over a rolling window** — "are we still making this mistake *lately*?"
+- **`locations_remedied`** — "did this fix actually take, or is it creeping back?"
+- **`first_seen` / `last_seen`** — when did this pattern enter our project's awareness, and is it active or fossilizing?
+- **Cross-project aggregation via vault export** — "this pattern fired in 4 of 7 projects last quarter; it's a portfolio-level concern, not a one-off."
+
+Detection happens once. Bookkeeping accumulates. The catalog is the **bookkeeping layer**; detection is a means, not the end. (See `prior-art.md` for the full external-tool comparison that drove this framing.)
+
+> **Constraint that shaped this choice:** claude-sail ships as bash + curl only. Adopting a detection engine like semgrep (Python) or ast-grep (Rust binary) would violate that constraint. Within the constraint, regex is the strongest detection primitive available — accepting some coarseness on multi-line patterns. A future `detection_kind: regex|semgrep|ast-grep` schema extension could route to better engines while preserving the bookkeeping layer; out of scope for v1.
+
 ## Desired Outcome
 
 A living, structured catalog of language-specific anti-patterns, with:

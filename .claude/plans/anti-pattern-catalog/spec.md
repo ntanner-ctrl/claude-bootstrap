@@ -1,5 +1,20 @@
 # Spec: Anti-Pattern Catalog
 
+> **Revision 4** (2026-04-30): Mechanism correctness (no architectural regression). AC14
+> empirical pre-impl verification (see `ac14-verification.md`) confirmed DA-1: `exit 0 + stderr`
+> from PreToolUse hooks does NOT propagate to Claude — only to the user terminal. Hook output
+> mechanism in WU6 changes from "exit 0 + stderr `Catalog: <id>`" to "exit 0 + stdout JSON
+> with `hookSpecificOutput.additionalContext`" per Claude Code's documented contract. WU6
+> architecture (PreToolUse hook citing catalog IDs as first consumer) is unchanged; only the
+> output channel shifts.
+>
+> **Revision 3** (2026-04-30): Post-review polish (no regression). Adds a Decisions section
+> documenting why-regex/why-warn-only/why-heartbeat (PA-2, DA-1, S-1); adds optional
+> `references` field to frontmatter (PA-3); adds event dedupe by (id, file, line) tuple to
+> sweep algorithm (E20); moves vault export outside the 5s timeout (E23); adds vault-mirror
+> contract header (DA-3); expands Known Limitations with E21, E22, E24; adds AC13 (dedupe)
+> and AC14 (DA-1 hook visibility verification). See spec.diff.md for full rev2→rev3 delta.
+>
 > **Revision 2** (2026-04-30): Addresses adversarial findings F1 (hookify→shell hook pivot),
 > F2 (sweep exclude paths), F3 (drop silent-error-suppression for v1, swap in regex-friendly
 > third pattern), F4 (events log cap), F5 (safe-swap fallback), F7 (file-level copy-if-not-exists).
@@ -35,6 +50,98 @@ Two sweep entry points:
 - **Session sweep** — invoked by `/end`, scoped to `git diff --name-only` files for the session. Cheap, automatic, runs only if `.claude/anti-patterns/` exists.
 - **Full sweep** — invoked manually as `bash scripts/anti-pattern-sweep.sh --full`. Scoped to `git ls-files` for the whole project. Used for initial catalog seeding and periodic reconciliation.
 
+## Decisions
+
+Documented design choices with the reasoning preserved for future-us. These resolve the
+"why didn't you just use X?" questions that come up otherwise.
+
+### Why regex over AST (PA-2)
+
+The catalog uses POSIX ERE regex for `detection_regex`. AST-based tools (semgrep, ast-grep)
+provide stronger detection: multi-line patterns, dataflow analysis, taint tracking. We don't
+adopt them because **claude-sail's distribution constraint is bash + curl only** — semgrep
+needs Python, ast-grep needs a Rust binary. Adopting either would change the toolkit's
+distribution model.
+
+Regex is therefore the strongest detection primitive available within the constraint, with
+accepted coarseness on multi-line patterns (cf. F3 dropping `bash-silent-error-suppression`
+from v1). A future `detection_kind: regex|semgrep|ast-grep` schema extension could route to
+better engines on systems that have them installed, while preserving the bookkeeping layer
+that's the actual product. Out of scope for v1; mentioned here so a future rev knows the
+intended evolution path.
+
+### Why warn-with-visibility via additionalContext (DA-1, rev4 verified)
+
+The first consumer (`hooks/anti-pattern-write-check.sh`) is a PreToolUse hook that allows
+the tool call to proceed but surfaces a `Catalog: <id>` warning to Claude in tool feedback.
+The mechanism is **`exit 0` + stdout JSON** with `hookSpecificOutput.additionalContext`,
+NOT stderr.
+
+**Why not stderr:** AC14 empirical verification (see `ac14-verification.md`) confirmed that
+`exit 0` PreToolUse hook stderr propagates to the user's terminal but NOT to Claude. A
+warn-only-via-stderr consumer would be wired-but-silent — AC4 mechanically passes, but the
+catalog produces no Claude-visible signal. This is exactly the failure mode DA-1 flagged
+during /review.
+
+**Why not exit 2:** `exit 2` does propagate stderr to Claude, but it also blocks the tool
+call. That's the right primitive for hard violations (`protect-claude-md.sh` uses it) but
+wrong for warn-only patterns where the user/Claude should see the citation and decide
+whether to proceed.
+
+**The right primitive — additionalContext:** Claude Code's documented PreToolUse hook output
+schema includes:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "additionalContext": "anti-pattern detected\n  Catalog: bash-unsafe-atomic-write\n  ..."
+  }
+}
+```
+
+The hook outputs this JSON to stdout, exits 0. Claude Code:
+1. Allows the tool call (`permissionDecision: "allow"`)
+2. Adds `additionalContext` text to Claude's context alongside the tool result
+3. The user sees the tool succeed; Claude sees the warning text; both are informed
+
+**Multi-pattern citations:** if multiple patterns match (e.g., a Write contains both
+`bash-unsafe-atomic-write` and `bash-rm-rf-with-variable`), the hook can emit multiple
+`hookSpecificOutput` entries — Claude Code accumulates all `additionalContext` values per
+the docs.
+
+**Verification status:** in-session empirical test was inconclusive (settings.local.json
+hooks are session-cached and don't reload mid-session — see `ac14-verification.md` Path C).
+Fresh-session manual verification is the final gate before WU6 marks complete.
+
+### Why heartbeat + nudge ceremony for v1 (S-1)
+
+Stage 5 (Pre-Mortem) found that fail-open observability has a known decay pattern in
+claude-sail's history — silent observability *is* broken observability. The heartbeat
+(`.last-sweep.json`) + stale-sweep nudge in `/end` are not speculative ceremony; they
+prevent the specific failure mode that's burned us before. The cost is real (extra spec
+sections, GNU-vs-BSD `date -d` branching, two new ACs) but the prevention has empirical
+basis.
+
+If this turns out to be over-engineered after 60 days of operation: the heartbeat write
+and `/end` nudge are both opt-out by file deletion (`rm .last-sweep.json` disables the
+nudge silently — fail-open). Cheap to walk back; expensive to bolt on after a silent-decay
+incident.
+
+### Why ship `bash-rm-rf-with-variable` despite no current instances (S-3)
+
+The pattern is included as a v1 entry that exercises the `recent_hits=0` path. This is a
+deliberate test that the recency signal **honestly reports zero** rather than fabricating
+hits. Alternative considered: cover that path via a synthetic `evals/evals.json` fixture
+and ship only the 2 incident-derived patterns. Rejected because the eval fixture wouldn't
+exercise the *full* sweep path on a real catalog entry — it would test the algorithm on
+fake data. Including the pattern as a real catalog entry tests the algorithm on the same
+codepath users will hit.
+
+Trade-off: the catalog has one entry that's "documented best practice" rather than
+"incident-derived." Documented as such; reviewers should know the difference.
+
 ## Catalog Entry Schema
 
 Each pattern is a markdown file at `.claude/anti-patterns/<id>.md` with YAML frontmatter:
@@ -58,6 +165,10 @@ recent_hits: 0                      # derived by sweep — count within recent_w
 recent_window_days: 60              # required, default 60 — definition of "recent"
 locations_remedied: 0               # derived by sweep — diff of (prior detections - current detections)
 related_hookify: []                 # optional, list of hookify rule names that cite this id
+references: []                      # optional, links to incidents/PRs/CVEs/findings
+                                    #   format: free-form strings or URLs
+                                    #   intent: forward-compat with semgrep's metadata.references
+                                    #   example: ["[[2026-04-30-jq-tmp-mv-pattern]]", "PR #42"]
 ---
 
 # [Pattern human title]
@@ -147,8 +258,16 @@ This log is the **single source of truth** for counter derivation. Frontmatter c
 
 5. Recompute counters from .events.jsonl:
    For each entry id:
-     - total_hits = count of all events with this id
-     - recent_hits = count of events with this id where ts >= now - recent_window_days
+
+   5a. Dedupe events by (id, file, line) tuple — keep only the most recent timestamp per
+       tuple (rev3 — addresses E20). Without dedup, a manual `--full` sweep followed by a
+       `/end` session sweep within the same window double-attributes any unchanged match
+       (same id, file, line gets two events seconds apart). Dedup is on read (counter
+       regen) — the events log itself stays append-only for forensic continuity.
+
+   5b. Compute counters from the deduped event set:
+     - total_hits = count of unique (id, file, line) tuples with this id
+     - recent_hits = count where ts >= now - recent_window_days
      - last_seen = max(ts) where id matches, or first_seen if no events
      - locations_remedied = (count of unique file:line tuples in events older than recent_window_days
                               that no longer match in the most recent sweep)
@@ -174,11 +293,25 @@ This log is the **single source of truth** for counter derivation. Frontmatter c
    Body content is preserved verbatim; only frontmatter counter fields are touched.
 
 7. If vault available (vault-config.sh sourced, VAULT_ENABLED=1):
+   Vault export runs **outside the timeout-wrapped sweep core** (rev3 — addresses E23).
+   Network-mounted vault paths (corp Dropbox, iCloud, slow SMB) can take 100+ms per write,
+   and per-pattern overhead inside a 5s session-mode budget can blow the timeout before
+   the heartbeat is written — making vault latency look like sweep failure. The fix:
+   the timeout wrapper covers steps 1-6 + 8-9 (the project-local critical path); step 7
+   runs unwrapped after the heartbeat is committed.
+
    For each updated entry, write a mirror to:
      $VAULT_PATH/Engineering/Anti-Patterns/<project>-<id>.md
    Mirror has identical body + frontmatter PLUS:
      project: <basename of git toplevel>
      mirror_of: .claude/anti-patterns/<id>.md
+
+   Mirror body is prefixed with a contract header (rev3 — addresses DA-3) so users
+   editing in Obsidian see the contract before they lose work to the next sweep:
+
+     <!-- AUTO-GENERATED MIRROR — edits here are overwritten by the next project sweep.
+          Edit the project-local catalog at .claude/anti-patterns/<id>.md instead. -->
+
    Vault writes use validate-before-swap. If vault write fails: log warning, do not fail the sweep.
 
 8. Print summary to stderr:
@@ -288,7 +421,7 @@ when a pattern matches. Fail-open: missing catalog directory, jq, or grep means 
 }
 ```
 
-**Hook script contract:**
+**Hook script contract (rev4 — additionalContext mechanism):**
 
 ```bash
 #!/usr/bin/env bash
@@ -298,11 +431,18 @@ when a pattern matches. Fail-open: missing catalog directory, jq, or grep means 
 # secret-scanner.sh, freeze-guard.sh, etc.). Extracts the candidate file
 # content from .tool_input.content (Write) OR .tool_input.new_string (Edit),
 # scans against each catalog pattern's detection_regex.
-# Warns on match (action: warn, exit 0). Cites Catalog: <id> in the warning.
+#
+# On match: outputs JSON to STDOUT (NOT stderr) with permissionDecision allow
+# + additionalContext "Catalog: <id>" so Claude sees the warning while the
+# tool call still proceeds. Exit 0.
+#
+# Why this output mechanism (rev4): empirically verified that `exit 0 + stderr`
+# does NOT propagate to Claude — only to the user terminal (see ac14-verification.md).
+# The additionalContext field is the documented Claude Code primitive for
+# warn-with-visibility on PreToolUse.
 
 set +e
 
-# Hook runtime toggle (matches existing convention)
 HOOK_NAME="anti-pattern-write-check"
 [[ ",${SAIL_DISABLED_HOOKS}," == *",${HOOK_NAME},"* ]] && exit 0
 
@@ -311,32 +451,68 @@ CATALOG_DIR="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/anti-patterns"
 
 input=$(cat)
 content=$(echo "$input" | jq -r '.tool_input.content // .tool_input.new_string // empty' 2>/dev/null)
-[ -z "$content" ] && exit 0   # nothing to scan (could be a non-content tool call)
+[ -z "$content" ] && exit 0   # nothing to scan
 
-# For each catalog entry: parse frontmatter for detection_regex, scan content,
-# emit warnings to stderr. (Implementation detail in WU6.)
+file_path=$(echo "$input" | jq -r '.tool_input.file_path // "<unknown>"' 2>/dev/null)
+
+# Accumulate matches across all catalog entries. Multiple patterns can match
+# the same content; we surface all of them.
+matches=""
+shopt -s nullglob
+for entry in "$CATALOG_DIR"/*.md; do
+    [ "$(basename "$entry")" = "SCHEMA.md" ] && continue
+    id=$(basename "$entry" .md)
+    regex=$(awk '/^---$/{c++; if(c>=2)exit; next} c==1 && /^detection_regex:/{
+        sub(/^detection_regex:[[:space:]]*/, "")
+        gsub(/^['\''"]|['\''"]$/, "")
+        print; exit
+    }' "$entry")
+    [ -z "$regex" ] && continue
+    if echo "$content" | grep -qE "$regex" 2>/dev/null; then
+        matches="${matches}anti-pattern detected\n  Catalog: $id\n  File: $file_path\n\n"
+    fi
+done
+
+# If any matches, emit a single JSON object with concatenated additionalContext.
+# Multi-hook accumulation is also supported by Claude Code (per docs), but
+# concatenating in one hook output is simpler and makes the citation block contiguous.
+if [ -n "$matches" ]; then
+    jq -nc --arg ctx "$matches" '{
+        hookSpecificOutput: {
+            hookEventName: "PreToolUse",
+            permissionDecision: "allow",
+            additionalContext: $ctx
+        }
+    }'
+fi
+
+exit 0
 ```
 
-The stdin/jq pattern matches existing hooks (`hooks/secret-scanner.sh:23` uses
-`input=$(cat); cmd=$(echo "$input" | jq -r '.tool_input.command // empty')`).
+The stdin/jq pattern matches existing hooks (`hooks/secret-scanner.sh:23`).
 For Write tool the content field is `.tool_input.content`; for Edit it's
-`.tool_input.new_string`. The fallback chain `// empty` handles both.
+`.tool_input.new_string`. The `// empty` fallback chain handles both.
 
-**Action: `warn`**, not `block` — matches existing toolkit posture for non-fatal patterns.
-User can tighten to block per-pattern by editing the hook (or by adding a hookify-style
-`action: block` entry to the pattern's frontmatter, which a future hook iteration can read).
+**Output channel (rev4):** stdout JSON, NOT stderr. The `hookSpecificOutput` schema is
+canonical Claude Code; `permissionDecision: "allow"` lets the tool call proceed;
+`additionalContext` is the field that surfaces text to Claude alongside the tool result.
 
-**Catalog reference convention:** the warning emitted by the hook MUST include the line
-`Catalog: <id>` so the user sees the entry name in their feedback. The convention is documented
+**Catalog reference convention:** the additionalContext text MUST include the line
+`Catalog: <id>` so Claude sees the entry name in its feedback. The convention is documented
 in `.claude/anti-patterns/SCHEMA.md`. The sweep can optionally grep hook output / hookify rule
 bodies for `Catalog:` references to derive bidirectional links — deferred to v2.
 
-**Why a shell hook, not hookify:** F1 — hookify rules in this toolkit fire on `event: bash`
-only. Write/Edit content interception requires PreToolUse hooks. Shell hooks are deterministic,
-already follow toolkit fail-open discipline, and don't depend on plugin capabilities we
-haven't verified. Trade-off: the catalog's first consumer is now a shell hook, not a hookify
-rule. The describe.md framing "at least one hookify rule cites a catalog ID" is updated to
-"at least one consumer cites a catalog ID by convention."
+**Why this approach over alternatives:**
+- Not stderr: rev3 spec assumed stderr propagates; AC14 empirical verification proved it doesn't.
+- Not `exit 2`: that does propagate stderr to Claude but blocks the tool call — wrong primitive
+  for warn-only patterns.
+- Not a marker file + separate surfacing mechanism: loose timing, no guarantee Claude reads it.
+
+**Why a shell hook, not hookify:** F1 (rev2) — hookify rules in this toolkit fire on
+`event: bash` only. Write/Edit content interception requires PreToolUse hooks. Shell hooks
+are deterministic, already follow toolkit fail-open discipline, and now have a documented
+warn-with-visibility primitive (additionalContext) that makes them strictly better than the
+hookify rule would have been.
 
 ## Documentation
 
@@ -394,7 +570,7 @@ Initial counters: `total_hits: 0`, `recent_hits: 0` (sweep will populate from `g
 | WU3 | `scripts/anti-pattern-sweep.sh` — both modes, self-test loop, **EXCLUDE_PATHS filter (rev2)**, event log with **10000-line cap rev2**, counter regeneration, **safe-swap helper-or-fallback (rev2)**, vault export, fail-open semantics. Estimate revised to 150 min (rev2, F6). | **High** | Yes | WU1, WU2 |
 | WU4 | `/end` integration — opt-in invocation block. | Low | No (manual smoke test) | WU3 |
 | WU5 | `commands/templates/stock-anti-patterns/` + `/bootstrap-project` **file-level copy-if-not-exists (rev2, F7)** + `install.sh` template copy. | Medium | No (covered by install dry-run) | WU2 |
-| WU6 | **`hooks/anti-pattern-write-check.sh` (rev2 — was hookify rule)** — PreToolUse shell hook on Write/Edit, scans content against catalog regexes, emits `Catalog: <id>` warnings. Updates `settings-example.json` to wire the hook. | Medium (rev2, was Low) | Yes | WU2 |
+| WU6 | **`hooks/anti-pattern-write-check.sh`** — PreToolUse shell hook on Write/Edit, scans content against catalog regexes, emits `Catalog: <id>` citations to Claude via stdout JSON `additionalContext` (rev4 — AC14 verified). Updates `settings-example.json` to wire the hook. **Final manual gate before WU6 marks complete:** verify in a fresh Claude session that the citation surfaces in tool feedback (Form 2 of AC14). | Medium | Yes | WU2 |
 | WU7 | Test suite additions: `test.sh` Category 4 frontmatter validation for catalog entries; behavioral fixture for sweep idempotency; **fixture for hook firing on Write content match (rev2)**; install dry-run check for stock-anti-patterns. README updates. | Medium | Yes | WU3, WU5, WU6 |
 
 7 WUs, 1 high-complexity (WU3). Auto-tier: **Full**. User can override with `--tier=standard` if the design feels well-converged enough to skip Refine.
@@ -417,6 +593,8 @@ Per success criterion in `describe.md`:
 | AC10 | Stock catalog ships via `/bootstrap-project` | Bootstrap a fresh dir, observe `.claude/anti-patterns/` populated with 3 starters |
 | AC11 | Sweep writes heartbeat on success (rev2, F-PM-1) | After successful sweep, `.claude/anti-patterns/.last-sweep.json` exists with timestamp + duration_ms + events_appended |
 | AC12 | `/end` surfaces stale-sweep nudge (rev2, F-PM-2) | With heartbeat artificially aged to >7 days, running `/end` prints `last successful sweep: Nd ago` to stderr |
+| AC13 | Counter regen dedupes by (id, file, line) tuple (rev3, E20) | Append two events for the same tuple seconds apart; sweep reports `total_hits: 1`, not 2. Verifiable in evals/evals.json fixture. |
+| AC14 | PreToolUse hook warning is visible to Claude via additionalContext (rev4) | Form 1 (unit): hook emits valid JSON to stdout containing `hookSpecificOutput.additionalContext` with `Catalog: <id>` text on a deliberately matching input. Form 2 (manual, fresh session): a real Write in a Claude Code session produces tool feedback containing the citation. Empirically confirmed during AC14 pre-impl verification — see ac14-verification.md. |
 
 ## Test Strategy
 
@@ -439,8 +617,11 @@ Per success criterion in `describe.md`:
 | Clock skew impact on recent_hits (rev2, E15) | Counter accuracy depends on monotonic-ish system clock. Major backward skew can temporarily inflate `recent_hits`. Documented limitation, not a v1 fix. |
 | Symlinked catalog entries (rev2, E19) | Catalog entries should be regular files. Symlinks to vault may cause writes to land outside the project, breaking project-local source-of-truth. Document; do not auto-detect. |
 | File rename mid-sweep (rev2, E7) | Phantom `locations_remedied` may appear. Self-corrects on next sweep. Documented limitation. |
-| Vault and project frontmatter drift | Vault is mirror, not source; on conflict, project wins (sweep overwrites vault entry). Documented behavior. |
+| Vault and project frontmatter drift | Vault is mirror, not source; on conflict, project wins (sweep overwrites vault entry). Mirror prefixed with auto-generated header (rev3, DA-3) so contract is visible to vault editors. |
 | Shell hook warn-action might be too noisy | Hook uses `action: warn` (exit 0 with stderr) not block; user can tighten by editing the hook. |
+| Detection regex mutated between sweeps (rev3, E21) | Old events in `.events.jsonl` remain tagged with the entry's id but were matched by a prior regex. `recent_hits` becomes a mix of old-regex and new-regex matches. Acceptable for v1; users who substantially change a regex should optionally archive old events for that id. |
+| Orphaned events for deleted patterns (rev3, E22) | If a pattern entry is deleted, events tagged with its id remain in `.events.jsonl` and are not garbage-collected. Counter regen runs on existing entries only, so orphans don't appear in counters but do contribute to log size. v2: optional `--full --prune` flag. |
+| `git diff --name-only @{1.hour.ago}` after rebase (rev3, E24) | Reflog reference may point to commits no longer reachable, producing phantom events from orphaned commits. Mitigation: wrap in `git rev-parse ... 2>/dev/null \|\| echo HEAD` fallback chain in the sweep script; preferable to silent miscount. |
 
 ## Open Questions for Stage 3 (Challenge)
 

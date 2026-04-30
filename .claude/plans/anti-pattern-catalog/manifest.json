@@ -4,25 +4,57 @@
   "blueprint_version": 2,
   "challenge_mode": "critique",
   "epistemic_session_id": "13303fac-657c-46f7-9991-89011d903768",
-  "current_stage": "challenge",
-  "revision": 1,
-  "last_updated": "2026-04-30T19:15:05Z",
-  "spec_digest": "ba9ddcff17cc6b2c",
+  "current_stage": "execute",
+  "revision": 4,
+  "last_updated": "2026-04-30T20:29:41Z",
+  "spec_digest": "rev3-pending-rehash",
   "stage_summaries": {
     "describe": {
       "intent": "Catalog of language-specific anti-patterns with derived counters from session-end sweeps. Project-local source of truth, vault export. Three starter bash entries; one hookify rule consumer.",
       "path": "Standard",
-      "gates": {"clarity": 5.0, "prior_art": "legacy-skipped — internal integration dominates"}
+      "gates": {
+        "clarity": 5.0,
+        "prior_art": "legacy-skipped — internal integration dominates"
+      }
     },
     "specify": {
       "wu_count": 7,
-      "high_complexity_wus": ["WU3"],
+      "high_complexity_wus": [
+        "WU3"
+      ],
       "tier_auto": "full",
       "open_questions": [
         "Should bash-missing-fail-fast detection be tightened or accepted as coarse?",
         "Single .events.jsonl vs per-pattern event log?",
         "Should --full sweep auto-prune events for deleted source files?"
       ]
+    },
+    "review": {
+      "verdict": "PROCEED",
+      "findings": 16,
+      "high": 3,
+      "medium": 4,
+      "low": 9,
+      "addressed_inline": 12,
+      "deferred": 4,
+      "external_lens": "prior-art (substituted for gpt-review)",
+      "deep_analysis": "skipped — pre-implementation",
+      "note": "All HIGH findings (PA-1, DA-1, S-1) addressed via prose edits to describe.md and spec.md. No mechanism redesign."
+    },
+    "test": {
+      "tests_generated": 30,
+      "ac_coverage": "14/14 (AC14 partially)",
+      "preservation_contracts": 7,
+      "failure_modes": 13,
+      "format": "bash + evals/evals.json fixtures",
+      "anti_tautology_review": "passed with 4 documented loose-coupling cases",
+      "gating_step_flagged": "AC14 form-2 (hook visibility empirical) before WU6"
+    },
+    "ac14_verification": {
+      "verdict": "rev3 design failed; rev4 mechanism (additionalContext) is correct",
+      "evidence": "ac14-verification.md",
+      "side_findings_captured_to_vault": 5,
+      "execute_unblocked": true
     }
   }
 }

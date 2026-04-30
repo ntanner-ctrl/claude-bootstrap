@@ -4,9 +4,9 @@
   "challenge_mode": "vanilla",
   "execution_preference": "auto",
   "created_at": "2026-04-30T19:06:21Z",
-  "current_stage": "review",
+  "current_stage": "execute",
   "completed": false,
-  "revision": 2,
+  "revision": 4,
   "regression_count": 1,
   "regression_log": [
     {
@@ -55,13 +55,31 @@
       "confidence_note": "Pre-mortem found 3 NEW operational findings (F-PM-1 heartbeat, F-PM-2 stale nudge, F-PM-3 durable summary). 0% overlap with adversarial — operational lens earned its keep. Folded inline into spec; no regression. AC11 + AC12 added."
     },
     "review": {
-      "status": "pending"
+      "status": "complete",
+      "completed_at": "2026-04-30T20:00:38Z",
+      "confidence": 0.88,
+      "confidence_note": "/review wizard run with 4-lens analysis. 16 findings (3H/4M/9L). 12 inline-addressed, 4 deferred. No regression — all HIGH findings were framing not mechanism. Spec promoted to rev3 with new Decisions section, references[] schema field, E20 dedupe in sweep step 5, E23 vault outside timeout, DA-3 mirror contract header, AC13+AC14 added. WU6 has visibility verification as pre-impl gating step (DA-1)."
     },
     "test": {
-      "status": "pending"
+      "status": "complete",
+      "completed_at": "2026-04-30T20:14:09Z",
+      "confidence": 0.82,
+      "confidence_note": "Spec-blind tests generated covering all 14 ACs + 7 preservation contracts + 13 failure modes. Bash-based, slot into existing test.sh + evals/evals.json + scripts/behavioral-smoke.sh infrastructure. AC14 explicitly flagged as partially spec-blind (form-1 unit-testable, form-2 requires harness-empirical verification — gating step before WU6). Test execution order suggested for Execute stage."
     },
     "execute": {
-      "status": "pending"
+      "status": "pending",
+      "blocked_reason": "AC14 form-2 verification revealed exit 0 + stderr does NOT propagate to Claude (rev3 spec design failed). additionalContext via stdout JSON is the correct mechanism (docs confirm, in-session unverifiable due to settings cache). Spec needs rev4 polish: change hook output from stderr to stdout JSON. Other WUs unblocked. See ac14-verification.md.",
+      "gating_findings": [
+        "DA-1 confirmed: warn-only stderr invisible to Claude",
+        "Path C (additionalContext) is documented mechanism",
+        "rev4 polish required on spec.md hook contract section + tests.md AC14 unit-test form"
+      ],
+      "unblocked_at": "2026-04-30T20:29:41Z",
+      "gating_verification": {
+        "ac14_form1_via_additionalContext_unit_testable": true,
+        "ac14_form2_manual_in_fresh_session_required": true,
+        "rev4_applied": true
+      }
     },
     "debrief": {
       "status": "pending"
@@ -70,5 +88,6 @@
   "premortem": {
     "status": "complete",
     "overlap": "low (0%)"
-  }
+  },
+  "updated_at": "2026-04-30T20:29:41Z"
 }
