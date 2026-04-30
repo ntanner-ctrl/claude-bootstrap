@@ -1,0 +1,28 @@
+{
+  "blueprint": "anti-pattern-catalog",
+  "manifest_version": 2,
+  "blueprint_version": 2,
+  "challenge_mode": "critique",
+  "epistemic_session_id": "13303fac-657c-46f7-9991-89011d903768",
+  "current_stage": "challenge",
+  "revision": 1,
+  "last_updated": "2026-04-30T19:15:05Z",
+  "spec_digest": "ba9ddcff17cc6b2c",
+  "stage_summaries": {
+    "describe": {
+      "intent": "Catalog of language-specific anti-patterns with derived counters from session-end sweeps. Project-local source of truth, vault export. Three starter bash entries; one hookify rule consumer.",
+      "path": "Standard",
+      "gates": {"clarity": 5.0, "prior_art": "legacy-skipped — internal integration dominates"}
+    },
+    "specify": {
+      "wu_count": 7,
+      "high_complexity_wus": ["WU3"],
+      "tier_auto": "full",
+      "open_questions": [
+        "Should bash-missing-fail-fast detection be tightened or accepted as coarse?",
+        "Single .events.jsonl vs per-pattern event log?",
+        "Should --full sweep auto-prune events for deleted source files?"
+      ]
+    }
+  }
+}

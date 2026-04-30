@@ -1,0 +1,323 @@
+# Spec: Anti-Pattern Catalog
+
+## Architecture
+
+A markdown-based catalog of language-specific anti-patterns, with derived counters refreshed by a session-end sweep. Project-local source of truth; vault export for cross-project aggregation.
+
+```
+PROJECT (source of truth)               VAULT (cross-project mirror)
+──────────────────────────              ────────────────────────────
+.claude/anti-patterns/         ──────►  Engineering/Anti-Patterns/
+  ├── SCHEMA.md                         ├── [project]-bash-unsafe-atomic-write.md
+  ├── bash-unsafe-atomic-write.md       ├── [project]-bash-silent-error-suppression.md
+  ├── bash-silent-error-suppression.md  └── ...
+  └── bash-missing-fail-fast.md
+                                                    ▲
+        ▲                                           │
+        │                                           │
+        │                                  vault export on each
+        │                                  successful sweep (fail-open
+        │                                  if vault unavailable)
+        │
+   sweep reads + writes
+   (counter regeneration is
+   idempotent — derived from
+   detection events, not maintained)
+```
+
+Two sweep entry points:
+
+- **Session sweep** — invoked by `/end`, scoped to `git diff --name-only` files for the session. Cheap, automatic, runs only if `.claude/anti-patterns/` exists.
+- **Full sweep** — invoked manually as `bash scripts/anti-pattern-sweep.sh --full`. Scoped to `git ls-files` for the whole project. Used for initial catalog seeding and periodic reconciliation.
+
+## Catalog Entry Schema
+
+Each pattern is a markdown file at `.claude/anti-patterns/<id>.md` with YAML frontmatter:
+
+```yaml
+---
+id: bash-unsafe-atomic-write       # required, kebab-case, matches filename
+language: bash                      # required: bash | python | js | ...
+severity: high                      # required: critical | high | medium | low
+status: active                      # required: active | retired
+detection_regex: '> *"\$[A-Z_]+"? *&& *mv'  # required, ERE, anchored as needed
+fixture_good: |                     # required, multi-line example that should NOT match
+  jq '.' input > "$TMP"
+  jq -e . "$TMP" >/dev/null && mv "$TMP" "$FILE"
+fixture_bad: |                      # required, multi-line example that SHOULD match
+  jq '.' input > "$TMP" && mv "$TMP" "$FILE"
+first_seen: 2026-04-30              # required, ISO date — when the pattern was first cataloged
+last_seen: 2026-04-30               # derived by sweep — most recent detection
+total_hits: 0                       # derived by sweep — count of detection events ever
+recent_hits: 0                      # derived by sweep — count within recent_window_days
+recent_window_days: 60              # required, default 60 — definition of "recent"
+locations_remedied: 0               # derived by sweep — diff of (prior detections - current detections)
+related_hookify: []                 # optional, list of hookify rule names that cite this id
+---
+
+# [Pattern human title]
+
+[Body: full description. What it looks like, why it's dangerous, how to fix.
+Stays free-form prose — Obsidian renders it, jq doesn't read it.]
+
+## Examples
+
+### Bad
+```bash
+[the full unsafe form]
+```
+
+### Good
+```bash
+[the validated form]
+```
+
+## Source
+- First seen: [link to incident or session]
+- Related hookify rule: [name, if any]
+```
+
+**Schema invariants:**
+- `id` field MUST equal the filename (without `.md` extension)
+- Required fields are validated by `test.sh` Category 4 (frontmatter check) — entries missing required fields fail the test suite
+- `detection_regex` is **POSIX ERE** (used by `grep -E`), so the same regex works on Linux, macOS, and BSD
+- Counter fields (`total_hits`, `recent_hits`, `locations_remedied`, `last_seen`) are **derived** — written only by sweep, never by hand. Hand-edits to these fields are overwritten on the next sweep.
+
+## Sweep Logic
+
+`scripts/anti-pattern-sweep.sh` — single script, two modes via `--session` (default) or `--full` flag.
+
+### Inputs
+
+| Mode | File set | Source |
+|------|----------|--------|
+| session | files modified this session | `git diff --name-only HEAD` (uncommitted) + `git diff --name-only @{1.hour.ago}` (recent commits, scoped to session start) |
+| full | all tracked files | `git ls-files` |
+
+If not in a git repo: session mode falls back to "files modified in last 24h" via `find -mtime -1`; full mode falls back to glob over common source extensions.
+
+### Detection event log
+
+The catalog directory has an append-only log: `.claude/anti-patterns/.events.jsonl`. Each detection event:
+
+```json
+{"ts":"2026-04-30T20:15:00Z","id":"bash-unsafe-atomic-write","file":"hooks/epistemic-preflight.sh","line":148,"sweep":"session"}
+```
+
+This log is the **single source of truth** for counter derivation. Frontmatter counters are recomputed from it — the log is append-only and cannot drift.
+
+### Sweep algorithm
+
+```
+1. Read all entries in .claude/anti-patterns/*.md
+   For each entry: parse frontmatter, extract { id, detection_regex, fixture_good, fixture_bad }
+
+2. Self-test each pattern (catches catalog bit-rot):
+   For each entry:
+     - grep -E "$detection_regex" against fixture_bad ⇒ MUST match (else WARN, skip pattern)
+     - grep -E "$detection_regex" against fixture_good ⇒ MUST NOT match (else WARN, skip pattern)
+   This is the catalog's own self-validation; broken regexes are skipped, not silently miscount.
+
+3. Build the file set per mode (session vs full).
+
+4. For each (entry, file) pair:
+   Run grep -nE "$detection_regex" against the file.
+   For each match: append a detection event to .events.jsonl with the entry id, file, line, and sweep mode.
+
+5. Recompute counters from .events.jsonl:
+   For each entry id:
+     - total_hits = count of all events with this id
+     - recent_hits = count of events with this id where ts >= now - recent_window_days
+     - last_seen = max(ts) where id matches, or first_seen if no events
+     - locations_remedied = (count of unique file:line tuples in events older than recent_window_days
+                              that no longer match in the most recent sweep)
+
+6. Atomically rewrite each entry's frontmatter using epistemic_safe_swap pattern
+   (sourced from scripts/epistemic-safe-write.sh — same validate-before-swap helper).
+   Body content is preserved verbatim; only frontmatter counter fields are touched.
+
+7. If vault available (vault-config.sh sourced, VAULT_ENABLED=1):
+   For each updated entry, write a mirror to:
+     $VAULT_PATH/Engineering/Anti-Patterns/<project>-<id>.md
+   Mirror has identical body + frontmatter PLUS:
+     project: <basename of git toplevel>
+     mirror_of: .claude/anti-patterns/<id>.md
+   Vault writes use validate-before-swap. If vault write fails: log warning, do not fail the sweep.
+
+8. Print summary to stderr:
+   "Anti-pattern sweep complete: scanned N files across M patterns.
+    K new detections recorded. Recent: <id>: <recent_hits> ..."
+```
+
+### Performance budget
+
+- Session sweep: 5 second hard cutoff (timeout wrapper)
+- Full sweep: no cutoff (run-to-completion)
+- If session sweep times out: log warning, partial counters written from completed work, sweep is non-blocking for `/end`
+
+### Fail-open semantics
+
+The sweep is **never** a blocker:
+- Missing catalog directory → exit 0 silently (project hasn't opted in)
+- Malformed pattern frontmatter → log WARN, skip that pattern, continue
+- Self-test failure for a pattern → log WARN, skip that pattern, continue
+- `git` unavailable → fall back to `find` heuristics
+- `jq` unavailable → exit 0 with one-line warning (sweep needs jq)
+- Vault unavailable → skip vault export silently
+
+## /end Integration
+
+`/end` skill gains a single new step (between postflight and any vault checkpoints):
+
+```bash
+# Anti-pattern sweep (opt-in by directory presence)
+if [ -d .claude/anti-patterns ]; then
+    SWEEP_SCRIPT="$(git rev-parse --show-toplevel 2>/dev/null)/scripts/anti-pattern-sweep.sh"
+    [ -f "$SWEEP_SCRIPT" ] || SWEEP_SCRIPT="${HOME}/.claude/scripts/anti-pattern-sweep.sh"
+    if [ -f "$SWEEP_SCRIPT" ]; then
+        timeout 5 bash "$SWEEP_SCRIPT" --session 2>&1 | tail -10 || true
+    fi
+fi
+```
+
+Two-line footprint, fail-open, opt-in by directory presence.
+
+## Stock Templates + Bootstrap
+
+`commands/templates/stock-anti-patterns/` ships with toolkit:
+- `SCHEMA.md` — copy of the schema doc above
+- Three starter patterns (`bash-unsafe-atomic-write.md`, `bash-silent-error-suppression.md`, `bash-missing-fail-fast.md`)
+
+`/bootstrap-project` gains a step: copy `stock-anti-patterns/` → `.claude/anti-patterns/` if the target directory doesn't exist (copy-if-not-exists, matching stock-pipelines semantics).
+
+`install.sh` is updated to copy `commands/templates/stock-anti-patterns/` to `~/.claude/commands/templates/stock-anti-patterns/`.
+
+## Hookify Integration
+
+A new hookify rule references the catalog by **convention in body** (no schema extension):
+
+`hookify-rules/hookify.unsafe-atomic-write.local.md`:
+
+```yaml
+---
+name: unsafe-atomic-write
+enabled: true
+event: write
+pattern: '> *"?\$[A-Z_]+"? *&& *mv +"?\$[A-Z_]+"?'
+action: warn
+---
+
+**WARN: Unsafe atomic write detected**
+
+You're writing `jq ... > "$TMP" && mv "$TMP" "$FILE"` (or similar). The `&&` only checks the producing
+command's exit code. If the command exits 0 with empty/partial output, `mv` runs and silently wipes
+the original.
+
+**Catalog:** `bash-unsafe-atomic-write` (see `.claude/anti-patterns/bash-unsafe-atomic-write.md`)
+
+**Safer pattern:**
+```bash
+some_cmd > "$TMP"
+[ -s "$TMP" ] && jq -e . "$TMP" >/dev/null && mv "$TMP" "$FILE"
+```
+
+Or use `epistemic_safe_swap` from `~/.claude/scripts/epistemic-safe-write.sh`.
+```
+
+The `**Catalog:** <id>` convention is documented in `commands/templates/stock-anti-patterns/SCHEMA.md`. The sweep can optionally grep hookify rules for `**Catalog:** ` references to derive bidirectional links — deferred (nice-to-have, not v1).
+
+## Documentation
+
+`.claude/anti-patterns/SCHEMA.md` (one-page):
+- Frontmatter schema reference
+- How to add a new pattern (3-step: copy template, fill fields, run sweep to validate)
+- Counter semantics (derived, not maintained — DO NOT hand-edit counter fields)
+- Sweep modes and when each runs
+- Hookify integration convention
+
+Add a `## Anti-Pattern Catalog` section to project root `README.md` in claude-sail with a link to the schema doc.
+
+## Three Starter Entries
+
+### 1. `bash-unsafe-atomic-write`
+
+Pattern: `> *"\$[A-Z_]+"? *&& *mv` (rough — final regex tuned during WU2)
+
+Source: 2026-04-30 incident — `/epistemic-postflight` wiped a 91KB epistemic.json this way.
+
+Initial counters: `total_hits: 4`, `recent_hits: 4` (the four sister-site occurrences caught and fixed this session). After remediation: `locations_remedied: 4`.
+
+### 2. `bash-silent-error-suppression`
+
+Pattern: detect `set +e` followed within ~20 lines by a `jq`/`grep`/etc. invocation whose exit code is *not* checked (no immediate `$?` test, no `||`, no `&&`).
+
+Source: same family of bugs as #1; root cause for many "should have failed but didn't" incidents.
+
+Initial counters: `total_hits: 0`, `recent_hits: 0` (sweep will populate on first run).
+
+### 3. `bash-missing-fail-fast`
+
+Pattern: detect a function or top-level script that uses a critical variable (e.g., `SESSION_ID`, `PROJECT`, `EPISTEMIC_FILE`) without a preceding `[ -z "$X" ] && exit` or equivalent guard.
+
+This one is harder to regex tightly — accept a coarser signal: "function/script body references variable that is `grep`'d out of a file but no fail-fast immediately follows." Accept some false-positive rate; document it explicitly.
+
+Source: 2026-04-30 — postflight proceeded with empty `SESSION_ID` and that compounded with the unsafe write.
+
+Initial counters: `total_hits: 1`, `recent_hits: 1` (the postflight site, now remediated). After remediation: `locations_remedied: 1`.
+
+## Work Units
+
+| WU | Description | Complexity | TDD | Depends on |
+|----|-------------|------------|-----|------------|
+| WU1 | Schema doc (`SCHEMA.md`) — frontmatter spec, add-pattern flow, counter semantics. | Low | No | — |
+| WU2 | Three starter entries with tuned `detection_regex` + `fixture_good` + `fixture_bad`. Manual hand-grep verifies regex on this repo. | Medium | Yes (fixture-based) | WU1 |
+| WU3 | `scripts/anti-pattern-sweep.sh` — both modes, self-test loop, event log, counter regeneration, vault export, fail-open semantics. | **High** | Yes | WU1, WU2 |
+| WU4 | `/end` integration — opt-in invocation block. | Low | No (manual smoke test) | WU3 |
+| WU5 | `commands/templates/stock-anti-patterns/` + `/bootstrap-project` copy step + `install.sh` template copy. | Medium | No (covered by install dry-run) | WU2 |
+| WU6 | `hookify-rules/hookify.unsafe-atomic-write.local.md` — new rule with catalog citation. | Low | No | WU2 |
+| WU7 | Test suite additions: `test.sh` Category 4 frontmatter validation for catalog entries; behavioral fixture for sweep idempotency; install dry-run check for stock-anti-patterns. README updates. | Medium | Yes | WU3, WU5, WU6 |
+
+7 WUs, 1 high-complexity (WU3). Auto-tier: **Full**. User can override with `--tier=standard` if the design feels well-converged enough to skip Refine.
+
+## Acceptance Criteria
+
+Per success criterion in `describe.md`:
+
+| ID | Criterion | Verification |
+|----|-----------|-------------|
+| AC1 | Catalog exists with ≥3 entries | `ls .claude/anti-patterns/*.md \| wc -l` ≥ 3 |
+| AC2 | Sweep increments `recent_hits` on detection | Fixture: write a known-bad file, run sweep, observe counter delta |
+| AC3 | Sweep is idempotent | Run sweep twice with no source changes; counters identical |
+| AC4 | One hookify rule cites a catalog ID | `grep -l '\*\*Catalog:\*\*' hookify-rules/` returns ≥1 |
+| AC5 | Full sweep finds existing instances | Run `--full` against claude-sail, hand-verify count of `> "$TMP" && mv` matches |
+| AC6 | Add-pattern docs exist | `.claude/anti-patterns/SCHEMA.md` exists, ≤1 page, covers schema + flow + counter semantics |
+| AC7 | Catalog frontmatter is test-validated | `bash test.sh` validates required fields per entry; missing fields fail the suite |
+| AC8 | Sweep fails open in `/end` | Force a sweep failure (corrupt a regex); `/end` still exits 0 |
+| AC9 | Vault export is fail-open | With vault unavailable: sweep completes, no errors raised, project-local catalog updated |
+| AC10 | Stock catalog ships via `/bootstrap-project` | Bootstrap a fresh dir, observe `.claude/anti-patterns/` populated with 3 starters |
+
+## Test Strategy
+
+- **Fixture-based detection tests** (WU2, WU3): each pattern has paired fixture files. The sweep self-tests on these on every run; a CI check also verifies them.
+- **Idempotency test** (WU3, WU7): run sweep twice, diff outputs, must be identical except for `last_seen` timestamps.
+- **Fail-open tests** (WU3, WU4): inject failures (corrupt regex, missing jq, vault unavailable) and verify graceful degradation.
+- **Install dry-run** (WU5, WU7): existing `test.sh` Category 7 verifies stock-anti-patterns lands in the install target.
+- **Behavioral eval fixture** (WU7): add `anti-pattern-sweep` fixture to `evals/evals.json` with expected sweep output for a known input.
+
+## Risks / Open Questions
+
+| Risk | Mitigation |
+|------|-----------|
+| Detection regex over-matches in real code (false positives inflate counters) | Self-test against `fixture_good` on every sweep; document expected false-positive rate per pattern. |
+| Detection regex under-matches (missed real instances) | Each pattern's body lists known-bad shapes; full-sweep results are hand-verified during WU2 against this repo. |
+| Sweep slow on large projects | 5s hard cutoff for session mode; full mode is opt-in/manual. |
+| Catalog bit-rot — entries become outdated | `status: active|retired`; sweep flags entries with `recent_hits == 0` for >90 days as advisory "consider retiring". |
+| `.events.jsonl` grows unbounded | Periodic compaction (manual `--compact` flag) — out of scope for v1; document as known limitation. |
+| Vault and project frontmatter drift | Vault is mirror, not source; on conflict, project wins (sweep overwrites vault entry). Documented behavior. |
+| Hookify warn-action might be too noisy | First rule uses `action: warn` not `block`; user can tighten if proven safe. |
+
+## Open Questions for Stage 3 (Challenge)
+
+1. Should `bash-missing-fail-fast` be in v1, or is its detection too imprecise? Could substitute a tighter pattern.
+2. Should the event log be `.events.jsonl` or scoped per-pattern (`.events/<id>.jsonl`)? Per-pattern scales better at 100+ patterns; single file is simpler at <100.
+3. Should `--full` sweep auto-prune `.events.jsonl` events whose source files no longer exist? (Currently: no, deferred.)

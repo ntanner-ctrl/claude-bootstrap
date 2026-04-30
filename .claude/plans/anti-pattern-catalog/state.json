@@ -1,0 +1,74 @@
+{
+  "name": "anti-pattern-catalog",
+  "blueprint_version": 2,
+  "challenge_mode": "vanilla",
+  "execution_preference": "auto",
+  "created_at": "2026-04-30T19:06:21Z",
+  "current_stage": "review",
+  "completed": false,
+  "revision": 2,
+  "regression_count": 1,
+  "regression_log": [
+    {
+      "from": "challenge",
+      "to": "specify",
+      "trigger_type": "automatic",
+      "trigger": "vanilla_challenge_critical_findings",
+      "reason": "F1: hookify event mismatch (consumer would never fire). F2: sweep self-poisoning (catalog files match own fixtures). Plus 4 lower-severity fixes folded in.",
+      "timestamp": "2026-04-30T19:20:16Z"
+    }
+  ],
+  "epistemic_session_id": "13303fac-657c-46f7-9991-89011d903768",
+  "epistemic_preflight_complete": true,
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed_at": "2026-04-30T19:14:54Z",
+      "confidence": 0.9,
+      "confidence_note": "Description converged extensively in conversation; gates pass at 5/5 each; scope and constraints fully tabled."
+    },
+    "specify": {
+      "status": "complete",
+      "completed_at": "2026-04-30T19:24:55Z",
+      "confidence": 0.92,
+      "confidence_note": "Rev2: all 6 fixes addressed (F1 hookify→shell hook, F2 EXCLUDE_PATHS, F3 silent→rm-rf swap, F4 events cap, F5 safe-swap fallback, F7 file-level copy). One inline correction during re-pass (stdin contract). Spec is implementation-ready."
+    },
+    "challenge": {
+      "status": "complete",
+      "started_at": "2026-04-30T19:16:59Z",
+      "completed_at": "2026-04-30T19:24:55Z",
+      "confidence": 0.85,
+      "confidence_note": "Vanilla mode found 2 critical (F1, F2) + 4 lower-severity findings. Rev2 spec passes re-run with READY verdict (one inline correction applied)."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "completed_at": "2026-04-30T19:26:27Z",
+      "confidence": 0.88,
+      "confidence_note": "Vanilla edge-cases pass: 4 low-severity findings (E7, E10, E15, E19) folded into Risks/Known Limitations without regression. No critical findings, no architectural changes implied."
+    },
+    "premortem": {
+      "status": "complete",
+      "completed_at": "2026-04-30T19:27:54Z",
+      "confidence": 0.85,
+      "confidence_note": "Pre-mortem found 3 NEW operational findings (F-PM-1 heartbeat, F-PM-2 stale nudge, F-PM-3 durable summary). 0% overlap with adversarial — operational lens earned its keep. Folded inline into spec; no regression. AC11 + AC12 added."
+    },
+    "review": {
+      "status": "pending"
+    },
+    "test": {
+      "status": "pending"
+    },
+    "execute": {
+      "status": "pending"
+    },
+    "debrief": {
+      "status": "pending"
+    }
+  },
+  "premortem": {
+    "status": "complete",
+    "overlap": "low (0%)"
+  }
+}

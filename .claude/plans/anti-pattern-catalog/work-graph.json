@@ -1,0 +1,161 @@
+{
+  "blueprint": "anti-pattern-catalog",
+  "checksum_inputs": [
+    "spec.md"
+  ],
+  "work_units": [
+    {
+      "id": "WU1",
+      "title": "Schema documentation",
+      "files": [
+        ".claude/anti-patterns/SCHEMA.md"
+      ],
+      "complexity": "low",
+      "tdd": false,
+      "depends_on": [],
+      "estimate_minutes": 15,
+      "summary": "Frontmatter spec, add-pattern flow, counter semantics."
+    },
+    {
+      "id": "WU2",
+      "title": "Three starter pattern entries",
+      "files": [
+        ".claude/anti-patterns/bash-unsafe-atomic-write.md",
+        ".claude/anti-patterns/bash-missing-fail-fast.md",
+        ".claude/anti-patterns/bash-rm-rf-with-variable.md"
+      ],
+      "complexity": "medium",
+      "tdd": true,
+      "depends_on": [
+        "WU1"
+      ],
+      "estimate_minutes": 30,
+      "summary": "Each entry has tuned detection_regex + fixture_good + fixture_bad. Manual hand-grep verifies regex on claude-sail."
+    },
+    {
+      "id": "WU3",
+      "title": "Sweep script",
+      "files": [
+        "scripts/anti-pattern-sweep.sh"
+      ],
+      "complexity": "high",
+      "tdd": true,
+      "depends_on": [
+        "WU1",
+        "WU2"
+      ],
+      "estimate_minutes": 150,
+      "summary": "Both modes (session/full), self-test loop, EXCLUDE_PATHS filter (rev2), .events.jsonl append-only log with 10000-line cap (rev2), counter regeneration, helper-or-fallback for safe-swap (rev2), vault export, fail-open semantics."
+    },
+    {
+      "id": "WU4",
+      "title": "/end integration",
+      "files": [
+        "commands/end.md"
+      ],
+      "complexity": "low",
+      "tdd": false,
+      "depends_on": [
+        "WU3"
+      ],
+      "estimate_minutes": 10,
+      "summary": "Two-line opt-in block: if .claude/anti-patterns exists, run sweep with 5s timeout. Fail-open."
+    },
+    {
+      "id": "WU5",
+      "title": "Stock templates + bootstrap",
+      "files": [
+        "commands/templates/stock-anti-patterns/SCHEMA.md",
+        "commands/templates/stock-anti-patterns/bash-unsafe-atomic-write.md",
+        "commands/templates/stock-anti-patterns/bash-silent-error-suppression.md",
+        "commands/templates/stock-anti-patterns/bash-missing-fail-fast.md",
+        "commands/bootstrap-project.md",
+        "install.sh"
+      ],
+      "complexity": "medium",
+      "tdd": false,
+      "depends_on": [
+        "WU2"
+      ],
+      "estimate_minutes": 25,
+      "summary": "Stock catalog ships with toolkit. /bootstrap-project copies it (copy-if-not-exists). install.sh copies stock-anti-patterns/ to install target."
+    },
+    {
+      "id": "WU6",
+      "title": "Shell hook citing catalog (rev2 — pivot from hookify rule)",
+      "files": [
+        "hooks/anti-pattern-write-check.sh",
+        "settings-example.json"
+      ],
+      "complexity": "medium",
+      "tdd": true,
+      "depends_on": [
+        "WU2"
+      ],
+      "estimate_minutes": 30,
+      "summary": "PreToolUse shell hook on Write/Edit. Reads $CLAUDE_HOOK_INPUT, scans content against each catalog pattern's detection_regex, emits 'Catalog: <id>' warnings on match. Fail-open. Wires hook in settings-example.json. Pivot from rev1 hookify rule (event: write unsupported)."
+    },
+    {
+      "id": "WU7",
+      "title": "Tests + README",
+      "files": [
+        "test.sh",
+        "evals/evals.json",
+        "scripts/behavioral-smoke.sh",
+        "README.md",
+        "commands/README.md"
+      ],
+      "complexity": "medium",
+      "tdd": true,
+      "depends_on": [
+        "WU3",
+        "WU5",
+        "WU6"
+      ],
+      "estimate_minutes": 45,
+      "summary": "test.sh Category 4 frontmatter validation for catalog. Idempotency fixture in evals.json. README updates with anti-pattern catalog section."
+    }
+  ],
+  "graph_metrics": {
+    "total_units": 7,
+    "max_width": 3,
+    "critical_path_length": 4,
+    "critical_path": [
+      "WU1",
+      "WU2",
+      "WU3",
+      "WU7"
+    ],
+    "parallel_groups": [
+      [
+        "WU1"
+      ],
+      [
+        "WU2"
+      ],
+      [
+        "WU3",
+        "WU5",
+        "WU6"
+      ],
+      [
+        "WU4",
+        "WU7"
+      ]
+    ]
+  },
+  "tier_signal": {
+    "wu_count": 7,
+    "high_complexity_count": 1,
+    "auto_tier": "full",
+    "rationale": "≥6 WUs OR 1+ High WU triggers Full. WU3 is genuinely high-complexity (event log + counter derivation + vault export + atomic writes). Full tier appropriate."
+  },
+  "risk_patterns": {
+    "auth": false,
+    "security": false,
+    "data_migration": false,
+    "external_api": false,
+    "schema_changes": "greenfield (catalog frontmatter is new)",
+    "min_tier_override": "none"
+  }
+}
