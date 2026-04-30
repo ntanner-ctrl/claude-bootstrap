@@ -296,6 +296,49 @@ Append one JSON line to `.claude/budget.jsonl`:
 
 **Fail-soft**: If the file cannot be written (missing directory, permissions), skip silently. Never block session closure for budget logging.
 
+### Step 3.7: Anti-Pattern Sweep (opt-in by directory presence)
+
+If the project has opted into the anti-pattern catalog (`.claude/anti-patterns/` exists),
+run a session-scoped sweep with a 5-second hard cutoff. Emits a stale-sweep nudge when the
+heartbeat is missing or >7 days old (silent observability is broken observability).
+Fail-open: any failure is logged to stderr and ignored.
+
+```bash
+if [ -d .claude/anti-patterns ]; then
+    HEARTBEAT=".claude/anti-patterns/.last-sweep.json"
+
+    # Stale-sweep nudge — surface when bookkeeping has decayed
+    if [ ! -f "$HEARTBEAT" ]; then
+        echo "[anti-pattern catalog] no successful sweep recorded — first run pending." >&2
+    else
+        last_ts=$(jq -r '.timestamp' "$HEARTBEAT" 2>/dev/null)
+        if [ -n "$last_ts" ]; then
+            # GNU date first, BSD `date -j` fallback (macOS)
+            last_epoch=$(date -d "$last_ts" +%s 2>/dev/null \
+                || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$last_ts" +%s 2>/dev/null)
+            if [ -n "$last_epoch" ]; then
+                now_epoch=$(date -u +%s)
+                age_days=$(( (now_epoch - last_epoch) / 86400 ))
+                if [ "$age_days" -gt 7 ]; then
+                    echo "[anti-pattern catalog] last successful sweep: ${age_days}d ago. Investigate sweep health." >&2
+                fi
+            fi
+        fi
+    fi
+
+    # Run the sweep (5s timeout; non-blocking on /end)
+    SWEEP_SCRIPT="$(git rev-parse --show-toplevel 2>/dev/null)/scripts/anti-pattern-sweep.sh"
+    [ -f "$SWEEP_SCRIPT" ] || SWEEP_SCRIPT="${HOME}/.claude/scripts/anti-pattern-sweep.sh"
+    if [ -f "$SWEEP_SCRIPT" ]; then
+        timeout 5 bash "$SWEEP_SCRIPT" --session 2>&1 | tail -10 || true
+    fi
+fi
+```
+
+**Fail-soft**: missing jq, slow vault, regex bit-rot — sweep logs WARN and exits 0. The
+`/end` flow continues regardless. The session-mode 5s cutoff is the outer envelope; the
+sweep itself uses validate-before-swap on counter rewrites so partial work is safe.
+
 ### Step 4: Confirm and Prompt Exit
 
 ```
@@ -314,6 +357,7 @@ Append one JSON line to `.claude/budget.jsonl`:
   Vault:        [N notes exported / skipped (reason)]
   Stale:        [N findings need re-verification / none]
   Budget:       [logged to .claude/budget.jsonl / skipped]
+  Anti-patterns: [N events from session sweep / skipped (no catalog)]
 
   Type /exit to end the conversation.
 

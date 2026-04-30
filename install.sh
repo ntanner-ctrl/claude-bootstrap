@@ -32,6 +32,7 @@ mkdir -p "${CLAUDE_HOME}/commands/templates/stock-hooks"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-agents"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-commands"
 mkdir -p "${CLAUDE_HOME}/commands/templates/stock-pipelines"
+mkdir -p "${CLAUDE_HOME}/commands/templates/stock-anti-patterns"
 mkdir -p "${CLAUDE_HOME}/commands/templates/vault-notes"
 mkdir -p "${CLAUDE_HOME}/plugins/local/sail-toolkit/.claude-plugin"
 mkdir -p "${CLAUDE_HOME}/plugins/local/sail-toolkit/hooks"
@@ -137,6 +138,20 @@ if [ -f "${SCRIPT_DIR}/commands/bootstrap-project.md" ]; then
         for f in "${SCRIPT_DIR}/commands/templates/stock-pipelines/"*.yaml; do
             [ -f "$f" ] || continue
             dest="${CLAUDE_HOME}/commands/templates/stock-pipelines/$(basename "$f")"
+            if [ ! -f "$dest" ]; then
+                cp "$f" "$dest"
+            else
+                echo "  Skipping $(basename "$f") — already exists (preserving customizations)"
+            fi
+        done
+    fi
+
+    # Stock anti-patterns — copy-if-not-exists (preserve user customizations)
+    if [ -d "${SCRIPT_DIR}/commands/templates/stock-anti-patterns" ]; then
+        echo "  → stock anti-patterns"
+        for f in "${SCRIPT_DIR}/commands/templates/stock-anti-patterns/"*.md; do
+            [ -f "$f" ] || continue
+            dest="${CLAUDE_HOME}/commands/templates/stock-anti-patterns/$(basename "$f")"
             if [ ! -f "$dest" ]; then
                 cp "$f" "$dest"
             else
@@ -253,6 +268,20 @@ else
         done
     fi
 
+    # Stock anti-patterns — copy-if-not-exists (preserve user customizations)
+    if [ -d "${REPO_DIR}/commands/templates/stock-anti-patterns" ]; then
+        echo "  → stock anti-patterns"
+        for f in "${REPO_DIR}/commands/templates/stock-anti-patterns/"*.md; do
+            [ -f "$f" ] || continue
+            dest="${CLAUDE_HOME}/commands/templates/stock-anti-patterns/$(basename "$f")"
+            if [ ! -f "$dest" ]; then
+                cp "$f" "$dest"
+            else
+                echo "  Skipping $(basename "$f") — already exists (preserving customizations)"
+            fi
+        done
+    fi
+
     # Cleanup
     rm -rf "$TEMP_DIR"
 fi
@@ -285,10 +314,11 @@ STOCK_HOOK_COUNT=$(find "${CLAUDE_HOME}/commands/templates/stock-hooks" -maxdept
 STOCK_AGENT_COUNT=$(find "${CLAUDE_HOME}/commands/templates/stock-agents" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
 STOCK_CMD_COUNT=$(find "${CLAUDE_HOME}/commands/templates/stock-commands" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
 STOCK_PIPELINE_COUNT=$(find "${CLAUDE_HOME}/commands/templates/stock-pipelines" -maxdepth 1 -name "*.yaml" 2>/dev/null | wc -l)
+STOCK_AP_COUNT=$(find "${CLAUDE_HOME}/commands/templates/stock-anti-patterns" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
 STOCK_TOTAL=$((STOCK_HOOK_COUNT + STOCK_AGENT_COUNT + STOCK_CMD_COUNT))
 
 cat > "${CLAUDE_HOME}/.sail-counts.json" << COUNTS_EOF
-{"commands": $CMD_COUNT, "agents": $AGENT_COUNT, "hooks": $HOOK_COUNT, "hookify_rules": $HOOKIFY_COUNT, "stock_total": $STOCK_TOTAL, "stock_pipelines": $STOCK_PIPELINE_COUNT, "installed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+{"commands": $CMD_COUNT, "agents": $AGENT_COUNT, "hooks": $HOOK_COUNT, "hookify_rules": $HOOKIFY_COUNT, "stock_total": $STOCK_TOTAL, "stock_pipelines": $STOCK_PIPELINE_COUNT, "stock_anti_patterns": $STOCK_AP_COUNT, "installed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 COUNTS_EOF
 
 echo ""
@@ -338,6 +368,7 @@ echo "  ~/.claude/hooks/session-end-vault.sh  - Safety-net vault export on sessi
 echo "  ~/.claude/hooks/failure-escalation.sh  - Track consecutive test/build failures"
 echo "  ~/.claude/hooks/session-end-cleanup.sh - Clean up signal files on session end"
 echo "  ~/.claude/hooks/freeze-guard.sh       - Block edits to frozen files"
+echo "  ~/.claude/hooks/anti-pattern-write-check.sh - Cite anti-pattern catalog matches on Write/Edit"
 echo "  ~/.claude/hooks/vault-config.sh       - Shared vault configuration (sourced by vault hooks)"
 echo ""
 echo -e "${YELLOW}Agents installed:${NC}"
@@ -399,7 +430,8 @@ echo '    }, {'
 echo '      "matcher": "Edit|Write",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/protect-claude-md.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/tdd-guardian.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/anti-pattern-write-check.sh" }'
 echo '      ]'
 echo '    }],'
 echo '    "SessionEnd": [{'

@@ -21,3 +21,8 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Anti-pattern catalog runtime data (derived; sweep regenerates from source)
+.claude/anti-patterns/.events.jsonl
+.claude/anti-patterns/.events.archive.jsonl
+.claude/anti-patterns/.last-sweep.json

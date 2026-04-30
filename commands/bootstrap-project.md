@@ -383,10 +383,12 @@ ELSE maturity = mature (7-10):
 ## 7.1 Create Directory Structure
 
 ```bash
-mkdir -p .claude/hooks .claude/agents .claude/commands .claude/pipelines
+mkdir -p .claude/hooks .claude/agents .claude/commands .claude/pipelines .claude/anti-patterns
 ```
 
 The `.claude/pipelines/` directory is where project-local pipeline YAML files live. It starts empty — add custom workflow pipelines here as the project grows.
+
+The `.claude/anti-patterns/` directory holds the project's anti-pattern catalog (see Phase 7.2.1). The session-end sweep is opt-in by presence of this directory.
 
 ## 7.2 Copy Stock Elements
 
@@ -398,6 +400,33 @@ For each selected element:
    - Adjust tool references to match project
 3. Write to `.claude/{type}/{name}.md`
 4. Compute SHA-256 hash for tracking
+
+### 7.2.1 Anti-Pattern Catalog (file-level copy-if-not-exists)
+
+The anti-pattern catalog ships starter entries that copy into the target project's
+`.claude/anti-patterns/` directory. Per-file copy-if-not-exists semantics preserve
+any existing project-specific entries on re-bootstrap.
+
+```bash
+SRC="${HOME}/.claude/commands/templates/stock-anti-patterns"
+DEST=".claude/anti-patterns"
+if [ -d "$SRC" ]; then
+    mkdir -p "$DEST"
+    for f in "$SRC"/*.md; do
+        [ -f "$f" ] || continue
+        target="$DEST/$(basename "$f")"
+        if [ ! -f "$target" ]; then
+            cp "$f" "$target"
+        fi
+        # Existing files are preserved — project may have customized counters,
+        # added project-specific patterns, or remediated the entry's regex.
+    done
+fi
+```
+
+This step is universal across maturity tiers — the catalog is lightweight and
+opt-out is `rm -rf .claude/anti-patterns/`. The session-end sweep activates
+automatically when the directory is present (see `commands/end.md`).
 
 ## 7.3 Create/Update Manifest
 
@@ -529,10 +558,15 @@ Stock element templates are stored at:
 │   ├── test-all.md
 │   ├── health-check.md
 │   └── scaffold.md
-└── stock-pipelines/
-    ├── ship-feature.yaml
-    ├── quality-check.yaml
-    └── quick-fix.yaml
+├── stock-pipelines/
+│   ├── ship-feature.yaml
+│   ├── quality-check.yaml
+│   └── quick-fix.yaml
+└── stock-anti-patterns/
+    ├── SCHEMA.md
+    ├── bash-unsafe-atomic-write.md
+    ├── bash-missing-fail-fast.md
+    └── bash-rm-rf-with-variable.md
 ```
 
 ---

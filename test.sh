@@ -73,11 +73,12 @@ bold "3. File Counts (vs README claims)"
 # Expected counts from README.md
 CMD_EXPECTED=65
 AGENT_EXPECTED=12
-HOOK_EXPECTED=19
+HOOK_EXPECTED=20
 HOOKIFY_EXPECTED=7
 STOCK_HOOK_EXPECTED=6
 STOCK_AGENT_EXPECTED=3
 STOCK_CMD_EXPECTED=3
+STOCK_AP_EXPECTED=4
 
 CMD_ACTUAL=$(ls "$SCRIPT_DIR"/commands/*.md 2>/dev/null | grep -v README | wc -l)
 AGENT_ACTUAL=$(ls "$SCRIPT_DIR"/agents/*.md 2>/dev/null | wc -l)
@@ -88,6 +89,7 @@ STOCK_AGENT_ACTUAL=$(ls "$SCRIPT_DIR"/commands/templates/stock-agents/*.md 2>/de
 STOCK_CMD_ACTUAL=$(ls "$SCRIPT_DIR"/commands/templates/stock-commands/*.md 2>/dev/null | wc -l)
 STOCK_PIPELINE_EXPECTED=4
 STOCK_PIPELINE_ACTUAL=$(ls "$SCRIPT_DIR"/commands/templates/stock-pipelines/*.yaml 2>/dev/null | wc -l)
+STOCK_AP_ACTUAL=$(ls "$SCRIPT_DIR"/commands/templates/stock-anti-patterns/*.md 2>/dev/null | wc -l)
 STOCK_TOTAL=$((STOCK_HOOK_ACTUAL + STOCK_AGENT_ACTUAL + STOCK_CMD_ACTUAL))
 
 check_count() {
@@ -108,6 +110,7 @@ check_count "Stock agents" "$STOCK_AGENT_ACTUAL" "$STOCK_AGENT_EXPECTED"
 check_count "Stock commands" "$STOCK_CMD_ACTUAL" "$STOCK_CMD_EXPECTED"
 check_count "Stock total" "$STOCK_TOTAL" 12
 check_count "Stock pipelines" "$STOCK_PIPELINE_ACTUAL" "$STOCK_PIPELINE_EXPECTED"
+check_count "Stock anti-patterns" "$STOCK_AP_ACTUAL" "$STOCK_AP_EXPECTED"
 
 echo ""
 
@@ -262,6 +265,65 @@ fi
 # are planned but require fixture files to be created separately.
 # See .claude/plans/research-pipeline/tests.md for fixture specs.
 
+# Anti-pattern catalog frontmatter validation (AC7)
+ap_required="id language severity status detection_regex first_seen recent_window_days"
+for entry in "$SCRIPT_DIR"/.claude/anti-patterns/*.md \
+             "$SCRIPT_DIR"/commands/templates/stock-anti-patterns/*.md; do
+    [ -f "$entry" ] || continue
+    base=$(basename "$entry")
+    [ "$base" = "SCHEMA.md" ] && continue
+    rel=$(echo "$entry" | sed "s|$SCRIPT_DIR/||")
+
+    missing=""
+    for field in $ap_required; do
+        # Match field at start-of-line in frontmatter; bounded by next ---
+        if ! awk -v f="$field" '
+            /^---$/{c++; if(c>=2)exit}
+            c==1 && index($0, f":") == 1 { found=1; exit }
+            END{exit found?0:1}
+        ' "$entry"; then
+            missing="$missing $field"
+        fi
+    done
+    if [ -z "$missing" ]; then
+        pass "$rel — frontmatter complete"
+    else
+        fail "$rel — missing required field(s):$missing"
+    fi
+
+    # filename must equal id field
+    declared_id=$(awk '/^---$/{c++; if(c>=2)exit} c==1 && index($0,"id:")==1{
+        sub(/^id:[[:space:]]*/,""); print; exit
+    }' "$entry")
+    expected_id="${base%.md}"
+    if [ "$declared_id" = "$expected_id" ]; then
+        : # already accounted for above
+    else
+        fail "$rel — id field '$declared_id' does not match filename '$expected_id'"
+    fi
+done
+
+# AC6: stock SCHEMA.md exists and is ≤80 lines
+SCHEMA_FILE="$SCRIPT_DIR/commands/templates/stock-anti-patterns/SCHEMA.md"
+if [ -f "$SCHEMA_FILE" ]; then
+    lines=$(wc -l < "$SCHEMA_FILE")
+    if [ "$lines" -le 80 ]; then
+        pass "stock SCHEMA.md exists ($lines lines, ≤80)"
+    else
+        fail "stock SCHEMA.md is $lines lines, expected ≤80"
+    fi
+    # Topic coverage (spec AC6)
+    if grep -qiE "schema|frontmatter" "$SCHEMA_FILE" \
+       && grep -qiE "add (a )?pattern" "$SCHEMA_FILE" \
+       && grep -qiE "counter|derived" "$SCHEMA_FILE"; then
+        pass "stock SCHEMA.md covers schema + add-pattern + counter topics"
+    else
+        fail "stock SCHEMA.md missing required topic sections"
+    fi
+else
+    fail "stock SCHEMA.md missing"
+fi
+
 echo ""
 
 # ─── 5. Hook Conventions ─────────────────────────────────────────
@@ -367,6 +429,9 @@ if bash "$SCRIPT_DIR/install.sh" >/dev/null 2>&1; then
     [ -d "$FAKE_HOME/.claude/commands/templates/stock-hooks" ] && pass "stock-hooks/ installed" || fail "stock-hooks/ missing"
     [ -d "$FAKE_HOME/.claude/commands/templates/stock-agents" ] && pass "stock-agents/ installed" || fail "stock-agents/ missing"
     [ -d "$FAKE_HOME/.claude/commands/templates/stock-commands" ] && pass "stock-commands/ installed" || fail "stock-commands/ missing"
+    [ -d "$FAKE_HOME/.claude/commands/templates/stock-anti-patterns" ] && pass "stock-anti-patterns/ installed" || fail "stock-anti-patterns/ missing"
+    installed_ap=$(ls "$FAKE_HOME/.claude/commands/templates/stock-anti-patterns/"*.md 2>/dev/null | wc -l)
+    check_count "Installed stock anti-patterns" "$installed_ap" "$STOCK_AP_EXPECTED"
 
     # Check hooks are executable
     non_exec=$(find "$FAKE_HOME/.claude/hooks" -name "*.sh" ! -executable 2>/dev/null | wc -l)
@@ -407,6 +472,140 @@ else
         warn "jq not installed — skipping behavioral evals"
     fi
 fi
+
+echo ""
+
+# ─── 9. Anti-Pattern Sweep Live Tests ────────────────────────────
+
+bold "9. Anti-Pattern Sweep Live Behavior"
+
+# Relax strict mode inside this section — fixture commands are allowed
+# to return non-zero (e.g. grep finding no match) without halting the run.
+set +eo pipefail
+
+if [ -f "$SCRIPT_DIR/scripts/anti-pattern-sweep.sh" ] && command -v jq &>/dev/null; then
+    AP_TMP=$(mktemp -d)
+    # Materialize a minimal toolkit-shaped repo with the catalog
+    git init -q "$AP_TMP" 2>/dev/null
+    mkdir -p "$AP_TMP/.claude/anti-patterns" "$AP_TMP/scripts" "$AP_TMP/src"
+    cp "$SCRIPT_DIR/.claude/anti-patterns/"*.md "$AP_TMP/.claude/anti-patterns/" 2>/dev/null
+    cp "$SCRIPT_DIR/scripts/anti-pattern-sweep.sh" "$AP_TMP/scripts/"
+
+    # Drop a known-bad fixture into a non-excluded source path
+    cat > "$AP_TMP/src/sample.sh" <<'EOF'
+#!/usr/bin/env bash
+jq '.' input.json > "$TMP" && mv "$TMP" "$FILE"
+EOF
+    ( cd "$AP_TMP" && git add -A && git commit -q -m seed 2>/dev/null )
+
+    # AC2 — sweep detects fixture_bad
+    ( cd "$AP_TMP" && bash scripts/anti-pattern-sweep.sh --full ) >/dev/null 2>&1
+    if [ -f "$AP_TMP/.claude/anti-patterns/.events.jsonl" ] \
+       && grep -F '"id":"bash-unsafe-atomic-write"' "$AP_TMP/.claude/anti-patterns/.events.jsonl" \
+            | grep -F '"file":"src/sample.sh"' >/dev/null; then
+        pass "AC2: sweep records detection event for fixture_bad"
+    else
+        fail "AC2: no detection event for known fixture_bad"
+    fi
+
+    # AC11 — heartbeat written
+    if [ -f "$AP_TMP/.claude/anti-patterns/.last-sweep.json" ] \
+       && jq -e '.timestamp and .events_appended != null and .duration_ms != null and .mode' \
+            "$AP_TMP/.claude/anti-patterns/.last-sweep.json" >/dev/null 2>&1; then
+        pass "AC11: heartbeat written with required fields"
+    else
+        fail "AC11: heartbeat missing or incomplete"
+    fi
+
+    # AC3 — idempotency: counters identical across two runs
+    snap1=$(for f in "$AP_TMP/.claude/anti-patterns/"*.md; do
+        [ "$(basename "$f")" = "SCHEMA.md" ] && continue
+        id=$(basename "$f" .md)
+        th=$(awk '/^---$/{c++; if(c>=2)exit} c==1 && /^total_hits:/{sub(/^[^:]+:[ \t]*/,""); print; exit}' "$f")
+        echo "$id $th"
+    done | sort)
+    ( cd "$AP_TMP" && bash scripts/anti-pattern-sweep.sh --full ) >/dev/null 2>&1
+    snap2=$(for f in "$AP_TMP/.claude/anti-patterns/"*.md; do
+        [ "$(basename "$f")" = "SCHEMA.md" ] && continue
+        id=$(basename "$f" .md)
+        th=$(awk '/^---$/{c++; if(c>=2)exit} c==1 && /^total_hits:/{sub(/^[^:]+:[ \t]*/,""); print; exit}' "$f")
+        echo "$id $th"
+    done | sort)
+    if [ "$snap1" = "$snap2" ]; then
+        pass "AC3: sweep is idempotent (counters stable across runs)"
+    else
+        fail "AC3: counters changed between sweeps"
+    fi
+
+    # AC13 — dedup by (id, file, line)
+    sample_evt=$(tail -1 "$AP_TMP/.claude/anti-patterns/.events.jsonl")
+    sample_id=$(echo "$sample_evt" | jq -r .id)
+    before=$(awk '/^---$/{c++; if(c>=2)exit} c==1 && /^total_hits:/{sub(/^[^:]+:[ \t]*/,""); print; exit}' \
+        "$AP_TMP/.claude/anti-patterns/$sample_id.md")
+    echo "$sample_evt" | jq -c '.ts = (now | todateiso8601)' \
+        >> "$AP_TMP/.claude/anti-patterns/.events.jsonl"
+    ( cd "$AP_TMP" && bash scripts/anti-pattern-sweep.sh --full ) >/dev/null 2>&1
+    after=$(awk '/^---$/{c++; if(c>=2)exit} c==1 && /^total_hits:/{sub(/^[^:]+:[ \t]*/,""); print; exit}' \
+        "$AP_TMP/.claude/anti-patterns/$sample_id.md")
+    if [ "$before" = "$after" ]; then
+        pass "AC13: counter regen dedupes by (id, file, line)"
+    else
+        fail "AC13: counter changed on duplicate event ($before → $after)"
+    fi
+
+    # AC9 — fail-open without vault
+    rm -f "$AP_TMP/.claude/anti-patterns/.events.jsonl" "$AP_TMP/.claude/anti-patterns/.last-sweep.json"
+    if (cd "$AP_TMP" && unset VAULT_ENABLED VAULT_PATH; bash scripts/anti-pattern-sweep.sh --full) >/dev/null 2>&1 \
+       && [ -f "$AP_TMP/.claude/anti-patterns/.events.jsonl" ]; then
+        pass "AC9: sweep succeeds without vault"
+    else
+        fail "AC9: sweep failed when vault unavailable"
+    fi
+
+    # AC8 — corrupted regex doesn't break sweep (fail-open)
+    sed -i.bak "s/^detection_regex:.*/detection_regex: '['/" \
+        "$AP_TMP/.claude/anti-patterns/bash-unsafe-atomic-write.md" 2>/dev/null
+    rc=0
+    (cd "$AP_TMP" && bash scripts/anti-pattern-sweep.sh --session) >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -eq 0 ]; then
+        pass "AC8: sweep exits 0 on corrupted regex (fail-open)"
+    else
+        fail "AC8: sweep returned $rc on corrupted regex (expected 0)"
+    fi
+
+    # Cleanup
+    rm -rf "$AP_TMP"
+
+    # AC14 form-1: hook emits valid additionalContext JSON on matching content
+    if [ -f "$SCRIPT_DIR/hooks/anti-pattern-write-check.sh" ]; then
+        AP_HOOK_TMP=$(mktemp -d)
+        mkdir -p "$AP_HOOK_TMP/.claude/anti-patterns"
+        cp "$SCRIPT_DIR/.claude/anti-patterns/"*.md "$AP_HOOK_TMP/.claude/anti-patterns/"
+        ( cd "$AP_HOOK_TMP" && git init -q )
+        fixture=$(awk '/^fixture_bad: \|$/{flag=1;next}/^[a-z_]+:/{flag=0}flag' \
+            "$SCRIPT_DIR/.claude/anti-patterns/bash-unsafe-atomic-write.md")
+        mock_input=$(jq -nc --arg c "$fixture" --arg p "src/test.sh" \
+            '{tool_input: {content: $c, file_path: $p}}')
+        stdout=$(cd "$AP_HOOK_TMP" && echo "$mock_input" | \
+            bash "$SCRIPT_DIR/hooks/anti-pattern-write-check.sh" 2>/dev/null)
+        if echo "$stdout" \
+            | jq -e '.hookSpecificOutput.permissionDecision == "allow" and
+                     (.hookSpecificOutput.additionalContext | test("Catalog:[[:space:]]*bash-unsafe-atomic-write"))' \
+            >/dev/null 2>&1; then
+            pass "AC14 form-1: hook emits additionalContext with Catalog citation"
+        else
+            fail "AC14 form-1: hook output missing or malformed: $stdout"
+        fi
+        rm -rf "$AP_HOOK_TMP"
+    else
+        warn "anti-pattern-write-check.sh not found, skipping AC14 form-1"
+    fi
+else
+    warn "Anti-pattern sweep tests skipped (script or jq missing)"
+fi
+
+# Restore strict mode for the summary
+set -eo pipefail
 
 echo ""
 

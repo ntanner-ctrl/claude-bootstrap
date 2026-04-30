@@ -91,6 +91,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/freeze-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/anti-pattern-write-check.sh"
           }
         ]
       }

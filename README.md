@@ -30,9 +30,10 @@ claude
 | [**Agents**](agents/) | 12 agents: 6 specialized review agents + 6 paradigm lens agents for `/prism` |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Wizard State**](docs/WIZARD-STATE.md) | Persistent state for workflow wizards — resume-on-compaction, content contracts, vault checkpoints |
-| [**Shell Hooks**](hooks/) | 19 shell files (18 hooks + 1 audit utility) for safety, session lifecycle, epistemic tracking, toolkit hardening |
+| [**Shell Hooks**](hooks/) | 20 shell files (19 hooks + 1 audit utility) for safety, session lifecycle, epistemic tracking, toolkit hardening |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
 | [**Stock Elements**](commands/templates/) | 12 stock elements (6 hooks, 3 agents, 3 commands) installed into target projects |
+| [**Anti-Pattern Catalog**](.claude/anti-patterns/) | Project-local catalog of language-specific anti-patterns with derived counters from session-end sweeps |
 | [**Ops Starter Kit**](ops-starter-kit/) | Domain-specific extensions for infrastructure work |
 
 ### Commands at a Glance
@@ -50,6 +51,7 @@ claude
 | **Status** | `/status`, `/blueprints`, `/overrides`, `/approve`, `/dashboard` |
 | **Setup** | `/bootstrap-project`, `/check-project-setup`, `/setup-hooks`, `/sail-doctor` |
 | **Pipelines** | `/pipeline` |
+| **Anti-Patterns** | `bash scripts/anti-pattern-sweep.sh` (manual full sweep; session sweep runs via `/end`) |
 | **Docs** | `/refresh-claude-md`, `/migrate-docs`, `/process-doc` |
 
 See [commands/README.md](commands/README.md) for full reference.
@@ -173,6 +175,27 @@ Reusable YAML-defined workflows that chain multiple commands together. Stock pip
 ```
 
 Pipeline YAML files live in `commands/templates/stock-pipelines/` (source) and `.claude/pipelines/` (project-local). Each pipeline defines `name`, `description`, `steps`, and `on-error` behavior. See [commands/README.md](commands/README.md) for details.
+
+### Anti-Pattern Catalog
+
+A markdown-based catalog of language-specific anti-patterns lives at `.claude/anti-patterns/`
+in any opted-in project. Each entry has a `detection_regex`, `fixture_good`/`fixture_bad`
+self-test, and counter fields **derived** from a session-end sweep — not hand-maintained.
+
+```bash
+bash scripts/anti-pattern-sweep.sh --full      # full reconciliation
+# Session sweep runs automatically via /end (5s cutoff, opt-in by directory presence)
+```
+
+**First consumer:** `hooks/anti-pattern-write-check.sh` is a PreToolUse hook on Write/Edit
+that scans content against catalog regexes and emits `Catalog: <id>` citations to Claude
+via stdout JSON `additionalContext` — the canonical Claude Code warn-with-visibility
+primitive (tool call still proceeds).
+
+Stock starter entries (`bash-unsafe-atomic-write`, `bash-missing-fail-fast`,
+`bash-rm-rf-with-variable`) ship via `/bootstrap-project`. See
+[`.claude/anti-patterns/SCHEMA.md`](.claude/anti-patterns/SCHEMA.md) for the full schema,
+add-pattern flow, and counter semantics.
 
 ---
 
