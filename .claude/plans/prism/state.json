@@ -1,0 +1,93 @@
+{
+  "blueprint_version": 2,
+  "name": "prism",
+  "created_at": "2026-03-22T12:00:00Z",
+  "current_stage": "execute",
+  "challenge_mode": "family",
+  "execution_preference": "auto",
+  "revision": 3,
+  "regression_count": 2,
+  "epistemic_session_id": null,
+  "epistemic_preflight_complete": false,
+  "manifest_stale": true,
+  "work_graph_stale": true,
+  "prior_art_gate": {
+    "status": "complete",
+    "recommendation": "inform",
+    "override": false,
+    "run_at": "2026-03-22T12:15:00Z"
+  },
+  "ambiguity_gate": {
+    "goal_clarity": 5,
+    "constraint_clarity": 4,
+    "success_criteria": 4,
+    "composite": 4.4,
+    "result": "pass",
+    "override": false
+  },
+  "regression_log": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "family_debate_converged_with_spec_changes",
+      "reason": "7 spec changes from family mode challenge Round 1",
+      "timestamp": "2026-03-22T13:30:00Z",
+      "revision": 2
+    },
+    {
+      "from_stage": "edge_cases",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "family_debate_edge_cases_converged_with_spec_changes",
+      "reason": "9 spec changes from family mode edge cases Round 1",
+      "timestamp": "2026-03-22T14:30:00Z",
+      "revision": 3
+    }
+  ],
+  "premortem": {
+    "status": "complete",
+    "new_findings": 8,
+    "covered_findings": 4,
+    "acknowledge_only": 7,
+    "recommendations": 7,
+    "most_likely_failure": "Context window exhaustion during synthesis (F17)",
+    "premortem_overlap": "low"
+  },
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "confidence": 0.9
+    },
+    "specify": {
+      "status": "complete",
+      "confidence": 0.92,
+      "confidence_note": "Rev 3 with 16 changes from two family debate rounds."
+    },
+    "challenge": {
+      "status": "complete",
+      "confidence": 0.85
+    },
+    "edge_cases": {
+      "status": "complete",
+      "confidence": 0.92
+    },
+    "premortem": {
+      "status": "complete",
+      "confidence": 0.85
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Two family debate rounds + pre-mortem provided sufficient adversarial coverage. 16 spec changes + 8 operational findings."
+    },
+    "test": {
+      "status": "complete",
+      "confidence": 0.88,
+      "confidence_note": "34 spec-blind tests across 3 categories: 22 behavior, 6 contract, 6 failure mode. Tests verify command structure, agent metadata, preservation contract, and failure handling. Runtime behavioral tests require evals fixtures (noted as future addition)."
+    },
+    "execute": {
+      "status": "in_progress",
+      "confidence": null
+    }
+  }
+}

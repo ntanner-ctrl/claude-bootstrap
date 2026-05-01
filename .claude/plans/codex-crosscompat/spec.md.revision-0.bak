@@ -1,0 +1,192 @@
+# Change Specification: Codex CLI Cross-Compatibility
+
+## Summary
+
+Build `scripts/convert-to-codex.sh`, a pure-bash compiler that transforms claude-sail's 120+ Claude Code extension files (66 commands, 12 agents, 19 hooks, settings, installer) into a standalone `codex/` distribution for OpenAI's Codex CLI, with hook adaptation, AGENTS.md generation, behavioral tuning, test coverage, and divergence tracking.
+
+## What Changes
+
+### Files/Components Touched
+
+| File/Component | Nature of Change |
+|----------------|------------------|
+| `scripts/convert-to-codex.sh` | **add** — master conversion script (compiler) |
+| `scripts/_codex-adapter.sh` | **add** — hook response format translator (exit-code → JSON-stdout) |
+| `codex/` | **add** — entire generated output directory (commands/, agents/, hooks/, installer) |
+| `codex/install-codex.sh` | **add** — Codex-side installer |
+| `codex/AGENTS.md` | **add** — generated instruction file from CLAUDE.md |
+| `codex/hooks.json` | **add** — generated hook wiring for Codex |
+| `codex/hooks/` | **add** — adapted hook scripts (wrapped via _codex-adapter.sh) |
+| `codex/commands/` | **add** — frontmatter-stripped command prompts |
+| `codex/agents/` | **add** — TOML-frontmatter agent files |
+| `test.sh` | **modify** — add `--codex` validation path |
+| `.claude/divergence/` | **add** — divergence tracking directory + finding template |
+| `.gitignore` | **modify** — add `codex/` if we decide generated output shouldn't be tracked (decision needed) |
+
+### External Dependencies
+
+- [x] None for conversion script (pure bash)
+- [ ] Optional: `jq` for hooks.json generation (with fallback to printf templating)
+- [ ] Optional: Codex CLI for end-to-end validation (not required for conversion)
+
+### Database/State Changes
+
+- [x] None
+- [ ] State format addition: `.claude/divergence/*.md` — new artifact type, structured markdown with YAML frontmatter
+
+## Preservation Contract (What Must NOT Change)
+
+- **All existing Claude Code behavior** — the conversion script reads source files, never modifies them. The `codex/` directory is purely additive.
+- **install.sh** — the Claude Code installer must continue to work identically. It does NOT install Codex artifacts.
+- **test.sh base path** — existing test categories (1-8) must pass unchanged. `--codex` adds a new category, doesn't modify existing ones.
+- **settings-example.json** — source of truth for hook wiring. Read-only input to the converter.
+- **Hook exit-code semantics** — source hooks continue using 0/1/2 convention. The adapter wraps, not replaces.
+
+## Architecture
+
+### Compiler Pipeline
+
+```
+Source (Claude Code native)          Compiler                    Output (Codex native)
+─────────────────────────           ────────                    ─────────────────────
+commands/*.md (YAML fm)     ──┐                          ┌──→  codex/commands/*.md (no fm)
+agents/*.md (YAML fm)       ──┤   convert-to-codex.sh    ├──→  codex/agents/*.md (TOML fm)
+hooks/*.sh (exit-code)      ──┤   ├─ parse_source()      ├──→  codex/hooks/*.sh (wrapped)
+settings-example.json       ──┤   ├─ adapt_format()      ├──→  codex/hooks.json
+CLAUDE.md                   ──┤   ├─ adapt_behavior()    ├──→  codex/AGENTS.md
+install.sh                  ──┘   └─ emit_target()       └──→  codex/install-codex.sh
+```
+
+### Hook Portability Matrix
+
+| Hook | Event (Claude) | Matcher | Codex Event | Codex Matcher | Status |
+|------|----------------|---------|-------------|---------------|--------|
+| session-sail.sh | SessionStart | "" | SessionStart | startup | ✓ direct |
+| worktree-cleanup.sh | SessionStart | "" | SessionStart | startup | ✓ direct |
+| epistemic-preflight.sh | SessionStart | "" | SessionStart | startup | ✓ direct |
+| dangerous-commands.sh | PreToolUse | Bash | PreToolUse | Bash | ✓ direct |
+| secret-scanner.sh | PreToolUse | Bash | PreToolUse | Bash | ✓ direct |
+| failure-escalation.sh | PostToolUse | Bash | PostToolUse | Bash | ✓ direct |
+| protect-claude-md.sh | PreToolUse | Edit\|Write | — | — | ✗ compensate |
+| tdd-guardian.sh | PreToolUse | Edit\|Write | — | — | ✗ compensate |
+| freeze-guard.sh | PreToolUse | Edit\|Write | — | — | ✗ compensate |
+| after-edit.sh | PostToolUse | Edit\|Write | — | — | ✗ compensate |
+| cfn-lint-check.sh | PostToolUse | Edit\|Write | — | — | ✗ compensate |
+| state-index-update.sh | PostToolUse | Edit\|Write | — | — | ✗ compensate |
+| blueprint-stage-gate.sh | PostToolUse | Edit\|Write | — | — | ✗ compensate |
+| session-end-vault.sh | SessionEnd | "" | Stop | — | ⚠️ adapt |
+| session-end-cleanup.sh | SessionEnd | "" | Stop | — | ⚠️ adapt |
+| epistemic-postflight.sh | SessionEnd | "" | Stop | — | ⚠️ adapt |
+| notify.sh | Notification | "*" | — | — | ✗ no equivalent |
+| statusline.sh | statusLine | — | — | — | ✗ no equivalent |
+| _audit-log.sh | (utility) | — | (utility) | — | ✓ copy |
+
+### Compensation Strategy for Edit/Write Gap
+
+For the 7 hooks blocked by Codex's Bash-only matcher:
+
+1. **AGENTS.md instruction rules** — Add rules like "NEVER edit CLAUDE.md directly without running protect-claude-md validation" as behavioral guidance
+2. **Stop-hook post-hoc verifier** — A Stop event hook that checks for violations after the fact (e.g., "was CLAUDE.md modified? If so, warn")
+3. **Accept degradation** — Defense-in-depth drops from 3 layers (hook + hookify + instruction) to 2 layers (instruction + stop-hook). Document this explicitly.
+
+### SessionEnd → Stop Adaptation
+
+Claude Code's SessionEnd fires once at session termination. Codex's Stop fires at turn completion (potentially multiple times per session). Adapted hooks must:
+
+1. Check idempotency — vault export and cleanup must be safe to run multiple times
+2. Gate on session state — only run full cleanup if the session is actually ending (heuristic: check for `/end` command in recent turns, or maintain a `.codex-session-active` marker)
+3. Accept that abandoned sessions may not get cleanup — this is a known degradation
+
+### Behavioral Adapter Rules
+
+| Claude Pattern | Codex Adaptation | Rationale |
+|----------------|------------------|-----------|
+| `STOP. You MUST...` | `CRITICAL: You MUST...` | GPT-4.1 responds to CRITICAL as attention signal |
+| `REQUIRED after...` | `ALWAYS after...` | Less adversarial, same compliance intent |
+| `description:` proactive trigger | AGENTS.md rule: "Before implementing, check if a workflow applies" | Codex has no proactive invocation; compensate via instruction |
+| Claude-specific tool names (Edit, Write) | Generic: "file editing", "file creation" | Model-agnostic language |
+| `/command` invocation | `run: /command` or inline instruction | Codex prompt file invocation syntax |
+
+**Note:** Behavioral adaptation is empirical. The initial mapping above is a starting hypothesis. Actual compliance rates require testing with GPT-4.1, tracked via divergence findings.
+
+## Work Units
+
+| ID | Description | Files | Dependencies | Complexity | TDD |
+|----|-------------|-------|-------------|------------|-----|
+| WU1 | Command adapter — strip YAML frontmatter, emit plain markdown | `scripts/convert-to-codex.sh` (command section), `codex/commands/` | None | Medium | true |
+| WU2 | Agent adapter — YAML→TOML frontmatter conversion | `scripts/convert-to-codex.sh` (agent section), `codex/agents/` | None | Medium | true |
+| WU3 | Hook adapter wrapper — `_codex-adapter.sh` exit-code→JSON translator | `scripts/_codex-adapter.sh` | None | Medium | true |
+| WU4 | Hook wiring generator — `settings-example.json` → `hooks.json` | `scripts/convert-to-codex.sh` (hook wiring section), `codex/hooks.json` | WU3 | Medium | true |
+| WU5 | Edit/Write gap compensation — AGENTS.md rules + Stop-hook verifier | `codex/AGENTS.md` (security section), `codex/hooks/stop-verifier.sh` | WU3, WU4 | High | false |
+| WU6 | AGENTS.md generator — CLAUDE.md → AGENTS.md conversion | `scripts/convert-to-codex.sh` (agents-md section), `codex/AGENTS.md` | WU5 | Medium | true |
+| WU7 | Codex installer — `codex/install-codex.sh` | `codex/install-codex.sh` | WU1, WU2, WU4, WU6 | Medium | false |
+| WU8 | Behavioral adapter — enforcement language tuning | `scripts/convert-to-codex.sh` (behavioral section) | WU1, WU2 | High | false |
+| WU9 | Test extension — `test.sh --codex` validation path | `test.sh` | WU1, WU2, WU3, WU4, WU6, WU7 | Medium | true |
+| WU10 | Divergence tracking — `.claude/divergence/` structure + finding template | `.claude/divergence/`, `scripts/convert-to-codex.sh` (divergence section) | None | Low | false |
+| WU11 | Master script assembly — wire all adapters into `convert-to-codex.sh` with `--target` flag | `scripts/convert-to-codex.sh` (main, argument parsing, orchestration) | WU1, WU2, WU3, WU4, WU6, WU8 | High | true |
+
+## Success Criteria
+
+| Criterion | How to Verify |
+|-----------|---------------|
+| All 66 commands converted to frontmatter-free markdown | `test.sh --codex` counts files in `codex/commands/` and verifies no YAML frontmatter (`---` blocks) |
+| All 12 agents converted to TOML frontmatter | `test.sh --codex` validates TOML `+++` delimiters and required fields (name, description) |
+| 6 direct-port hooks produce valid Codex JSON-stdout | Unit test: feed each hook's exit-code outputs through `_codex-adapter.sh`, verify JSON schema |
+| 3 SessionEnd→Stop hooks are idempotent | Unit test: run adapted hooks twice in sequence, verify no errors or duplicate side effects |
+| `hooks.json` matches expected schema | `test.sh --codex` validates against Codex hooks schema (5 events, correct matchers) |
+| `AGENTS.md` contains compensation rules for all 7 blocked hooks | Grep for each hook name in AGENTS.md, verify instruction rule exists |
+| `codex/install-codex.sh` deploys to correct paths | Dry-run install in temp `$HOME`, verify file placement |
+| Conversion is idempotent | Run `convert-to-codex.sh` twice, diff output — must be identical |
+| Conversion is deterministic | Run on same source, verify byte-identical output |
+| Source files are never modified | `git diff` after conversion shows no changes to source files |
+| `test.sh` base categories still pass | Run `test.sh` without `--codex`, all 75 existing checks pass |
+
+## Failure Modes
+
+| What Could Fail | Detection Method | Recovery Action |
+|-----------------|------------------|-----------------|
+| YAML frontmatter stripping corrupts command body | `test.sh --codex` content validation — check for `---` artifacts, truncated content | Fix regex in command adapter; add test case for edge case |
+| TOML generation produces invalid syntax | TOML linter check in test (or Codex agent load test) | Fix template; pure-bash TOML emission is fragile — add more test cases |
+| `_codex-adapter.sh` mishandles stderr with special characters | Unit test with Unicode, newlines, quotes in stderr | Proper quoting in adapter; use `jq` for JSON escaping if available |
+| `hooks.json` references wrong paths after install | Dry-run install + path verification | Parameterize paths in generator, not hardcode |
+| Behavioral adapter strips too aggressively | Manual comparison of source vs adapted commands for key enforcement commands | Allowlist approach — only transform known patterns, pass-through unknowns |
+| `git diff` shows source modification | Pre/post conversion `git status` check in test | Bug in script — writing to source instead of codex/ target |
+| New command/agent/hook added without re-running conversion | `test.sh --codex` count mismatch between source and codex/ | Conversion is always run from source — just re-run script |
+
+## Rollback Plan
+
+1. `rm -rf codex/` — the entire output is generated, never hand-edited
+2. `git checkout -- test.sh` — revert test extension if needed
+3. `rm scripts/convert-to-codex.sh scripts/_codex-adapter.sh` — remove scripts
+4. `rm -rf .claude/divergence/` — remove tracking infrastructure
+
+No database, no external state, no deployments. Rollback is trivially `git checkout`.
+
+## Dependencies (Preconditions)
+
+- [x] Research brief completed (gate score 4.3/5.0)
+- [x] Hook portability matrix validated (6 direct, 3 adapt, 7 compensate, 2 accept, 1 utility)
+- [x] `bash` available (pure bash constraint — no node/python/ruby)
+- [x] `jq` available for JSON operations (used in test.sh already)
+- [ ] Decision: should `codex/` be gitignored (generated artifact) or committed (reviewable diffs)? Research recommends committed.
+- [ ] Decision: should `_codex-adapter.sh` live in `scripts/` (source) or `codex/hooks/` (output)?
+
+## Open Questions
+
+1. **`codex/` git tracking** — Research recommends committing for reviewable diffs. Counterargument: generated artifacts bloat the repo and create merge conflicts. **Recommendation: commit, with `.claude/divergence/` also committed.** The diffs ARE the value — they show exactly what changed between Claude and Codex representations.
+
+2. **`_codex-adapter.sh` placement** — It's both a source file (part of the conversion infrastructure) AND a runtime file (deployed with hooks). **Recommendation: lives in `scripts/` as source, copied to `codex/hooks/` during conversion.** Single source of truth.
+
+3. **Behavioral adapter scope for v1** — Should v1 attempt full enforcement language tuning, or ship with mechanical conversion only and defer behavioral tuning? **Recommendation: v1 does mechanical + structural (commands, agents, hooks, installer, AGENTS.md). Behavioral tuning (WU8) is a separate, explicitly empirical WU that can ship as a no-op initially.**
+
+4. **Codex `resume` matcher** — SessionStart has both `startup` and `resume` matchers. Should hooks fire on resume too? **Recommendation: yes for session-sail.sh (state recovery), no for epistemic-preflight (already captured).**
+
+## Senior Review Simulation
+
+- **They'd ask about:** "How do you keep `codex/` in sync as the source evolves? Is there a pre-commit hook or CI check?" — **Answer: `test.sh --codex` catches staleness by comparing file counts. For CI, a GitHub Action that runs the conversion and fails if `codex/` differs from the freshly-generated output (like a lockfile check).**
+
+- **Non-obvious risk:** The behavioral adapter (WU8) is the hardest part and the least testable. You can verify format conversion mechanically, but you can't automatically verify that GPT-4.1 actually follows `CRITICAL: You MUST...` better than `STOP. You MUST...`. This is inherently empirical and will require divergence tracking to iterate on. **Don't let the easy mechanical work create false confidence about the hard behavioral work.**
+
+- **Standard approach I might be missing:** Cross-platform CLI tool distribution usually uses a **plugin system** rather than a conversion script. But claude-sail isn't a plugin — it's a collection of 120+ files that extend a host CLI. There's no plugin API to target. The conversion-script-as-compiler approach is novel but fits the problem shape.
+
+- **What bites first-timers:** Pure-bash TOML generation. TOML has multiline strings, arrays, inline tables — generating valid TOML without a library is error-prone. **Mitigation: agents only need simple TOML (string fields in frontmatter), so the subset is manageable. But test thoroughly.**

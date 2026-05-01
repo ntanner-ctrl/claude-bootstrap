@@ -1,0 +1,220 @@
+{
+  "spec_source": ".claude/plans/blueprint-tdd-family/spec.md",
+  "generated_at": "2026-03-24T00:00:00Z",
+  "spec_checksum": "pending",
+  "nodes": [
+    {
+      "id": "WU-1",
+      "description": "Update work-graph.json schema with tdd field",
+      "files": [
+        "docs/PLANNING-STORAGE.md"
+      ],
+      "dependencies": [],
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "WU-2",
+      "description": "Add TDD annotation heuristic to spec-change.md",
+      "files": [
+        "commands/spec-change.md"
+      ],
+      "dependencies": [
+        "WU-1"
+      ],
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "WU-3",
+      "description": "Restructure Stage 7 options in blueprint.md",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "dependencies": [
+        "WU-2"
+      ],
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "WU-4",
+      "description": "Add TDD-per-WU support to delegate.md",
+      "files": [
+        "commands/delegate.md"
+      ],
+      "dependencies": [
+        "WU-2"
+      ],
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "WU-5",
+      "description": "Update tdd.md for WU-level invocation",
+      "files": [
+        "commands/tdd.md"
+      ],
+      "dependencies": [
+        "WU-2"
+      ],
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "WU-6",
+      "description": "Change default challenge mode to family",
+      "files": [
+        "commands/blueprint.md",
+        "docs/BLUEPRINT-MODES.md"
+      ],
+      "dependencies": [
+        "WU-3"
+      ],
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "WU-7",
+      "description": "Implement family mode scaffolding improvements (S-1, S-2, S-3)",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "dependencies": [
+        "WU-6"
+      ],
+      "complexity": "high",
+      "tdd": false
+    },
+    {
+      "id": "WU-8",
+      "description": "Update documentation (README, CLAUDE.md, commands/README.md)",
+      "files": [
+        "README.md",
+        ".claude/CLAUDE.md",
+        "commands/README.md"
+      ],
+      "dependencies": [
+        "WU-3",
+        "WU-6",
+        "WU-7"
+      ],
+      "complexity": "low",
+      "tdd": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "WU-1",
+      "to": "WU-2"
+    },
+    {
+      "from": "WU-2",
+      "to": "WU-3"
+    },
+    {
+      "from": "WU-2",
+      "to": "WU-4"
+    },
+    {
+      "from": "WU-2",
+      "to": "WU-5"
+    },
+    {
+      "from": "WU-3",
+      "to": "WU-6"
+    },
+    {
+      "from": "WU-6",
+      "to": "WU-7"
+    },
+    {
+      "from": "WU-3",
+      "to": "WU-8"
+    },
+    {
+      "from": "WU-6",
+      "to": "WU-8"
+    },
+    {
+      "from": "WU-7",
+      "to": "WU-8"
+    }
+  ],
+  "analysis": {
+    "total_units": 8,
+    "max_parallel_width": 3,
+    "critical_path_length": 6,
+    "critical_path": [
+      "WU-1",
+      "WU-2",
+      "WU-3",
+      "WU-6",
+      "WU-7",
+      "WU-8"
+    ],
+    "file_conflicts": [
+      {
+        "file": "commands/blueprint.md",
+        "units": [
+          "WU-3",
+          "WU-6",
+          "WU-7"
+        ],
+        "resolution": "WU-6 independent of WU-3 (different sections); WU-7 depends on WU-6; WU-3 targets Stage 7, WU-6/7 target challenge mode. Can serialize WU-3 and WU-6→7 independently, but WU-8 waits for all."
+      }
+    ],
+    "batches": [
+      {
+        "batch": 1,
+        "parallel": false,
+        "units": [
+          "WU-1"
+        ],
+        "note": "Schema update — foundation for all TDD work"
+      },
+      {
+        "batch": 2,
+        "parallel": false,
+        "units": [
+          "WU-2"
+        ],
+        "note": "Add TDD heuristic to spec-change.md"
+      },
+      {
+        "batch": 3,
+        "parallel": true,
+        "units": [
+          "WU-3",
+          "WU-4",
+          "WU-5"
+        ],
+        "note": "All depend on WU-2. Different files — safe to parallelize."
+      },
+      {
+        "batch": 4,
+        "parallel": false,
+        "units": [
+          "WU-6"
+        ],
+        "note": "Default mode change — depends on WU-3 (same file: blueprint.md)"
+      },
+      {
+        "batch": 5,
+        "parallel": false,
+        "units": [
+          "WU-7"
+        ],
+        "note": "Family mode improvements — depends on WU-6, same file"
+      },
+      {
+        "batch": 6,
+        "parallel": false,
+        "units": [
+          "WU-8"
+        ],
+        "note": "Documentation — depends on WU-3, WU-6, WU-7"
+      }
+    ]
+  }
+}

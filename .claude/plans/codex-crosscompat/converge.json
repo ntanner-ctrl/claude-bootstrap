@@ -1,0 +1,280 @@
+{
+  "findings": [
+    {
+      "id": "CF-1",
+      "summary": "Adapter contract doubly unverified: exit-code→JSON-stdout direction unvalidated AND output JSON schema undefined",
+      "source_findings": [
+        "C3",
+        "M1"
+      ],
+      "severity": "critical",
+      "confidence": 0.95,
+      "false_known": true,
+      "compound": true,
+      "section": "Architecture > Hook Adapter / WU3",
+      "direction": "Validate Codex hook response protocol against current docs before implementing WU3. Define adapter JSON schema as a spec artifact. If direction is wrong, WU3/WU4/WU11 all need redesign.",
+      "addressed": "needs-new-section"
+    },
+    {
+      "id": "CF-2",
+      "summary": "Security compensation is orphaned, unmerged, AND architecturally non-viable: WU5 missing from WU11/WU9 deps, dual-owns AGENTS.md with WU6, and Stop-hook cannot replicate pre-gate approval flows",
+      "source_findings": [
+        "H1",
+        "H2",
+        "M2"
+      ],
+      "severity": "critical",
+      "confidence": 0.95,
+      "false_known": false,
+      "compound": true,
+      "section": "Work Units > WU5, WU6, WU11",
+      "direction": "Restructure: WU6 owns AGENTS.md generation. WU5 becomes 'security compensation rules' that WU6 consumes as input. Add WU5 to WU11 and WU9 dependency lists. Replace stop-verifier with post-hoc audit logging (detect-and-report, not gate). Explicitly document that protect-claude-md approval flow has no Codex equivalent.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-3",
+      "summary": "TOML agent frontmatter requirement is unsourced — Codex may use a different format or none at all",
+      "source_findings": [
+        "C2"
+      ],
+      "severity": "critical",
+      "confidence": 0.82,
+      "false_known": false,
+      "compound": false,
+      "section": "Architecture > Agent Adapter / WU2",
+      "direction": "Verify Codex agent file format against current documentation before implementing WU2. If TOML is wrong, WU2 complexity drops significantly (may just be plain markdown like commands).",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-4",
+      "summary": "Codex install root never specified — all hardcoded paths in _audit-log.sh, hooks.json, and install-codex.sh break",
+      "source_findings": [
+        "M7",
+        "M10"
+      ],
+      "severity": "high",
+      "confidence": 0.95,
+      "false_known": false,
+      "compound": true,
+      "section": "Architecture / WU4, WU7",
+      "direction": "Define a CODEX_INSTALL_ROOT variable (likely ~/.codex/) as a single structural parameter. All generated paths must reference this variable. Add to spec as a precondition.",
+      "addressed": "needs-new-section"
+    },
+    {
+      "id": "CF-5",
+      "summary": "_codex-adapter.sh placement in scripts/ bypasses hook lint AND violates the convention it wraps — silent fail-closed risk",
+      "source_findings": [
+        "C7",
+        "H3"
+      ],
+      "severity": "high",
+      "confidence": 0.95,
+      "false_known": true,
+      "compound": true,
+      "section": "Architecture > Adapter Placement / test.sh",
+      "direction": "Either (a) extend test.sh Category 5 lint to also cover scripts/_codex-adapter.sh, or (b) move source to hooks/ with a _ prefix convention. Decision D2 chose scripts/ — so option (a) is the fix. Add explicit lint rule.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-6",
+      "summary": "SessionEnd→Stop semantic mismatch: vault export duplicates on every Stop, session-end check heuristic ('check recent turns') is architecturally impossible for hooks, vault-config.sh install path unaddressed",
+      "source_findings": [
+        "C4",
+        "C8",
+        "M5"
+      ],
+      "severity": "high",
+      "confidence": 0.95,
+      "false_known": false,
+      "compound": true,
+      "section": "Architecture > SessionEnd→Stop Adaptation",
+      "direction": "Replace 'check recent turns' heuristic with a file-marker approach (.codex-session-ending set by /end command, checked by Stop hooks). Define vault-config.sh Codex path. Accept that Stop-without-/end means no cleanup — document as known degradation.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-7",
+      "summary": "WU8 (behavioral adapter) is simultaneously optional per D3 and required per WU11 dependency list",
+      "source_findings": [
+        "H4"
+      ],
+      "severity": "high",
+      "confidence": 0.92,
+      "false_known": false,
+      "compound": false,
+      "section": "Work Units > WU8, WU11",
+      "direction": "Resolve: WU11 should depend on WU8 as optional (no-op pass-through in v1, per D3). Make WU11 call WU8's entry point but WU8 returns input unchanged. This preserves the pipeline slot for future behavioral tuning.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-8",
+      "summary": "YAML frontmatter stripping regex unspecified — naive sed on --- corrupts commands that contain --- in body content",
+      "source_findings": [
+        "M6"
+      ],
+      "severity": "high",
+      "confidence": 0.87,
+      "false_known": false,
+      "compound": false,
+      "section": "Work Units > WU1",
+      "direction": "Specify the stripping algorithm: match first --- on line 1, find closing --- (next line matching ^---$), remove lines 1 through closing. Add test cases for commands containing --- in body (e.g., code fences, horizontal rules).",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-9",
+      "summary": "Portability matrix shows startup-only for SessionStart hooks but D4 decided startup+resume — matrix contradicts decision",
+      "source_findings": [
+        "H6",
+        "M3"
+      ],
+      "severity": "high",
+      "confidence": 0.91,
+      "false_known": false,
+      "compound": true,
+      "section": "Architecture > Hook Portability Matrix",
+      "direction": "Update portability matrix to show startup+resume per D4. Note that epistemic-preflight must handle upsert (already noted in D4 rationale). Check if session-sail.sh and worktree-cleanup.sh are safe to run on resume.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-10",
+      "summary": "CLAUDE.md input source ambiguous — three candidates (repo CLAUDE.md, user ~/.claude/CLAUDE.md, target project CLAUDE.md) and which sections map to AGENTS.md is underspecified",
+      "source_findings": [
+        "C9"
+      ],
+      "severity": "high",
+      "confidence": 0.88,
+      "false_known": true,
+      "compound": false,
+      "section": "Architecture > AGENTS.md Generator / WU6",
+      "direction": "Specify: WU6 consumes the repo's own CLAUDE.md (claude-sail/.claude/CLAUDE.md) as primary input. Define which sections map, which drop, and which transform. User's global CLAUDE.md and target project CLAUDE.md are out of scope for v1.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-11",
+      "summary": "Success criteria references 75 checks but actual baseline is 84 — staleness detection uses file counts only, misses content drift",
+      "source_findings": [
+        "C5",
+        "H5",
+        "C6",
+        "M4"
+      ],
+      "severity": "high",
+      "confidence": 0.95,
+      "false_known": false,
+      "compound": true,
+      "section": "Success Criteria",
+      "direction": "Update 75→84 (or use dynamic count). For staleness: add content hash comparison to test.sh --codex (sha256sum of source vs last-conversion manifest). File-count-only is insufficient for a compiler correctness guarantee.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-12",
+      "summary": "Pre-gate→post-detect security degradation understated; 'full parity' goal contradicted by accepted degradations",
+      "source_findings": [
+        "H9",
+        "H10"
+      ],
+      "severity": "medium",
+      "confidence": 0.95,
+      "false_known": false,
+      "compound": true,
+      "section": "Architecture > Compensation Strategy",
+      "direction": "Replace 'full parity' language with 'structural parity with documented security degradations'. Add a security degradation summary table listing each lost guarantee and its compensation (or explicit acceptance of loss).",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-13",
+      "summary": "Behavioral adapter table presents empirical hypotheses as established mappings",
+      "source_findings": [
+        "C10"
+      ],
+      "severity": "medium",
+      "confidence": 0.85,
+      "false_known": true,
+      "compound": false,
+      "section": "Architecture > Behavioral Adapter Rules",
+      "direction": "Mark the entire behavioral adapter table as 'HYPOTHETICAL — requires GPT-4.1 compliance testing'. This is partially addressed by the Note at the bottom, but the table header and lack of confidence annotations undermine it.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-14",
+      "summary": ".gitignore modification still listed in What Changes table despite D1 deciding to commit codex/",
+      "source_findings": [
+        "H8"
+      ],
+      "severity": "medium",
+      "confidence": 0.97,
+      "false_known": false,
+      "compound": false,
+      "section": "What Changes > Files/Components Touched",
+      "direction": "Remove .gitignore row from the table or change to 'no change needed — D1 resolved'.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-15",
+      "summary": "hooks.json success criteria claims 5 events but only 4 Codex events are mapped in the portability matrix",
+      "source_findings": [
+        "H7"
+      ],
+      "severity": "medium",
+      "confidence": 0.88,
+      "false_known": false,
+      "compound": false,
+      "section": "Success Criteria / Architecture > Hook Portability Matrix",
+      "direction": "Reconcile: either identify the 5th event (Notification?) and add its mapping, or correct the success criteria to say 4 events.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-16",
+      "summary": "WU5 TDD=false and WU8 TDD=false — compensation rules and behavioral adapter have no automated verification",
+      "source_findings": [
+        "M8"
+      ],
+      "severity": "medium",
+      "confidence": 0.84,
+      "false_known": false,
+      "compound": false,
+      "section": "Work Units > WU5, WU8",
+      "direction": "Add grep-based verification for WU5 (each blocked hook name must appear in AGENTS.md). WU8 TDD=false is acceptable given D3 (v1 pass-through). Note the verification gap explicitly.",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-17",
+      "summary": "Concurrent conversion runs could produce partial codex/ output",
+      "source_findings": [
+        "M9"
+      ],
+      "severity": "low",
+      "confidence": 0.75,
+      "false_known": false,
+      "compound": false,
+      "section": "Failure Modes",
+      "direction": "Add atomic output strategy: write to codex.tmp/, then mv to codex/ on success. Or document as out-of-scope for v1 (single-user tool).",
+      "addressed": "needs-update"
+    },
+    {
+      "id": "CF-18",
+      "summary": "Command count in spec summary says 66 — should be 65 (README.md is not a command)",
+      "source_findings": [
+        "C1"
+      ],
+      "severity": "low",
+      "confidence": 0.97,
+      "false_known": false,
+      "compound": false,
+      "section": "Summary / Success Criteria",
+      "direction": "Correct 66→65 in spec summary and success criteria.",
+      "addressed": "needs-update"
+    }
+  ],
+  "verdict": "REWORK",
+  "verdict_rationale": "The spec has strong mechanical architecture but 4 critical findings remain unresolved. CF-1 (adapter contract unverified) blocks WU3/WU4/WU11 — the core pipeline. CF-2 (security compensation orphaned+non-viable) means the defense-in-depth story has a structural gap, not just a documentation gap. CF-3 (TOML unsourced) could invalidate WU2 entirely. These three criticals plus 8 high-severity findings (install root undefined, lint gap, session semantics, frontmatter algorithm, matrix contradictions, CLAUDE.md ambiguity, staleness detection, success criteria drift) require a spec revision pass before implementation begins. However, the spec's compiler-pipeline architecture is sound and the work unit decomposition is good — this is a tighten-and-verify rework, not a redesign.",
+  "critical_count": 3,
+  "false_known_count": 5,
+  "compound_count": 8,
+  "unresolved_tensions": [
+    "CF-1: Adapter direction (exit-code→JSON-stdout) requires Codex docs validation — HUMAN must check current Codex hook API before spec can be finalized",
+    "CF-3: TOML agent frontmatter requires Codex docs validation — HUMAN must verify agent file format before WU2 design is locked",
+    "CF-2: protect-claude-md approval flow has no Codex equivalent — HUMAN must decide: accept the security gap, or redesign the compensation strategy",
+    "CF-12: 'Full parity' vs 'structural parity with degradations' — HUMAN must set the marketing/positioning framing"
+  ],
+  "regression_target": "specify"
+}

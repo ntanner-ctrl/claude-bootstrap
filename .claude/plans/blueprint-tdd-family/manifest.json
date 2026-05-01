@@ -1,0 +1,21 @@
+{
+  "blueprint_version": 2,
+  "name": "blueprint-tdd-family",
+  "path": "Full",
+  "challenge_mode": "family",
+  "execution_preference": "auto",
+  "current_stage": "challenge",
+  "revision": 1,
+  "summary": "Remove TDD as standalone Stage 7 option, enforce TDD per-WU via work graph annotation, change default challenge mode from debate to family, improve family mode scaffolding",
+  "spec_digest": "8 WUs across 9 files, 12 success criteria, 3 design decisions (DD-1 TDD annotation, DD-2 new Stage 7 options, DD-3 TDD per-WU mechanics), 3 scaffolding improvements (S-1 complexity-adaptive rounds, S-2 steelman prompt, S-3 elder graceful degradation)",
+  "work_units": 8,
+  "work_graph_width": 3,
+  "critical_path": 4,
+  "key_risks": [
+    "Token cost increase from family-as-default",
+    "blueprint.md file conflict across WU-3, WU-6, WU-7 (different sections)",
+    "test.sh count checks may need updating"
+  ],
+  "prior_art": "build",
+  "epistemic_session_id": null
+}

@@ -1,0 +1,114 @@
+{
+  "name": "codex-crosscompat",
+  "blueprint_version": 2,
+  "challenge_mode": "critique",
+  "execution_preference": "speed",
+  "created_at": "2026-03-27T22:00:00Z",
+  "current_stage": "execute",
+  "completed": false,
+  "revision": 3,
+  "regression_count": 1,
+  "regression_log": [
+    {
+      "from": "challenge",
+      "to": "specify",
+      "reason": "REWORK verdict: 3 criticals (adapter contract unverified, TOML unsourced, security compensation non-viable), 5 false knowns, 8 compound failures",
+      "timestamp": "2026-03-28T03:15:00Z"
+    }
+  ],
+  "epistemic_session_id": "bb58f1a8-30fe-4bb9-ab39-bc8d0c0d66bd",
+  "epistemic_preflight_complete": true,
+  "manifest_stale": false,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed_at": "2026-03-28T01:42:00Z",
+      "confidence": 0.85,
+      "confidence_note": "Research brief provides strong foundation; steps derived directly from validated research."
+    },
+    "specify": {
+      "status": "complete",
+      "completed_at": "2026-03-28T03:35:00Z",
+      "confidence": 0.92,
+      "confidence_note": "Rev 2: all revalidation findings addressed. 4 PostToolUse hooks reclassified as portable (Figma ground truth). Work graph dependencies corrected. Plugin manifest hooks field added."
+    },
+    "challenge": {
+      "status": "complete",
+      "completed_at": "2026-03-28T04:00:00Z",
+      "confidence": 0.88,
+      "confidence_note": "Revalidation pass: 0 critical, 4 high (all addressed inline), 2 medium, 3 low. Spec grounded in validated ground truth. Remaining uncertainty: stderr vs stdout feedback channel (flagged for WU3 validation)."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "completed_at": "2026-03-28T04:30:00Z",
+      "confidence": 0.88,
+      "confidence_note": "Edge cases found 3 critical boundary issues (path scope, success criterion contradiction, plugin.json nesting). All addressed inline. Remaining uncertainty: stderr vs stdout (flagged for WU3 empirical validation)."
+    },
+    "premortem": {
+      "status": "complete",
+      "completed_at": "2026-03-28T04:45:00Z",
+      "confidence": 0.85,
+      "confidence_note": "5 NEW operational findings, 3 COVERED. Key pattern: opt-in checks fail under failover pressure. No critical findings — all are high/medium operational improvements."
+    },
+    "review": {
+      "status": "skipped",
+      "skip_reason": "Extensive scrutiny: 2 critique rounds (27 findings), 12 edge cases, 8 pre-mortem scenarios, ground truth validation. Remaining uncertainty is empirical (stderr/stdout), not reviewable."
+    },
+    "test": {
+      "status": "complete",
+      "completed_at": "2026-03-28T05:00:00Z",
+      "confidence": 0.90,
+      "confidence_note": "21 spec-blind tests generated: 15 behavior, 5 contract, 5 failure mode. Anti-tautology review clean. All tests verify observable behavior, not implementation structure."
+    },
+    "execute": {
+      "status": "pending"
+    },
+    "debrief": {
+      "status": "pending"
+    }
+  },
+  "ambiguity_gate": {
+    "goal_clarity": 5,
+    "constraint_clarity": 4,
+    "success_criteria": 4,
+    "composite": 4.4,
+    "result": "pass",
+    "override": false
+  },
+  "prior_art_gate": {
+    "status": "covered-by-research",
+    "research_brief": ".claude/plans/codex-crosscompat/research.md"
+  },
+  "decisions": [
+    {
+      "id": "D1",
+      "topic": "codex/ git tracking",
+      "decision": "Commit to git",
+      "rationale": "The diffs between Claude and Codex representations are the value — they document divergence as a chapter of the repos journey",
+      "decided_at": "2026-03-28T01:55:00Z"
+    },
+    {
+      "id": "D2",
+      "topic": "_codex-adapter.sh placement",
+      "decision": "Source in scripts/, copy to codex/hooks/ during conversion",
+      "rationale": "Single source of truth in scripts/, deployed copy in codex/",
+      "decided_at": "2026-03-28T01:55:00Z"
+    },
+    {
+      "id": "D3",
+      "topic": "Behavioral adapter v1 scope",
+      "decision": "Pass enforcement language through unchanged in v1. Iterate empirically via divergence tracking.",
+      "rationale": "Mechanical conversion is valuable standalone. Behavioral tuning requires real GPT-4.1 compliance data — guessing is premature optimization. WU10 divergence tracking supports iteration.",
+      "decided_at": "2026-03-28T01:55:00Z"
+    },
+    {
+      "id": "D4",
+      "topic": "Codex resume matcher",
+      "decision": "All SessionStart hooks fire on both startup AND resume",
+      "rationale": "Epistemic preflight handles upsert (no double-counting). Framework is lightweight. Resume is a valid state recovery point for all three hooks.",
+      "decided_at": "2026-03-28T01:55:00Z"
+    }
+  ],
+  "premortem_overlap": "moderate"
+}

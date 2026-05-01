@@ -1,0 +1,148 @@
+{
+  "nodes": [
+    {
+      "id": "W1",
+      "label": "Add debrief stage to blueprint.md",
+      "files": [
+        "commands/blueprint.md"
+      ],
+      "status": "pending",
+      "complexity": "high",
+      "tdd": false
+    },
+    {
+      "id": "W2",
+      "label": "Update PLANNING-STORAGE.md schemas",
+      "files": [
+        "docs/PLANNING-STORAGE.md"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W3",
+      "label": "Create /link-blueprint command",
+      "files": [
+        "commands/link-blueprint.md"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W4",
+      "label": "Add commit-time signal to plugin-enhancers",
+      "files": [
+        "commands/plugin-enhancers.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "W5",
+      "label": "Update test.sh with counts and validations",
+      "files": [
+        "test.sh"
+      ],
+      "status": "pending",
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "W6",
+      "label": "Update README.md and commands/README.md",
+      "files": [
+        "README.md",
+        "commands/README.md"
+      ],
+      "status": "pending",
+      "complexity": "low",
+      "tdd": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "W1",
+      "to": "W2",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W3",
+      "type": "blocks"
+    },
+    {
+      "from": "W1",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W2",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W4",
+      "to": "W5",
+      "type": "blocks"
+    },
+    {
+      "from": "W1",
+      "to": "W6",
+      "type": "blocks"
+    },
+    {
+      "from": "W3",
+      "to": "W6",
+      "type": "blocks"
+    }
+  ],
+  "batches": [
+    {
+      "batch": 1,
+      "units": [
+        "W1",
+        "W4"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 2,
+      "units": [
+        "W2"
+      ],
+      "parallel": false
+    },
+    {
+      "batch": 3,
+      "units": [
+        "W3"
+      ],
+      "parallel": false
+    },
+    {
+      "batch": 4,
+      "units": [
+        "W5",
+        "W6"
+      ],
+      "parallel": true
+    }
+  ],
+  "analysis": {
+    "total_units": 6,
+    "max_parallel_width": 2,
+    "critical_path_length": 5,
+    "file_conflicts": [],
+    "parallelization_recommendation": "moderate"
+  },
+  "spec_work_units_checksum": "pending-stage2-completion",
+  "generated_at": "2026-03-25T12:50:00Z"
+}

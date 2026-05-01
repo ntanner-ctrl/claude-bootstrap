@@ -1,0 +1,278 @@
+{
+  "version": 1,
+  "spec_checksum": "a84e9b0c0766390041cd811aa28f7c8fc6ad1a1cea255997687d8578f90124f7",
+  "spec_revision": 2,
+  "generated_at": "2026-03-28T04:00:00Z",
+  "nodes": [
+    {
+      "id": "WU1",
+      "description": "Command adapter — strip YAML frontmatter, add # /name header",
+      "files": [
+        "scripts/convert-to-codex.sh",
+        "codex/commands/"
+      ],
+      "dependencies": [],
+      "complexity": "medium",
+      "tdd": true
+    },
+    {
+      "id": "WU2",
+      "description": "Agent adapter — strip YAML frontmatter, generate openai.yaml from extracted fields",
+      "files": [
+        "scripts/convert-to-codex.sh",
+        "codex/agents/",
+        "codex/agents/openai.yaml"
+      ],
+      "dependencies": [],
+      "complexity": "medium",
+      "tdd": true
+    },
+    {
+      "id": "WU3",
+      "description": "Hook path rewriter — rewrite source paths, generate hooks.json with relative paths, port 4 PostToolUse Edit|Write hooks, validate feedback channel",
+      "files": [
+        "scripts/convert-to-codex.sh",
+        "codex/hooks/",
+        "codex/hooks.json"
+      ],
+      "dependencies": [],
+      "complexity": "medium",
+      "tdd": true
+    },
+    {
+      "id": "WU4",
+      "description": "AGENTS.md generator — convert .claude/CLAUDE.md with path rewrites + append compensation rules for 7 blocked hooks",
+      "files": [
+        "scripts/convert-to-codex.sh",
+        "codex/AGENTS.md"
+      ],
+      "dependencies": [],
+      "complexity": "high",
+      "tdd": true
+    },
+    {
+      "id": "WU5",
+      "description": "Plugin manifest generator — .codex-plugin/plugin.json with hooks field, skills, interface block",
+      "files": [
+        "scripts/convert-to-codex.sh",
+        "codex/.codex-plugin/plugin.json"
+      ],
+      "dependencies": [
+        "WU1",
+        "WU2",
+        "WU3"
+      ],
+      "complexity": "low",
+      "tdd": true
+    },
+    {
+      "id": "WU6",
+      "description": "Codex installer — codex/install-codex.sh deploying to ~/.codex/",
+      "files": [
+        "codex/install-codex.sh"
+      ],
+      "dependencies": [
+        "WU1",
+        "WU2",
+        "WU3",
+        "WU4",
+        "WU5"
+      ],
+      "complexity": "medium",
+      "tdd": false
+    },
+    {
+      "id": "WU7",
+      "description": "Test extension — test.sh --codex validation path with sha256 staleness detection",
+      "files": [
+        "test.sh"
+      ],
+      "dependencies": [
+        "WU1",
+        "WU2",
+        "WU3",
+        "WU4",
+        "WU5",
+        "WU6"
+      ],
+      "complexity": "medium",
+      "tdd": true
+    },
+    {
+      "id": "WU8",
+      "description": "Divergence tracking — .claude/divergence/ structure + finding template",
+      "files": [
+        ".claude/divergence/"
+      ],
+      "dependencies": [],
+      "complexity": "low",
+      "tdd": false
+    },
+    {
+      "id": "WU9",
+      "description": "Master script assembly — wire all adapters into convert-to-codex.sh with --target flag, CODEX_INSTALL_ROOT, atomic output",
+      "files": [
+        "scripts/convert-to-codex.sh"
+      ],
+      "dependencies": [
+        "WU1",
+        "WU2",
+        "WU3",
+        "WU4"
+      ],
+      "complexity": "high",
+      "tdd": true
+    }
+  ],
+  "edges": [
+    {
+      "from": "WU1",
+      "to": "WU5"
+    },
+    {
+      "from": "WU2",
+      "to": "WU5"
+    },
+    {
+      "from": "WU3",
+      "to": "WU5"
+    },
+    {
+      "from": "WU1",
+      "to": "WU6"
+    },
+    {
+      "from": "WU2",
+      "to": "WU6"
+    },
+    {
+      "from": "WU3",
+      "to": "WU6"
+    },
+    {
+      "from": "WU4",
+      "to": "WU6"
+    },
+    {
+      "from": "WU5",
+      "to": "WU6"
+    },
+    {
+      "from": "WU1",
+      "to": "WU7"
+    },
+    {
+      "from": "WU2",
+      "to": "WU7"
+    },
+    {
+      "from": "WU3",
+      "to": "WU7"
+    },
+    {
+      "from": "WU4",
+      "to": "WU7"
+    },
+    {
+      "from": "WU5",
+      "to": "WU7"
+    },
+    {
+      "from": "WU6",
+      "to": "WU7"
+    },
+    {
+      "from": "WU1",
+      "to": "WU9"
+    },
+    {
+      "from": "WU2",
+      "to": "WU9"
+    },
+    {
+      "from": "WU3",
+      "to": "WU9"
+    },
+    {
+      "from": "WU4",
+      "to": "WU9"
+    },
+    {
+      "from": "WU5",
+      "to": "WU9"
+    },
+    {
+      "from": "WU9",
+      "to": "WU6"
+    },
+    {
+      "from": "WU9",
+      "to": "WU7"
+    }
+  ],
+  "analysis": {
+    "batches": [
+      {
+        "batch": 1,
+        "units": [
+          "WU1",
+          "WU2",
+          "WU3",
+          "WU4",
+          "WU8"
+        ],
+        "note": "All independent adapters + divergence infra — max parallelism"
+      },
+      {
+        "batch": 2,
+        "units": [
+          "WU5"
+        ],
+        "note": "Plugin manifest (needs WU1-3)"
+      },
+      {
+        "batch": 3,
+        "units": [
+          "WU9"
+        ],
+        "note": "Master script assembly (needs WU1-5)"
+      },
+      {
+        "batch": 4,
+        "units": [
+          "WU6"
+        ],
+        "note": "Installer (needs WU9)"
+      },
+      {
+        "batch": 5,
+        "units": [
+          "WU7"
+        ],
+        "note": "Test extension (needs everything)"
+      }
+    ],
+    "max_parallel_width": 5,
+    "critical_path": [
+      "WU4",
+      "WU9",
+      "WU6",
+      "WU7"
+    ],
+    "critical_path_length": 4,
+    "file_conflicts": [
+      {
+        "file": "scripts/convert-to-codex.sh",
+        "units": [
+          "WU1",
+          "WU2",
+          "WU3",
+          "WU4",
+          "WU5",
+          "WU9"
+        ],
+        "note": "All adapter sections contribute to the same script — WU9 assembles"
+      }
+    ]
+  }
+}

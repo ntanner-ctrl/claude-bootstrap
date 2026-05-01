@@ -1,0 +1,37 @@
+{
+  "name": "codex-crosscompat",
+  "blueprint_version": 2,
+  "challenge_mode": "critique",
+  "execution_preference": "speed",
+  "path": "full",
+  "revision": 1,
+  "epistemic_session_id": "bb58f1a8-30fe-4bb9-ab39-bc8d0c0d66bd",
+  "current_stage": "challenge",
+  "summary": "Pure-bash compiler converting claude-sail to Codex CLI distribution. 9 WUs across 4 batches. Critical path: WU4→WU6→WU7 (length 3). Max parallel width: 5. Ground truth validated: hooks.json identical schema, agents are plain markdown + openai.yaml, install root ~/.codex/.",
+  "spec_digest": "9 WUs: command adapter, agent adapter (openai.yaml), hook path rewriter, AGENTS.md generator, plugin manifest, installer, tests, divergence tracking, master assembly",
+  "work_units": 9,
+  "tdd_units": 6,
+  "non_tdd_units": 3,
+  "preservation_contract": [
+    "All existing Claude Code behavior",
+    "install.sh unchanged",
+    "test.sh base categories pass",
+    "settings-example.json read-only",
+    "Hook exit-code semantics preserved"
+  ],
+  "open_questions": [],
+  "risk_flags": [
+    "user-facing behavior change",
+    "security-sensitive (hook gap)"
+  ],
+  "stages_completed": [
+    "describe",
+    "specify"
+  ],
+  "artifacts": {
+    "describe": ".claude/plans/codex-crosscompat/describe.md",
+    "spec": ".claude/plans/codex-crosscompat/spec.md",
+    "research": ".claude/plans/codex-crosscompat/research.md",
+    "work_graph": ".claude/plans/codex-crosscompat/work-graph.json"
+  }
+}

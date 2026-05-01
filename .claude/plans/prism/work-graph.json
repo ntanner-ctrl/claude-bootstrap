@@ -1,0 +1,222 @@
+{
+  "spec_checksum": "pending-sha256",
+  "generated_at": "2026-03-22T12:30:00Z",
+  "nodes": [
+    {
+      "id": "W1",
+      "description": "Create dry-lens agent",
+      "files": [
+        "agents/dry-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W2",
+      "description": "Create yagni-lens agent",
+      "files": [
+        "agents/yagni-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W3",
+      "description": "Create kiss-lens agent",
+      "files": [
+        "agents/kiss-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W4",
+      "description": "Create consistency-lens agent",
+      "files": [
+        "agents/consistency-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W5",
+      "description": "Create cohesion-lens agent",
+      "files": [
+        "agents/cohesion-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W6",
+      "description": "Create coupling-lens agent",
+      "files": [
+        "agents/coupling-lens.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 500
+    },
+    {
+      "id": "W7",
+      "description": "Create prism orchestrator command",
+      "files": [
+        "commands/prism.md"
+      ],
+      "complexity": "large",
+      "estimated_tokens": 5000
+    },
+    {
+      "id": "W8",
+      "description": "Create vault-notes prism-report template",
+      "files": [
+        "commands/templates/vault-notes/prism-report.md"
+      ],
+      "complexity": "small",
+      "estimated_tokens": 300
+    },
+    {
+      "id": "W9",
+      "description": "Update commands/README.md",
+      "files": [
+        "commands/README.md"
+      ],
+      "complexity": "trivial",
+      "estimated_tokens": 100
+    },
+    {
+      "id": "W10",
+      "description": "Update README.md counts",
+      "files": [
+        "README.md"
+      ],
+      "complexity": "trivial",
+      "estimated_tokens": 100
+    },
+    {
+      "id": "W11",
+      "description": "Update test.sh counts",
+      "files": [
+        "test.sh"
+      ],
+      "complexity": "trivial",
+      "estimated_tokens": 100
+    },
+    {
+      "id": "W12",
+      "description": "Update install.sh output",
+      "files": [
+        "install.sh"
+      ],
+      "complexity": "trivial",
+      "estimated_tokens": 100
+    }
+  ],
+  "edges": [
+    {
+      "from": "W1",
+      "to": "W7"
+    },
+    {
+      "from": "W2",
+      "to": "W7"
+    },
+    {
+      "from": "W3",
+      "to": "W7"
+    },
+    {
+      "from": "W4",
+      "to": "W7"
+    },
+    {
+      "from": "W5",
+      "to": "W7"
+    },
+    {
+      "from": "W6",
+      "to": "W7"
+    },
+    {
+      "from": "W7",
+      "to": "W8"
+    },
+    {
+      "from": "W7",
+      "to": "W9"
+    },
+    {
+      "from": "W8",
+      "to": "W10"
+    },
+    {
+      "from": "W9",
+      "to": "W10"
+    },
+    {
+      "from": "W8",
+      "to": "W11"
+    },
+    {
+      "from": "W9",
+      "to": "W11"
+    },
+    {
+      "from": "W8",
+      "to": "W12"
+    },
+    {
+      "from": "W9",
+      "to": "W12"
+    }
+  ],
+  "batches": [
+    {
+      "batch": 1,
+      "units": [
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5",
+        "W6"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 2,
+      "units": [
+        "W7"
+      ],
+      "parallel": false
+    },
+    {
+      "batch": 3,
+      "units": [
+        "W8",
+        "W9"
+      ],
+      "parallel": true
+    },
+    {
+      "batch": 4,
+      "units": [
+        "W10",
+        "W11",
+        "W12"
+      ],
+      "parallel": true
+    }
+  ],
+  "analysis": {
+    "max_parallel_width": 6,
+    "critical_path_length": 4,
+    "critical_path": [
+      "W1",
+      "W7",
+      "W8",
+      "W10"
+    ],
+    "file_conflicts": [],
+    "total_units": 12
+  }
+}
