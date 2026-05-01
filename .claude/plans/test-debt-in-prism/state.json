@@ -1,0 +1,212 @@
+{
+  "name": "test-debt-in-prism",
+  "blueprint_version": 2,
+  "challenge_mode": "critique",
+  "execution_preference": "auto",
+  "created_at": "2026-05-01T14:30:00Z",
+  "current_stage": "execute",
+  "completed": false,
+  "revision": 3,
+  "regression_count": 1,
+  "regression_log": [
+    {
+      "from_stage": "challenge",
+      "to_stage": "specify",
+      "trigger_type": "automatic",
+      "trigger": "critique_critical_compound_findings",
+      "reason": "Stage 3 critique (critique mode, Full tier) surfaced 5 compound failure modes — CF-1 (containment is theater), CF-2 (token budget hand-waved), CF-3 (runner exit-code interpretation broken), CF-4 (liveness wishful), CF-5 (detection wrong for polyglot). User's threat-model reframe (containment → scope guardrail for first-party tooling) dissolved CF-1 partially (downgrades C1, H8, C9). Remaining: 12 substantive spec changes including agent rename test-debt-reviewer → test-debt-classifier.",
+      "timestamp": "2026-05-01T15:10:00Z",
+      "revision": 2
+    }
+  ],
+  "epistemic_session_id": "e824aa27-7329-4b12-8acf-b89438f29677",
+  "epistemic_preflight_complete": true,
+  "manifest_stale": true,
+  "work_graph_stale": false,
+  "stages": {
+    "describe": {
+      "status": "complete",
+      "completed_at": "2026-05-01T14:35:00Z",
+      "path": "Full",
+      "step_count": 9,
+      "risk_flags": [
+        "user-facing-behavior-change",
+        "security-sensitive"
+      ],
+      "execution_preference": "auto",
+      "confidence": 0.85,
+      "confidence_note": "Brief is dense and load-bearing decisions are pre-converged; prior-art + empirical feasibility both done; vault context loaded. Main residual uncertainty is whether the v1-vs-future-genericity split on the allowlist hook is right (small; spec stage decision)."
+    },
+    "specify": {
+      "status": "complete",
+      "completed_at": "2026-05-01T16:45:00Z",
+      "rev1_completed_at": "2026-05-01T14:45:00Z",
+      "rev1_confidence": 0.85,
+      "rev2_completed_at": "2026-05-01T15:25:00Z",
+      "rev2_confidence": 0.78,
+      "regression_target": true,
+      "revision": 3,
+      "work_units_count": 14,
+      "tdd_count": 7,
+      "critical_path_length": 6,
+      "max_parallel_width": 4,
+      "confidence": 0.82,
+      "confidence_note": "Revision 3 trim per /overcomplicated review. User accepted path (a): runner support 6→2 (pytest + bash test.sh), AC consolidation (1-5 → 1), WU13 folded into WU1, Decisions trim. Spec 313 → 299 lines (~5%); WUs 15 → 14; ACs 26 → 22. Confidence rose from 0.78 → 0.82: trimming a deliberately-scoped runner set is more honest than maintaining 6 runners speculatively, and the post-trim spec has a sharper v1 mandate.",
+      "preserved_resolutions": [
+        "5-category classification (real-issue / test-infrastructure-broken / drift / abandoned / quarantine candidate)",
+        "Stage 5.5 position between Quality (5) and Synthesis (6)",
+        "Separate hook (NOT modifying dangerous-commands.sh)",
+        "Opt-OUT default via SAIL_PRISM_RUN_TESTS=0 env var",
+        "v1 scope discipline (failures-only; no coverage/staleness/mutation/multi-run/continuous)",
+        "Single retry as quarantine-candidate signal",
+        "Output persistence to .claude/wizards/prism-<id>/test-debt-output.log"
+      ]
+    },
+    "challenge": {
+      "status": "complete",
+      "rev1_completed_at": "2026-05-01T15:05:00Z",
+      "rev1_verdict": "REWORK",
+      "rev1_compound_findings_count": 5,
+      "rev1_critical_findings_count": 2,
+      "rev1_confidence": 0.45,
+      "rev2_completed_at": "2026-05-01T16:00:00Z",
+      "rev2_mode": "quick re-Diverge (validation-shaped) + inline polish per user path (a)",
+      "rev2_verdict": "PASS_WITH_POLISH_APPLIED",
+      "rev2_high_severity_addressed": [
+        "C5",
+        "C7",
+        "M2",
+        "M-NEW1",
+        "M-NEW2",
+        "H10"
+      ],
+      "rev2_polish_added_wus": [
+        "WU14",
+        "WU15"
+      ],
+      "rev2_polish_added_acs": [
+        "AC26"
+      ],
+      "tier": "full",
+      "vocabulary_correction": "user flagged DISPOSITION_VERIFIED as overstated; relabeled to text_conforms / fact_checked / behaviorally_verified / partial / new_issue / accepted / polished. Saved as feedback_verification_word_precision.md memory.",
+      "completed_at": "2026-05-01T16:00:00Z",
+      "phases_run": [
+        "orient",
+        "diverge",
+        "interaction_scan",
+        "re_diverge",
+        "polish_inline"
+      ],
+      "phases_skipped": [
+        "clash",
+        "refine",
+        "converge_agent_dispatch"
+      ],
+      "phases_skipped_reason": "Diverge + Interaction Scan surfaced sufficient evidence for REWORK verdict; Clash/Refine wouldn't dissolve compound failures; Converge done inline by orchestrator given clarity. Will run full pipeline on post-revision re-critique.",
+      "confidence": 0.45,
+      "confidence_note": "Critique mode (Full tier) was effective — surfaced load-bearing flaws including a misframed threat model that the user reframed inline. Findings catalog in adversarial.md covers 30 items with disposition. After regression to Stage 2, re-Diverge or full re-pipeline will validate fixes."
+    },
+    "edge_cases": {
+      "status": "complete",
+      "completed_at": "2026-05-01T16:30:00Z",
+      "mode": "quick Diverge x3 (validation-shaped); Interaction Scan inline by orchestrator",
+      "findings_count": 24,
+      "clusters": [
+        "false-pass-brittleness",
+        "not-pass-mis-classified",
+        "env-config-parsing",
+        "concurrency-state-recovery",
+        "polyglot-fragile",
+        "ac15-verification-brittle"
+      ],
+      "verdict": "PASS_WITH_TRIM_MOOTING_MOST",
+      "verdict_note": "Most findings dissolved under rev3 trim (runner-multiplication was the underlying cluster). Remaining items deferred to v2 with rationale.",
+      "confidence": 0.78
+    },
+    "premortem": {
+      "status": "complete",
+      "completed_at": "2026-05-01T17:15:00Z",
+      "mode": "single agent dispatch (option b)",
+      "findings_count": 8,
+      "new_findings": [
+        "PM2",
+        "PM5",
+        "PM8"
+      ],
+      "verified_findings": [
+        "PM2"
+      ],
+      "verdict": "PASS_WITH_INLINE_FIXES",
+      "regression_decision": "option [2] — note + inline-fix; PM2/PM4/PM7 polished; PM1/PM5/PM8 deferred",
+      "polish_added_acs": [
+        "AC23",
+        "AC24"
+      ],
+      "polish_added_skip_reasons": [
+        "hook_not_wired"
+      ],
+      "confidence": 0.80,
+      "confidence_note": "Pre-mortem found 2 NEW critical/high findings; one verified factually (PM2 install.sh merge gap). User chose inline-fix path — added runtime self-probe (AC23) + stale-state recovery (AC24) + install detection (WU14). PM1 (opt-out default) challenged but user stood by earlier decision. PM5+PM8 scope expansions deferred to v2."
+    },
+    "review": {
+      "status": "skipped",
+      "skipped_at": "2026-05-01T17:20:00Z",
+      "skip_reason": "Diminishing returns — spec absorbed substantial adversarial coverage already (full Stage 3 critique + Stage 3 re-Diverge + Stage 4 Edge Cases Diverge + Stage 4.5 pre-mortem + /overcomplicated trim). Each subsequent review pass surfaced smaller items. External review (/gpt-review) cost > marginal value at this point. User opted (a) — skip + proceed to Stage 6 (spec-to-tests, which is genuinely new work)."
+    },
+    "test": {
+      "status": "complete",
+      "completed_at": "2026-05-01T17:35:00Z",
+      "test_count": 30,
+      "categories_added": [
+        "Cat 9 detection",
+        "Cat 10 lifecycle",
+        "Cat 11 token-budget",
+        "Cat 13 exit-code matrix",
+        "Cat 14 classifier",
+        "Cat 15 migration+probes",
+        "Cat 16 perf",
+        "Cat 17 preservation",
+        "Cat 18 failure modes"
+      ],
+      "manual_smoke_checks": [
+        "T10.3 ambient PreToolUse hooks for subagents — manual per prior-art.md"
+      ],
+      "outside_scope_acknowledged": [
+        "semantic classification correctness (PM8 deferred)",
+        "perf tests advisory not blocking on slow envs"
+      ],
+      "confidence": 0.82,
+      "confidence_note": "30 spec-blind tests across 11 categories cover all 24 ACs + 7 preservation invariants + 5 failure modes. Helper functions (simulate_* family) need to be implemented as part of WU9; documented in tests.md. Tests should fail initially (no impl) and pass when impl matches spec — that's the contract. AC10 noted as manual smoke check (can't fully automate without Claude Code subprocess)."
+    },
+    "execute": {
+      "status": "pending"
+    },
+    "debrief": {
+      "status": "pending"
+    }
+  },
+  "prior_art_gate": {
+    "status": "complete",
+    "recommendation": "build",
+    "override": false,
+    "run_at": "2026-05-01T14:00:00Z",
+    "report": "prior-art.md",
+    "note": "No tooling fits; industry has flaky-detection only. Build with informed borrowing (retry-based detection + govuk-rfcs/rfc-069 severity-axis). Hook feasibility empirically confirmed."
+  },
+  "vault_context": {
+    "consulted_at": "2026-05-01T14:30:00Z",
+    "relevant_notes": [
+      "Engineering/Findings/2026-04-22-project-scout-integration-test-debt-live-aws-coupling.md",
+      "Engineering/Findings/2026-03-22-prism-premortem-context-exhaustion.md",
+      "Engineering/Findings/2026-04-30-debrief-anti-pattern-catalog.md",
+      "Engineering/Blueprints/2026-04-30-claude-sail-anti-pattern-catalog.md"
+    ],
+    "load_bearing_context": {
+      "user_rule": "feedback_preexisting_test_debt — stop dismissing test failures; fix or flag for cleanup. Standing instruction motivating this blueprint.",
+      "prism_context_risk": "Prism orchestrator context exhaustion is a known issue (high-severity finding). Adding Stage 5.5 increases this risk. Token budget design is load-bearing.",
+      "predecessor_lessons": "Anti-pattern-catalog debrief: pre-impl empirical gating works; spec-blind tests with hard thresholds beat fuzzy contracts; settings.local.json hooks are session-cached (already burned us once, accounted for).",
+      "threat_model_reframe": "User reframed 'containment' (security boundary) as 'scope guardrail' (catches agent confusion). Recorded as feedback memory; applies to first-party tooling generally. Dissolved CF-1 critical finding from rev1 critique."
+    }
+  },
+  "research_brief_status": "no-formal-research.md; equivalent context provided by (a) prior-session brief in memory project_test_debt_design.md, (b) prior-art.md generated this session with empirical hook-feasibility verdict, (c) vault notes consulted above"
+}

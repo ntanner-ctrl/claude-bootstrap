@@ -1,0 +1,206 @@
+# Change Specification: test-debt-in-prism
+
+## Summary
+
+Add a conditional Stage 5.5 to `/prism` — a `test-debt-reviewer` subagent that runs the project's test suite using a detected runner, classifies each pre-existing failure into one of five categories (real-issue / test-infrastructure-broken / drift / abandoned / quarantine candidate), and feeds findings into Stage 6 Synthesis as another themable contributor — with containment via a new per-agent Bash allowlist hook (`prism-bash-allowlist.sh`) that runs alongside `dangerous-commands.sh` without modifying it.
+
+## Classification (5 categories, severity ordering)
+
+1. **real-issue** (critical) — code under test is broken; test correctly catches it
+2. **test-infrastructure-broken** (high) — test suite cannot run cleanly: collection errors, import errors, missing fixtures, broken setup. Distinct from real-issue because the *test* is unrunnable, not because the *code* is broken. Often blocks discovery of other failures.
+3. **drift** (medium) — test references API, symbol, schema, or contract that has moved/renamed/changed; test logic is sound but the world moved
+4. **abandoned** (medium) — test was for a feature, endpoint, or capability that was never finished or has been removed; test is obsolete
+5. **quarantine candidate** (low) — flaky/timing-dependent/non-deterministic; passes on retry. Should be marked as such or removed.
+
+Per failing test the agent: reads test + symbol(s) under test, classifies into one of the above, surfaces to Synthesis with severity tag and a one-line "why this is failing." Single retry IS in scope as the quarantine-candidate signal — if a failed test passes on a single re-run, it gets the quarantine tag automatically.
+
+## What Changes
+
+### Files/Components Touched
+
+| File | Nature of Change |
+|------|------------------|
+| `agents/test-debt-reviewer.md` | **add** — new subagent (Bash + Read + Glob + Grep), declared allowlist, 4-category classifier prompt |
+| `hooks/prism-bash-allowlist.sh` | **add** — new PreToolUse hook; branches on `agent_type`; enforces per-agent allowlist; fail-open |
+| `commands/prism.md` | **modify** — add Stage 5.5 wiring, runner detection, opt-out gate, Synthesis update, wizard state schema |
+| `settings-example.json` | **modify** — add `prism-bash-allowlist.sh` to PreToolUse Bash matcher (alongside existing entries) |
+| `install.sh` | **modify** — agent count `12 → 13`, hook count update |
+| `README.md` | **modify** — agent count, capability mention if applicable |
+| `agents/README.md` | **modify** — new entry for test-debt-reviewer in agents table |
+| `test.sh` | **modify** — Category 3 (counts), Category 4 (frontmatter on new agent), Category 5 (no `set -e` in new hook), Category 6 (settings JSON valid), Category 7 (install dry run includes new files), Category 8 (behavioral evals for the new hook) |
+| `evals/evals.json` | **modify** — add fixtures for `prism-bash-allowlist.sh`: allowed test-runner commands pass; non-allowlisted commands blocked with feedback; non-test-debt-reviewer agent_type passes through |
+| `scripts/behavioral-smoke.sh` | **possibly modify** — only if existing harness can't drive `agent_type` field in stdin JSON; v1 assumption: existing harness sufficient |
+
+### External Dependencies
+
+- [x] **None** — pure shell + markdown changes. No new package deps. Test runners (`pytest`, `bun`, `cargo`, etc.) are not introduced — the agent uses what the target project already has.
+
+### Database/State Changes
+
+- [x] **None** at the persistence layer.
+- [x] **State format addition (in-memory):** `prism` wizard state schema gains a `test_debt` step. New step has fields: `status` (`pending` | `running` | `complete` | `skipped` | `error`), `runner_detected` (string | null), `failure_count` (int), `findings` (array), `output_log_path` (string | null), `skip_reason` (string | null). This is additive — existing fields and steps are unchanged.
+
+## Preservation Contract (What Must NOT Change)
+
+- **Behavior that must survive:**
+  - All existing prism stages 1-6 produce identical output when Stage 5.5 is skipped (no runner / opt-out / no failing tests)
+  - All existing prism agents (6 lens + 5 domain reviewer = 11 agents) remain read-only — they do NOT gain Bash capability
+  - `dangerous-commands.sh` is byte-for-byte unchanged; its blocking behavior is unaffected
+  - All other PreToolUse hooks (`secret-scanner.sh`, `protect-claude-md.sh`, etc.) continue to fire as today
+  - Main-session Bash calls behave exactly as today (the new hook is a no-op when `agent_type` is absent or doesn't match)
+  - Synthesis output backward compatibility: existing finding sources continue to be themed; test-debt findings ADD to the synthesis input, do NOT replace or alter existing finding shapes
+  - `bash test.sh` continues to pass on this repo with the new files in place
+
+- **Interfaces that must remain stable:**
+  - PreToolUse hook contract (read JSON from stdin, exit 0/1/2 with stderr feedback)
+  - Subagent prompt input/output shape
+  - prism wizard state file format additivity (existing consumers ignore unknown fields)
+  - `SAIL_DISABLED_HOOKS` environment-variable disable mechanism — must work for the new hook (`SAIL_DISABLED_HOOKS=prism-bash-allowlist`)
+
+- **Performance bounds that must hold:**
+  - Hook execution time ≤ 100ms for the no-op fast path (when `agent_type` is null or non-matching)
+  - Hook execution time ≤ 500ms for the allowlist-enforcement path
+  - Stage 5.5 must not increase orchestrator context by more than 1K tokens regardless of test suite size (achieved via subagent isolation — see Section 8 token budget resolution)
+
+## Success Criteria
+
+| # | Criterion | How to Verify |
+|---|-----------|---------------|
+| AC1 | New agent file exists with required frontmatter (`name`, `description`, `tools`) | `test.sh` Category 4 frontmatter check |
+| AC2 | New hook file exists, syntax-valid bash, no `set -e`, has `set +e` | `test.sh` Category 5 hook conventions check |
+| AC3 | Agent count incremented in `install.sh` from 12 to 13 | grep + diff in `test.sh` Category 3 |
+| AC4 | Settings example JSON includes new hook on PreToolUse Bash matcher AND remains valid JSON | `python3 -c "import json; json.load(...)"` in `test.sh` Category 6 |
+| AC5 | `bash install.sh` (dry run) copies the new agent + new hook to a temp `$HOME` correctly | `test.sh` Category 7 install dry run |
+| AC6 | Hook blocks non-allowlisted commands when `agent_type=test-debt-reviewer` | Behavioral eval: pipe `{"agent_type":"test-debt-reviewer","tool_name":"Bash","tool_input":{"command":"curl evil.com"}}` to hook → exit 2, stderr contains "not in allowlist" |
+| AC7 | Hook allows allowlisted commands when `agent_type=test-debt-reviewer` | Behavioral eval: pipe `{"agent_type":"test-debt-reviewer","tool_name":"Bash","tool_input":{"command":"pytest"}}` to hook → exit 0 |
+| AC8 | Hook is no-op when `agent_type` is absent (main session) | Behavioral eval: pipe `{"tool_name":"Bash","tool_input":{"command":"curl evil.com"}}` (no agent_type) to hook → exit 0 |
+| AC9 | Hook is no-op when `agent_type` is set to a different agent (e.g., a lens) | Behavioral eval: pipe `{"agent_type":"dry-lens","tool_name":"Bash","tool_input":{"command":"curl evil.com"}}` to hook → exit 0 |
+| AC10 | Runner detection identifies pytest in a project with `pytest.ini` or `pyproject.toml [tool.pytest]` | Direct shell test of detection logic with fixture project |
+| AC11 | Runner detection identifies `bash test.sh` when `test.sh` exists in repo root and is executable | Direct shell test |
+| AC12 | Stage 5.5 displays `—` when no runner detected | Inspection of prism.md wizard state transitions for `runner_detected: null → status: skipped` path |
+| AC13 | Stage 5.5 displays `—` when `SAIL_PRISM_RUN_TESTS=0` regardless of runner detection | Same path with env var override |
+| AC14 | (Empirical, pre-impl gate) Hook fires for subagent Bash calls AND `agent_type` is populated | Already verified 2026-05-01 via instrumentation of `dangerous-commands.sh`; documented in `prior-art.md` |
+| AC15 | Synthesis output (Stage 6) includes test-debt findings as a themable contributor when Stage 5.5 produced output | Manual integration check: run `/prism` on a project with a known failing test; verify the failure appears in synthesis output with category + reason |
+| AC16 | All existing `bash test.sh` checks still pass with the new files in place | `bash test.sh` exit 0 |
+| AC17 | `dangerous-commands.sh` is byte-identical to pre-change version | `diff` check in test.sh or as part of preservation contract verification |
+| AC18 | Stage 5.5 raw output is persisted to `.claude/wizards/prism-*/test-debt-output.log` when stage runs | Inspection of state transitions |
+
+## Failure Modes
+
+| What Could Fail | Detection Method | Recovery Action |
+|-----------------|------------------|-----------------|
+| Test runner takes >2 min on a slow suite | Progress check (heartbeat from subagent every 30s; if 90s elapse with no output, mark stuck) | Kill subagent; mark stage `error`; emit synthesis finding "test-debt analysis incomplete: runner timeout"; preserve raw partial output |
+| Test runner output too large (>500 KB) | Byte count check on captured stdout/stderr | Truncate to last 500 KB with `--- truncated ---` marker; classification proceeds on truncated data; persistence still saves full to log file |
+| Hook bug locks out legitimate test runner command | New hook fail-opens (set +e, errors don't block) AND can be disabled via `SAIL_DISABLED_HOOKS=prism-bash-allowlist` | User can disable hook for the session; fix shipped in next install |
+| Allowlist too strict (test runner needs an unanticipated subcommand, e.g., `pytest -p no:cacheprovider`) | Hook block message tells user exactly what was blocked | Update agent allowlist (in agent file frontmatter or v2 hook config); ship in next install. v1 falls back gracefully — block is informative, not silent |
+| Hook does not fire on subagent Bash (regression of confirmed behavior) | Empirical AC14 — dispatching test-debt-reviewer with a non-allowlisted command should produce block; if not blocked, hook didn't fire | Halt blueprint, investigate; this is a load-bearing assumption |
+| Settings cache prevents new hook from being picked up after install | First-time users in a new session pick it up; existing-session users wouldn't (known issue from anti-pattern-catalog debrief). Document in commit message | User restarts Claude Code session after install — accepted constraint, called out in install messaging |
+| Project has multiple potential runners (e.g., both `pytest` and `bash test.sh`) | Detection returns first match by priority order | Priority order documented in spec: `bun test` > `pytest` > `cargo test` > `go test ./...` > `npm test` > `bash test.sh`. Override via `SAIL_PRISM_TEST_RUNNER=<runner>` env var |
+| Test runner has side effects (writes to real DB, sends emails) | Cannot detect generically | `SAIL_PRISM_RUN_TESTS=0` env var skips entirely; users must opt out for hostile/side-effect-heavy repos. Documentation calls this out prominently |
+| Classification produces unhelpful output ("real-issue" for everything) | User-perceptible — synthesis becomes noise | v1 acceptable risk — agent prompt is the lever; iterate on prompt in v2 if it surfaces |
+| Token budget blown despite subagent isolation | Orchestrator token estimate exceeds threshold after Stage 5.5 | Subagent isolation is the primary mitigation; if synthesis input from test-debt exceeds 1K tokens (e.g., 100+ failures), truncate to top-50 by severity + count summary |
+| Agent finds no failing tests but still produces noise in synthesis | Stage 5.5 emits no findings → synthesis ignores | Verified via integration test: project with all-passing tests yields `findings: []` in state, no synthesis contribution |
+| Concurrent prism runs conflict on output log path | Same as existing prism stages — single concurrent run assumption | Inherits existing prism single-instance assumption; no new mitigation needed |
+| Runner exits non-zero for non-failure reasons (collection error, syntax error) | Distinguishable: pytest rc=2 = test failures present; rc=3-5 = collection/import error | Classify as `test-infrastructure-broken` (5th category, severity high). Skip classification of underlying tests until collection succeeds — tests can't be classified if they can't run |
+
+## Rollback Plan
+
+1. `git revert <commit-sha>` to remove all blueprint commits — pure code change, no data migrations
+2. `bash install.sh` to re-deploy the previous-state hooks/agents to `~/.claude/`
+3. New hook file `~/.claude/hooks/prism-bash-allowlist.sh` is removed by install if not in source; if remnant, manual `rm` is safe (settings.json no longer references it after revert)
+4. New agent file `~/.claude/agents/test-debt-reviewer.md` similarly cleaned by install or manual removal
+5. State cleanup: none required — no persistent state created; output logs in `.claude/wizards/prism-*/` are per-run and self-cleaning
+6. Notify: nobody — toolkit-internal change
+
+## Dependencies (Preconditions)
+
+- [x] Anti-pattern-catalog blueprint shipped (predecessor; commits 36bff79 + e53a7d2 — confirmed 2026-04-30)
+- [x] Hook feasibility empirically verified (subagent Bash calls fire PreToolUse hooks with `agent_id`/`agent_type` populated — verified 2026-05-01)
+- [x] `bash` and `jq` available on installation target (existing prism requirements; not new)
+- [x] Existing test framework conventions known: bash `test.sh` exit code semantics, behavioral-smoke.sh fixture format
+
+## Open Questions — Resolved
+
+### Q1: Test runner timeout policy (progress check vs hard timeout)
+
+**Resolution:** Progress check, per memory `feedback_timeouts_vs_liveness`. Subagent emits a heartbeat (any output line) every 30s during test run. Orchestrator monitors: 90s with no heartbeat → consider subagent stuck → kill, mark stage `error`, emit "test-debt analysis incomplete" synthesis finding, preserve partial output to log file. No hard wall-clock timeout — a 5-min test suite that's actively producing output is fine.
+
+### Q2: Raw test output persistence
+
+**Resolution:** Yes, persist to `.claude/wizards/prism-<run-id>/test-debt-output.log` (the wizard already creates the per-run dir). Path made discoverable in synthesis output: "Raw test runner output: see .claude/wizards/prism-<id>/test-debt-output.log". Failure detail not summarized in synthesis is accessible there.
+
+### Q3: Allowlist hook v1 — hard-coded vs agent-frontmatter-driven
+
+**Resolution:** Hard-coded for `test-debt-reviewer` in v1. The hook source contains an explicit case-statement on `agent_type` with the test-debt allowlist inline. Future genericity (reading allowlist from agent frontmatter) is structurally enabled by the hook's design — the case-statement is a single function `enforce_for_agent()` that's easy to refactor to read from a config — but is NOT implemented in v1. Rationale: YAGNI; we have one Bash-using agent. When a second appears, refactor takes ~30 min.
+
+### Q4: Token budget interaction with prism orchestrator context exhaustion
+
+**Resolution:** Run classification IN the subagent, NOT in the orchestrator. The subagent reads test runner output (potentially 10K+ tokens) and emits ONLY summarized findings (one line per failing test, ~30 tokens each). Even with 100 failing tests, orchestrator-side context grows by ~3K tokens — within budget. This is the *primary* mitigation for the prism-context-exhaustion finding (vault: 2026-03-22). Without subagent isolation, raw `pytest -v` output for a moderate suite would blow the budget. AC15 verifies orchestrator context impact stays within bound.
+
+## Senior Review Simulation
+
+### What they'd ask about
+
+- **"How does this interact with running tests that have side effects (real DB writes, emails, hitting APIs)?"** — `SAIL_PRISM_RUN_TESTS=0` is the opt-out, but it's *opt-out*, not *opt-in*. For users who add `/prism` to a hostile repo for the first time, the default is "run." Mitigation: prominent warning in `commands/prism.md` documentation + a one-time confirmation prompt on first run in a new project (deferred to v2 — accepted v1 risk because env var works for known-hostile repos and prism is local-only).
+- **"What if `pytest` returns non-zero for collection errors, not test failures?"** — Already handled in failure modes table. Distinguish via exit code (pytest rc=2 = failures; rc=3-5 = collection errors); collection errors get a special category `test-infrastructure-broken`.
+- **"What if the test suite tests the prism agent itself? Recursive prism invocation, infinite loop."** — Not actually a risk in our design. The subagent runs the test runner as a *shell command*; the runner doesn't invoke prism. Prism agents are *prompted*, not *executed* via shell. Worth a one-line note in the agent prompt: "do not invoke prism or any other claude-sail command from within tests."
+- **"Have you considered using existing test markers (`@pytest.mark.requires_aws`, `describe.skip`, etc.) as classification hints rather than blind classification?"** — Yes, but deferred. v1 reads test source to classify; existing markers naturally surface when reading. v2 could parse them structurally for better accuracy. Documented in spec as future enhancement.
+
+### Non-obvious risks
+
+- **The subagent isolation assumption is load-bearing.** If for any reason the subagent's findings are returned via the orchestrator's full conversation context (not just summarized), the token-budget mitigation collapses. AC15 must be verified before declaring success.
+- **The "first Bash-using prism agent" precedent shapes the next 5+ similar agents.** A linter or typechecker agent will follow this pattern. If the v1 hook design is poor (e.g., hardcoded inline allowlist with no refactor path), the second agent's blueprint will pay the cost. Hook is designed with refactor path in mind (function `enforce_for_agent()` is the seam).
+- **Hooks are session-cached.** From anti-pattern-catalog debrief: settings.local.json hook changes don't take effect mid-session. So users who install via `bash install.sh` mid-session won't get the new hook until next session. Install messaging must call this out.
+
+### Standard approach we might be missing
+
+- **Tag-based test filtering as classification source.** Industry tools like pytest markers (`@pytest.mark.flaky`, `@pytest.mark.slow`) carry classification intent already. Reading those markers is more accurate than inferring "is this flaky?" from test content. v1 approach (read test source + classify) WILL pick markers up incidentally if they're in the source, but doesn't structurally consume them. Acceptable v1 trade-off; v2 enhancement.
+- **Exit-code-based progressive disclosure.** Rather than "run all tests, classify each failure," some industry tools run failed tests in *isolation* afterward to get more detailed output. Out of scope for v1 — single-pass is enough for classification at our granularity.
+
+### What bites first-timers
+
+- **The `agent_type` field is absent for main-session calls, not present-and-empty.** Hook code must use `jq -r '.agent_type // empty'` (the `// empty` is critical — without it, `jq` returns `null` as a literal string and string comparisons against `"test-debt-reviewer"` get confusing). Already accounted for in the hook design pattern documented above.
+- **Settings re-read requires session restart.** If you test the new hook in the same session you installed it, it might not fire. Test via direct invocation (pipe stdin to the script) for in-session verification — this matches the empirical hook-feasibility test pattern from earlier this session.
+- **`bash test.sh` runs synchronously and may hit the 90s heartbeat threshold for slow suites on cold disk.** Heartbeat threshold should be configurable via `SAIL_PRISM_TEST_TIMEOUT` (default 90s) — accommodates large suites without forcing premature termination.
+
+## Decisions
+
+Architectural choices made in this spec, for reference during implementation:
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Hook architecture | NEW separate hook (`prism-bash-allowlist.sh`), NOT modifying `dangerous-commands.sh` | Zero meaningful overlap; defense-in-depth; smaller blast radius; follows existing `secret-scanner.sh` + `dangerous-commands.sh` coexistence precedent |
+| Hook v1 implementation | Hard-coded case-statement on `agent_type`; future-genericity via `enforce_for_agent()` function seam | YAGNI; second agent will pay the refactor cost when it appears |
+| Classification location | INSIDE the subagent | Subagent isolation is the primary mitigation for prism-context-exhaustion (vault 2026-03-22 finding) |
+| Timeout policy | Progress check (heartbeat-based), not hard wall-clock timeout | Per memory `feedback_timeouts_vs_liveness` |
+| Output persistence | `.claude/wizards/prism-<run-id>/test-debt-output.log` | Wizard already creates per-run dir; discoverable in synthesis output |
+| Runner priority | bun > pytest > cargo > go > npm > bash test.sh | Faster runners first; allow override via `SAIL_PRISM_TEST_RUNNER` |
+| Opt-out gate | `SAIL_PRISM_RUN_TESTS=0` | Per brief; consistent with `SAIL_DISABLED_HOOKS` env-var pattern |
+
+## Work Units
+
+| ID | Description | Files | Dependencies | Complexity | TDD |
+|----|-------------|-------|--------------|------------|-----|
+| WU1 | Create `agents/test-debt-reviewer.md` — frontmatter (name, description, tools=Bash,Read,Glob,Grep), agent prompt with 5-category classifier (incl. test-infrastructure-broken), declared allowlist enumeration, classification format spec, no-recursion notice | `agents/test-debt-reviewer.md` | — | Medium | false |
+| WU2 | Create `hooks/prism-bash-allowlist.sh` — fail-open shebang, `SAIL_DISABLED_HOOKS` toggle, `agent_type` extraction via `jq -r '.agent_type // empty'`, case-statement dispatch to `enforce_for_agent`, allowlist for `test-debt-reviewer` (test runners + `git log --oneline path/to/test`), exit 0/2 with feedback | `hooks/prism-bash-allowlist.sh` | — | Medium | true |
+| WU3 | Implement test runner detection in prism.md — heuristics: `bun.lock`/`package.json+bun` → bun test; `pyproject.toml [tool.pytest]` or `pytest.ini` → pytest; `Cargo.toml` → cargo test; `go.mod` → go test ./...; `package.json` `scripts.test` → npm test; `test.sh` executable → bash test.sh; priority order documented; `SAIL_PRISM_TEST_RUNNER` env-var override | `commands/prism.md` (helper section) | — | Medium | true |
+| WU4 | Wire Stage 5.5 in prism.md — runs after Stage 5 Quality and before Stage 6 Synthesis; conditional on runner detection AND `SAIL_PRISM_RUN_TESTS != 0`; spawns `test-debt-reviewer` subagent; receives runner detection result + project root; persists raw output to wizard dir; receives summarized findings back | `commands/prism.md` | WU3 | High | false |
+| WU5 | Implement `SAIL_PRISM_RUN_TESTS=0` opt-out gate in prism.md — checked in Stage 5.5 entry path; sets stage status to `skipped` with reason "opt-out" | `commands/prism.md` | WU4 | Low | true |
+| WU6 | Update Synthesis stage in prism.md to consume test-debt findings as themable contributor — findings appear in synthesis input alongside other stage findings; backward-compat (zero findings = no contribution) | `commands/prism.md` | WU4 | Medium | false |
+| WU7 | Update prism wizard state schema — add `test_debt` step with fields: status, runner_detected, failure_count, findings (array of {test_id, category, severity, reason, retry_passed}), output_log_path, skip_reason | `commands/prism.md` (state schema section) | WU4 | Low | false |
+| WU8 | Update `settings-example.json` — add `prism-bash-allowlist.sh` to PreToolUse Bash matcher hooks array (alongside `dangerous-commands.sh` and `secret-scanner.sh`) | `settings-example.json` | WU2 | Low | true |
+| WU9 | Update `test.sh` — Category 3 file counts (agents 12→13; hook count update); Category 4 frontmatter check on new agent; Category 5 hook conventions check on new hook; Category 6 settings-example.json validation; Category 8 behavioral evals (use existing scripts/behavioral-smoke.sh against new evals fixtures) | `test.sh` | WU1, WU2, WU8 | Medium | true |
+| WU10 | Add behavioral eval fixtures to `evals/evals.json` — 4 fixtures: (a) test-debt-reviewer + allowlisted cmd → exit 0; (b) test-debt-reviewer + non-allowlisted cmd → exit 2 with "not in allowlist"; (c) main session (no agent_type) + cmd → exit 0; (d) different agent_type + cmd → exit 0 | `evals/evals.json` | WU2 | Low | true |
+| WU11 | Refresh metadata — `install.sh` agent count message (12→13); `README.md` agent count if mentioned; `agents/README.md` add row for test-debt-reviewer | `install.sh`, `README.md`, `agents/README.md` | WU1 | Low | false |
+| WU12 | Pre-impl empirical gate — verify allowlist hook fires for actual subagent dispatch (NOT just direct invocation). Mirrors anti-pattern-catalog AC14 form-2 pattern. Run before WU4 wiring is committed | (verification artifact `wu12-verification.md`) | WU2, WU8 | Medium | false |
+
+**WU count: 12 → Critique tier: Full** (≥6 WUs).
+**Risk-pattern triggers:** security-sensitive (hooks, allowlist enforcement), schema-shaped change (state schema). `tier = max(scope_tier, risk_tier) = Full`.
+
+**Critical path:** WU2 → WU8 → WU12 → WU4 → WU5/WU6/WU7 (parallel after WU4) → WU9 → done. Length ≈ 7.
+
+**Max parallel width:** ~4 (WU1, WU2, WU3, WU11 can all run in parallel as starting work; WU5/WU6/WU7 after WU4 land also yields width 3).
+
+---
+
+Specification complete. Open for challenge stage.

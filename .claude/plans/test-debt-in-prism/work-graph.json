@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "name": "test-debt-in-prism",
+  "spec_digest_sha256": "e5787b9681894e28c3ec9357c575dd523eafd8b30ae334adddd57b6e1d271b42",
+  "generated_at": "2026-05-01T17:15:00Z",
+  "spec_revision": "3-polish",
+  "nodes": [
+    {
+      "id": "WU1",
+      "description": "Create agents/test-debt-classifier.md (5-category classifier; declared allowlist for pytest+bash test.sh+git log; ≤2K-token output cap; multi-classification tiebreak; zero-failures behavior; explicit timeout-parameter on every Bash invocation; partial-output-on-timeout handling; textual false-pass scan; INLINE per-runner exit-code table for pytest + bash test.sh — folded from former WU13)",
+      "files": [
+        "agents/test-debt-classifier.md"
+      ],
+      "depends_on": [],
+      "complexity": "Medium",
+      "tdd": false
+    },
+    {
+      "id": "WU2",
+      "description": "Create hooks/prism-bash-allowlist.sh (substring-prefix match; case-statement on agent_type; scope-guardrail framing)",
+      "files": [
+        "hooks/prism-bash-allowlist.sh"
+      ],
+      "depends_on": [],
+      "complexity": "Medium",
+      "tdd": true
+    },
+    {
+      "id": "WU3",
+      "description": "Implement test runner detection in prism.md — 2-runner check (pytest config OR test.sh; both → SAIL_PRISM_TEST_RUNNER or polyglot_ambiguous_no_override); command -v precheck for binary-missing; validate SAIL_PRISM_TEST_RUNNER against v1 set",
+      "files": [
+        "commands/prism.md"
+      ],
+      "depends_on": [],
+      "complexity": "Low",
+      "tdd": true
+    },
+    {
+      "id": "WU4",
+      "description": "Wire Stage 5.5 in prism.md (conditional; spawns test-debt-classifier subagent; receives summarized findings; persists raw output; default-construct test_debt field on absent state)",
+      "files": [
+        "commands/prism.md"
+      ],
+      "depends_on": [
+        "WU3",
+        "WU12"
+      ],
+      "complexity": "High",
+      "tdd": false
+    },
+    {
+      "id": "WU5",
+      "description": "Implement SAIL_PRISM_RUN_TESTS=0 opt-out gate (status=skipped, skip_reason=opt_out_env_var)",
+      "files": [
+        "commands/prism.md"
+      ],
+      "depends_on": [
+        "WU4"
+      ],
+      "complexity": "Low",
+      "tdd": true
+    },
+    {
+      "id": "WU6",
+      "description": "Update Synthesis stage — consume test-debt findings as themable contributor; document theme-flattening; surface skip_reason from closed enum",
+      "files": [
+        "commands/prism.md"
+      ],
+      "depends_on": [
+        "WU4"
+      ],
+      "complexity": "Medium",
+      "tdd": false
+    },
+    {
+      "id": "WU7",
+      "description": "Update prism wizard state schema — add test_debt step; document closed skip_reason enum; consumer-side default-construct on absent field",
+      "files": [
+        "commands/prism.md"
+      ],
+      "depends_on": [
+        "WU4"
+      ],
+      "complexity": "Low",
+      "tdd": false
+    },
+    {
+      "id": "WU8",
+      "description": "Update settings-example.json — add prism-bash-allowlist.sh to PreToolUse Bash matcher",
+      "files": [
+        "settings-example.json"
+      ],
+      "depends_on": [
+        "WU2"
+      ],
+      "complexity": "Low",
+      "tdd": true
+    },
+    {
+      "id": "WU9",
+      "description": "Update test.sh — Cat 3-8 coverage (consolidated AC1 covers existence checks); cover AC1-AC22; AC11 fixture-driven word-count check uses WU13 fixture",
+      "files": [
+        "test.sh"
+      ],
+      "depends_on": [
+        "WU1",
+        "WU2",
+        "WU8",
+        "WU10",
+        "WU13"
+      ],
+      "complexity": "Medium",
+      "tdd": true
+    },
+    {
+      "id": "WU10",
+      "description": "Add 7 behavioral eval fixtures to evals/evals.json (allowed, blocked, main-session, different-agent, binary-missing→runner_binary_missing, false-pass textual, unsupported_override)",
+      "files": [
+        "evals/evals.json"
+      ],
+      "depends_on": [
+        "WU2"
+      ],
+      "complexity": "Low",
+      "tdd": true
+    },
+    {
+      "id": "WU11",
+      "description": "Refresh metadata — install.sh agent count 12→13 + hook count 18→19; README.md, agents/README.md, .claude/CLAUDE.md (hook count 19→20 shell files)",
+      "files": [
+        "install.sh",
+        "README.md",
+        "agents/README.md",
+        ".claude/CLAUDE.md"
+      ],
+      "depends_on": [
+        "WU1"
+      ],
+      "complexity": "Low",
+      "tdd": false
+    },
+    {
+      "id": "WU12",
+      "description": "Pre-impl empirical gate — verify the NEW prism-bash-allowlist.sh hook fires for actual test-debt-classifier subagent dispatch (distinct from AC10 general claim)",
+      "files": [
+        "wu12-verification.md"
+      ],
+      "depends_on": [
+        "WU2",
+        "WU8"
+      ],
+      "complexity": "Medium",
+      "tdd": false
+    },
+    {
+      "id": "WU13",
+      "description": "Create test fixture for AC11 — tests/fixtures/test-debt-100-failures/ with 100 synthetic failing tests + generate.sh for deterministic recreation. Used to verify subagent return-message ≤ 2K-token bound",
+      "files": [
+        "tests/fixtures/test-debt-100-failures/"
+      ],
+      "depends_on": [],
+      "complexity": "Low",
+      "tdd": true
+    },
+    {
+      "id": "WU14",
+      "description": "User-facing threat-model documentation — Security & Side Effects subsection in commands/prism.md; install.sh first-run message; one-line per-stage runner-naming warning",
+      "files": [
+        "commands/prism.md",
+        "install.sh"
+      ],
+      "depends_on": [
+        "WU4"
+      ],
+      "complexity": "Low",
+      "tdd": false
+    }
+  ],
+  "batches": [
+    [
+      "WU1",
+      "WU2",
+      "WU3",
+      "WU13"
+    ],
+    [
+      "WU8",
+      "WU10",
+      "WU11"
+    ],
+    [
+      "WU12"
+    ],
+    [
+      "WU4"
+    ],
+    [
+      "WU5",
+      "WU6",
+      "WU7",
+      "WU14"
+    ],
+    [
+      "WU9"
+    ]
+  ],
+  "critical_path": [
+    "WU2",
+    "WU8",
+    "WU12",
+    "WU4",
+    "WU14",
+    "WU9"
+  ],
+  "critical_path_length": 6,
+  "max_parallel_width": 4,
+  "file_conflicts": [
+    {
+      "file": "commands/prism.md",
+      "work_units": [
+        "WU3",
+        "WU4",
+        "WU5",
+        "WU6",
+        "WU7",
+        "WU14"
+      ],
+      "note": "Six WUs touch prism.md — naturally serialized by dependency graph"
+    }
+  ]
+}
