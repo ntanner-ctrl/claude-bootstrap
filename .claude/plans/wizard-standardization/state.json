@@ -4,7 +4,7 @@
   "path": "full",
   "challenge_mode": "family",
   "execution_preference": "auto",
-  "current_stage": "challenge",
+  "current_stage": "archived",
   "revision": 0,
   "regression_count": 0,
   "regression_log": [],
@@ -56,5 +56,8 @@
     "override": false
   },
   "work_units": 8,
-  "work_graph_width": 5
+  "work_graph_width": 5,
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Closed. Superseded by direct development of the three primary wizards (research, blueprint, prism).",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

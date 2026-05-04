@@ -30,7 +30,7 @@ ls -t .claude/plans/*/checkpoints/*.json .claude/checkpoints/*.json 2>/dev/null 
 ### Step 2: Compute Status
 
 For each active item, determine:
-- **Blueprint**: name, current stage, time since last update
+- **Blueprint**: name, current stage, time since last update. **Skip blueprints where `current_stage == "archived"`** — those are closed, not active.
 - **TDD**: target, current phase, mode
 - **Checkpoint**: timestamp, relative time ("20 min ago")
 - **Delegate**: whether delegation is in progress

@@ -3,7 +3,7 @@
   "name": "toolkit-hardening",
   "description": "Six toolkit improvements: compaction guardian, ambiguity gate, cognitive trap tables, failure counter escalation, wonder/reflect phase, knowledge maturation cycle",
   "challenge_mode": "debate",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "execution_preference": "auto",
   "revision": 2,
   "regressions": [
@@ -81,5 +81,8 @@
       "confidence_note": "All 6 components implemented. 3 parallel agents + integration pass. Structural tests pass. Behavioral tests pass (guardian block/allow, failure escalation ladder, false positive prevention). Enforcement lint clean."
     }
   },
-  "created": "2026-03-10T00:00:00Z"
+  "created": "2026-03-10T00:00:00Z",
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

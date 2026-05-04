@@ -11,7 +11,12 @@ Display all in-progress blueprints in the current project.
 1. Check for `.claude/plans/` directory
 2. For each subdirectory, read `state.json`
 3. Auto-migrate pre-v2 plans if `blueprint_version` is missing (see `/blueprint` migration)
-4. Display summary sorted by last activity
+4. **Filter out archived blueprints** (`current_stage == "archived"`) by default — these are closed work, not active. Count them and show the count in a footer line.
+5. Display summary sorted by last activity
+
+## Flags
+
+- `--all` — include archived blueprints in the listing (suppresses the default filter)
 
 ## Output Format
 
@@ -26,6 +31,8 @@ Display all in-progress blueprints in the current project.
   [name]          HALTED (3/3 regressions)             Last: [time ago]
   [name]          Stage [N]/8 ([stage name])   [mode] Last: [time ago] ⚠️ stale
 
+[N] archived (hidden) — run /blueprints --all to show
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Commands:
@@ -35,6 +42,8 @@ Commands:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+If the archived count is 0, omit the "[N] archived (hidden)" line entirely.
 
 ## Stale Detection
 
@@ -55,7 +64,7 @@ Override History (last 30 days):
 
 ## Empty State
 
-If no blueprints exist:
+If no active blueprints exist (after filtering archived):
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -63,6 +72,7 @@ If no blueprints exist:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   No active blueprints.
+  [N] archived (hidden) — run /blueprints --all to show
 
   Start planning:
     /blueprint [name]    Full planning workflow
@@ -70,6 +80,8 @@ If no blueprints exist:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+If there are no blueprints at all (active or archived), omit the archived line.
 
 ## Integration
 

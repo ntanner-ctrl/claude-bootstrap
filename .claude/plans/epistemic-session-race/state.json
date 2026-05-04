@@ -2,7 +2,7 @@
   "blueprint_version": 2,
   "name": "epistemic-session-race",
   "created_at": "2026-05-01T17:10:00Z",
-  "current_stage": "debrief",
+  "current_stage": "archived",
   "path": "full",
   "challenge_mode": "critique",
   "execution_preference": "simplicity",
@@ -243,5 +243,8 @@
     "Q1_hook_env_has_extras": "CLAUDE_PROJECT_DIR and CLAUDE_ENV_FILE env vars are set FOR HOOKS but NOT for Claude turn Bash tool invocations. Confirmed by both probes. Hooks have richer env than turns.",
     "marker_anchor_decision_rev2": "DECIDED 2026-05-04 — Option (A): per-claude-PID marker as discovery key, with claude main PID resolved via process-tree traversal (walk /proc/$PID/stat PPid chain until comm=claude). SESSION_ID from stdin JSON stored INSIDE marker as the canonical data identity. Rationale: (1) probe v2 confirms process tree is consistent (hook = bash→sh→claude, max 2 hops); (2) resume case works correctly because session_id is the data, marker filename is scaffolding; (3) smaller delta from existing session-end-cleanup.sh:18 convention; (4) no CLAUDE_ENV_FILE coupling (probe showed that var is per-hook-fire, not per-session). Option (B) session_id-keyed marker + by-PID index was considered and rejected — more moving parts for no correctness gain.",
     "claude_print_cleanup_works": "Probe SessionStart fired correctly via `claude --print 'ping'`. SessionEnd cleanup deleted marker cleanly (single-session case). Demonstrates current cleanup logic works when scope is correct — fix is about scoping, not adding cleanup."
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Debrief complete; cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

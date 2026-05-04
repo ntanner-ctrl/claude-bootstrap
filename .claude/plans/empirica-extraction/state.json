@@ -2,7 +2,7 @@
   "blueprint_version": 2,
   "name": "empirica-extraction",
   "created_at": "2026-03-19T11:00:00Z",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "challenge_mode": "family",
   "execution_preference": "auto",
   "revision": 3,
@@ -106,5 +106,8 @@
       "units_remaining": [],
       "notes": "Complete. Full rename: empirica_* -> epistemic_*, .empirica/ -> .epistemic/ across 14 command files, README, and global CLAUDE.md. 65/65 test.sh checks pass."
     }
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

@@ -97,8 +97,12 @@ ORIG_SESSIONS=$(jq '.sessions | length' "$EPISTEMIC_FILE" 2>/dev/null || echo ""
 # inline so this command stays self-contained — Claude executes this
 # bash block directly via the Bash tool, and a missing source would
 # silently revert to the unsafe pattern.
+# NOTE: reads $JQ_EXIT instead of taking $1 as an argument — when this
+# command is invoked as a skill, the renderer substitutes $N positional
+# patterns from the args string (e.g. $1 → "know=0.80"), corrupting the
+# function body. A named global is immune to that substitution.
 _safe_swap() {
-    local jq_exit=$1
+    local jq_exit="$JQ_EXIT"
     if [ "$jq_exit" -ne 0 ]; then
         echo "ERROR: jq failed (exit $jq_exit). epistemic.json untouched." >&2
         rm -f "$EPISTEMIC_TMP"
@@ -178,7 +182,8 @@ jq --arg id "$SESSION_ID" \
    }] |
    .last_updated = (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
    ' "$EPISTEMIC_FILE" > "$EPISTEMIC_TMP"
-_safe_swap $? || { echo "ERROR: Failed to write preflight vectors" >&2; exit 1; }
+JQ_EXIT=$?
+_safe_swap || { echo "ERROR: Failed to write preflight vectors" >&2; exit 1; }
 
 echo "Preflight vectors recorded for session ${SESSION_ID} (project: ${PROJECT})."
 ```

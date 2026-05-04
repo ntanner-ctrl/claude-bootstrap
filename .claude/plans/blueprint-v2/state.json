@@ -5,7 +5,7 @@
   "updated": "2026-02-07T21:00:00Z",
   "recommended_path": "full",
   "chosen_path": "full",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "challenge_mode": "debate",
   "revision": 2,
   "stages": {
@@ -65,12 +65,12 @@
     "review": {
       "status": "skipped",
       "skippable": true,
-      "skip_reason": "User decision \u2014 no external review planned for this iteration."
+      "skip_reason": "User decision — no external review planned for this iteration."
     },
     "test": {
       "status": "skipped",
       "skippable": true,
-      "skip_reason": "User decision \u2014 tests more valuable after implementation exists. Spec-blind testing deferred."
+      "skip_reason": "User decision — tests more valuable after implementation exists. Spec-blind testing deferred."
     },
     "execute": {
       "status": "complete",
@@ -100,9 +100,12 @@
     {
       "finding": "M1",
       "original": "Default to vanilla for initial release",
-      "override": "Keep debate as default \u2014 user impressed with debate chain quality",
+      "override": "Keep debate as default — user impressed with debate chain quality",
       "timestamp": "2026-02-07T19:15:00Z"
     }
   ],
-  "notes": "Major enhancement to the planning workflow. Brainstormed in conversation 2026-02-07. Revision 2 integrates all Rev 1 adversarial findings. Rev 2 re-validation passed with notes (0 critical, 7 medium). Edge cases analysis complete: 21 cases catalogued, 4 must-fix, no regression needed. All 20 WUs implemented across 3 sessions. validate-rename.sh passes with 0 violations."
+  "notes": "Major enhancement to the planning workflow. Brainstormed in conversation 2026-02-07. Revision 2 integrates all Rev 1 adversarial findings. Rev 2 re-validation passed with notes (0 critical, 7 medium). Edge cases analysis complete: 21 cases catalogued, 4 must-fix, no regression needed. All 20 WUs implemented across 3 sessions. validate-rename.sh passes with 0 violations.",
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

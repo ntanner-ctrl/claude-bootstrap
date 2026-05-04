@@ -1,7 +1,7 @@
 {
   "blueprint_version": 2,
   "name": "inspired-features",
-  "current_stage": "execute",
+  "current_stage": "archived",
   "challenge_mode": "family",
   "execution_preference": "speed",
   "revision": 2,
@@ -67,5 +67,8 @@
     "status": "complete",
     "new_findings": 4,
     "premortem_overlap": "low"
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Closed. Stale (44d idle); intent no longer recalled.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

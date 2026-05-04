@@ -4,7 +4,7 @@
   "challenge_mode": "critique",
   "execution_preference": "speed",
   "created_at": "2026-03-27T22:00:00Z",
-  "current_stage": "execute",
+  "current_stage": "archived",
   "completed": false,
   "revision": 3,
   "regression_count": 1,
@@ -110,5 +110,8 @@
       "decided_at": "2026-03-28T01:55:00Z"
     }
   ],
-  "premortem_overlap": "moderate"
+  "premortem_overlap": "moderate",
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Closed. First-party Anthropic/OpenAI cross-compat plugins resolved core issues; remaining work continued in-house via Codex.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

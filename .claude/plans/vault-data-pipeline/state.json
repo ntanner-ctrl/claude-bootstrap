@@ -5,7 +5,7 @@
   "updated": "2026-02-20T00:12:00Z",
   "recommended_path": "full",
   "chosen_path": "full",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "challenge_mode": "debate",
   "execution_preference": "auto",
   "revision": 1,
@@ -72,5 +72,8 @@
       "timestamp": "2026-02-20T00:05:00Z",
       "revision": 1
     }
-  ]
+  ],
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

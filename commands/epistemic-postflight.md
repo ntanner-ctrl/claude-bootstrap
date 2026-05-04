@@ -92,9 +92,14 @@ ORIG_SESSIONS=$(jq '.sessions | length' "$EPISTEMIC_FILE" 2>/dev/null || echo ""
 # non-empty, valid JSON, and didn't lose sessions. Backs up the prior
 # state to .bak on every successful write.
 #
-# Call as:   jq ... > "$EPISTEMIC_TMP"; _safe_swap $? || exit 1
+# Call as:   jq ... > "$EPISTEMIC_TMP"; JQ_EXIT=$?; _safe_swap || exit 1
+#
+# NOTE: reads $JQ_EXIT instead of taking $1 as an argument — when this
+# command is invoked as a skill, the renderer substitutes $N positional
+# patterns from the args string (e.g. $1 → "know=0.80"), corrupting the
+# function body. A named global is immune to that substitution.
 _safe_swap() {
-    local jq_exit=$1
+    local jq_exit="$JQ_EXIT"
     if [ "$jq_exit" -ne 0 ]; then
         echo "ERROR: jq failed (exit $jq_exit). epistemic.json untouched." >&2
         rm -f "$EPISTEMIC_TMP"
@@ -194,7 +199,8 @@ if [ "$HAS_PREFLIGHT" != "true" ]; then
        end |
        .last_updated = (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
        ' "$EPISTEMIC_FILE" > "$EPISTEMIC_TMP"
-    _safe_swap $? || exit 1
+    JQ_EXIT=$?
+    _safe_swap || exit 1
 
     exit 0
 fi
@@ -307,7 +313,8 @@ jq --arg id "$SESSION_ID" \
 
    .last_updated = (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
    ' "$EPISTEMIC_FILE" > "$EPISTEMIC_TMP"
-_safe_swap $? || { echo "ERROR: Failed to compute deltas" >&2; exit 1; }
+JQ_EXIT=$?
+_safe_swap || { echo "ERROR: Failed to compute deltas" >&2; exit 1; }
 
 # Report deltas
 echo "Postflight recorded and paired for session ${SESSION_ID}."

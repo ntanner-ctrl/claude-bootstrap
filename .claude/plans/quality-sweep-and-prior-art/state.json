@@ -3,7 +3,7 @@
   "name": "quality-sweep-and-prior-art",
   "challenge_mode": "debate",
   "execution_preference": "auto",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "path": "full",
   "revision": 2,
   "regressions": 1,
@@ -49,12 +49,12 @@
     "review": {
       "status": "skipped",
       "confidence": null,
-      "skip_reason": "Stages 3-4.5 were thorough \u2014 3-round debate, 3-round edge case analysis, and pre-mortem. 30+ findings addressed."
+      "skip_reason": "Stages 3-4.5 were thorough — 3-round debate, 3-round edge case analysis, and pre-mortem. 30+ findings addressed."
     },
     "test": {
       "status": "complete",
       "confidence": 0.85,
-      "confidence_note": "44 test cases across 9 categories covering standalone, gate, sweep, triage, fix dispatch, edge cases, and pre-mortem findings. Manual verification \u2014 no automated test suite for this toolkit."
+      "confidence_note": "44 test cases across 9 categories covering standalone, gate, sweep, triage, fix dispatch, edge cases, and pre-mortem findings. Manual verification — no automated test suite for this toolkit."
     },
     "execute": {
       "status": "complete",
@@ -73,5 +73,8 @@
       "revision": 1
     }
   ],
-  "created_at": "2026-03-13T10:00:00Z"
+  "created_at": "2026-03-13T10:00:00Z",
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

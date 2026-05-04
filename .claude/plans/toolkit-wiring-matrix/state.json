@@ -2,7 +2,7 @@
   "blueprint_version": 2,
   "name": "toolkit-wiring-matrix",
   "created": "2026-03-03T21:30:00Z",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "challenge_mode": "vanilla",
   "execution_preference": "auto",
   "revision": 1,
@@ -55,5 +55,8 @@
       "notes": "Closed as substantially complete. WU-2 (insight capture) and WU-3 (orphan rescue) fully done. WU-1/WU-4/WU-5 partially done. Remaining Phase 2 plugin activation is a separate concern tracked in plugin-enhancers.md."
     }
   },
-  "regression_log": []
+  "regression_log": [],
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

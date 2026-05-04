@@ -4,7 +4,7 @@
   "challenge_mode": "vanilla",
   "execution_preference": "auto",
   "created_at": "2026-04-30T19:06:21Z",
-  "current_stage": "debrief",
+  "current_stage": "archived",
   "completed": true,
   "completed_at": "2026-04-30T21:35:00Z",
   "revision": 4,
@@ -112,5 +112,7 @@
     "status": "complete",
     "overlap": "low (0%)"
   },
-  "updated_at": "2026-04-30T21:35:00Z"
+  "updated_at": "2026-05-04T16:44:26Z",
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Debrief complete; cleanup pass 2026-05-04."
 }

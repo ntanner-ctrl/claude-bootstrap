@@ -2,7 +2,7 @@
   "blueprint_version": 2,
   "name": "critique-architecture",
   "created": "2026-03-27T23:10:00Z",
-  "current_stage": "edge_cases",
+  "current_stage": "archived",
   "challenge_mode": "critique",
   "execution_preference": "auto",
   "revision": 1,
@@ -93,5 +93,8 @@
         "confidence": 0.91
       }
     ]
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Shipped. Replaced family mode; debrief orphan backfilled per commit 2a4e085.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

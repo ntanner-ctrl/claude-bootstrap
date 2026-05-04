@@ -2,7 +2,7 @@
   "blueprint_version": 2,
   "name": "prism",
   "created_at": "2026-03-22T12:00:00Z",
-  "current_stage": "execute",
+  "current_stage": "archived",
   "challenge_mode": "family",
   "execution_preference": "auto",
   "revision": 3,
@@ -89,5 +89,8 @@
       "status": "in_progress",
       "confidence": null
     }
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Shipped. /prism command is live; test-debt-in-prism is its Stage 5.5 extension.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

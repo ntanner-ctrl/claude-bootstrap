@@ -4,7 +4,7 @@
   "created_at": "2026-03-18T00:00:00Z",
   "challenge_mode": "debate",
   "execution_preference": "auto",
-  "current_stage": "complete",
+  "current_stage": "archived",
   "revision": 4,
   "regressions": [
     {
@@ -81,5 +81,8 @@
       "confidence": null,
       "notes": "All 4 deliverables implemented: sail-doctor.md, pipeline.md, evals.json, behavioral-smoke.sh. test.sh Category 8 runs evals."
     }
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

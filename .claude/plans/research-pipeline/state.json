@@ -3,7 +3,7 @@
   "name": "research-pipeline",
   "challenge_mode": "family",
   "execution_preference": "auto",
-  "current_stage": "debrief",
+  "current_stage": "archived",
   "revision": 1,
   "regression_count": 0,
   "regression_log": [],
@@ -127,5 +127,8 @@
     "overlap": "moderate",
     "new_findings": 2,
     "covered_findings": 2
-  }
+  },
+  "archived_at": "2026-05-04T16:44:26Z",
+  "archive_reason": "Reached terminal stage (complete); cleanup pass 2026-05-04.",
+  "updated_at": "2026-05-04T16:44:26Z"
 }

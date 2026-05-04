@@ -3,7 +3,7 @@
   "name": "wizard-state-management",
   "challenge_mode": "family",
   "execution_preference": "auto",
-  "current_stage": "execute",
+  "current_stage": "archived",
   "revision": 1,
   "regression_count": 0,
   "regression_log": [],
@@ -91,7 +91,7 @@
     "covered_findings": 2
   },
   "created_at": "2026-03-24T19:41:00Z",
-  "updated_at": "2026-03-25T00:02:00Z",
+  "updated_at": "2026-05-04T16:53:47Z",
   "family_progress": {
     "stage": "edge_cases",
     "round": 1,
@@ -107,5 +107,7 @@
     "elder_verdicts": [
       "CONVERGED"
     ]
-  }
+  },
+  "archived_at": "2026-05-04T16:53:47Z",
+  "archive_reason": "Shipped (commit 43f54a6, 2026-03-24) — wizard state added to /prism, /review, /test, /clarify. Blueprint state.json was never bumped to complete despite the work landing. See docs/WIZARD-STATE.md and .claude/wizards/."
 }
