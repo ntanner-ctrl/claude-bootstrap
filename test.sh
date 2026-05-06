@@ -79,8 +79,8 @@ bold "3. File Counts (vs README claims)"
 
 # Expected counts from README.md
 CMD_EXPECTED=65
-AGENT_EXPECTED=12
-HOOK_EXPECTED=20
+AGENT_EXPECTED=13
+HOOK_EXPECTED=21
 HOOKIFY_EXPECTED=7
 STOCK_HOOK_EXPECTED=6
 STOCK_AGENT_EXPECTED=3
@@ -692,6 +692,157 @@ EOF
 else
     warn "Anti-pattern sweep tests skipped (script or jq missing)"
 fi
+
+# ─── 10. Test Debt in Prism (structural) ────────────────────────
+
+bold "10. Test Debt in Prism — Structural Checks"
+
+# Agent file
+TDC_AGENT="$SCRIPT_DIR/agents/test-debt-classifier.md"
+if [ -f "$TDC_AGENT" ]; then
+    pass "agents/test-debt-classifier.md exists (AC1)"
+
+    # AC11 proxy: 2K-token bound documented
+    if grep -qE "(2000 tokens|2K-token|1500 words)" "$TDC_AGENT"; then
+        pass "AC11 proxy: agent prompt documents 2K-token bound"
+    else
+        fail "AC11 proxy: agent prompt missing 2K-token bound"
+    fi
+
+    # 5 classification categories
+    cats=$(grep -cE "^[0-9]+\.\s+\*\*(real-issue|test-infrastructure-broken|drift|abandoned|quarantine[- ]candidate)" "$TDC_AGENT" || true)
+    if [ "$cats" -ge 5 ]; then
+        pass "Agent enumerates 5 classification categories"
+    else
+        fail "Agent missing classification categories (found $cats, expected ≥5)"
+    fi
+
+    # Allowlist enumeration
+    if grep -q "pytest " "$TDC_AGENT" && grep -q "bash test.sh" "$TDC_AGENT" && grep -q "git log " "$TDC_AGENT"; then
+        pass "Agent declares allowlist (pytest, bash test.sh, git log)"
+    else
+        fail "Agent allowlist incomplete"
+    fi
+
+    # AC15 proxy: per-runner exit-code semantics (rc=1 failures + rc=5 no-tests + table form)
+    if grep -qE "Per-Runner Exit Code|Exit code.*Meaning" "$TDC_AGENT" \
+       && grep -qE "^\| 1 \|.*[Ff]ailures" "$TDC_AGENT" \
+       && grep -qE "^\| 5 \|.*[Nn]o tests" "$TDC_AGENT"; then
+        pass "AC15 proxy: per-runner pytest exit-code table documented (rc=1 failures, rc=5 no-tests)"
+    else
+        fail "AC15 proxy: per-runner exit codes missing or incomplete"
+    fi
+
+    # AC17 proxy: false-pass detection
+    if grep -qE "(false.?pass|FAILURES|failure markers)" "$TDC_AGENT"; then
+        pass "AC17 proxy: false-pass detection documented"
+    else
+        fail "AC17 proxy: false-pass detection missing"
+    fi
+
+    # AC19 proxy: multi-class tiebreak
+    if grep -qE "(tiebreak|highest.severity wins|multi.classification)" "$TDC_AGENT"; then
+        pass "AC19 proxy: multi-class tiebreak documented"
+    else
+        fail "AC19 proxy: multi-class tiebreak missing"
+    fi
+
+    # AC20 proxy: zero-failures behavior
+    if grep -qE "(findings:\s*\[\]|[Zz]ero.[Ff]ailures)" "$TDC_AGENT"; then
+        pass "AC20 proxy: zero-failures behavior documented"
+    else
+        fail "AC20 proxy: zero-failures behavior missing"
+    fi
+else
+    fail "agents/test-debt-classifier.md does not exist (AC1)"
+fi
+
+# Hook file
+TDC_HOOK="$SCRIPT_DIR/hooks/prism-bash-allowlist.sh"
+if [ -f "$TDC_HOOK" ]; then
+    pass "hooks/prism-bash-allowlist.sh exists (AC1)"
+
+    if grep -q "SAIL_DISABLED_HOOKS" "$TDC_HOOK"; then
+        pass "Hook supports SAIL_DISABLED_HOOKS toggle"
+    else
+        fail "Hook missing SAIL_DISABLED_HOOKS toggle"
+    fi
+
+    if grep -qE 'agent_type.*//.*empty|jq.*\.agent_type' "$TDC_HOOK"; then
+        pass "Hook extracts agent_type from stdin"
+    else
+        fail "Hook missing agent_type extraction"
+    fi
+
+    if grep -q 'test-debt-classifier' "$TDC_HOOK"; then
+        pass "Hook dispatches on test-debt-classifier agent_type"
+    else
+        fail "Hook missing test-debt-classifier dispatch"
+    fi
+else
+    fail "hooks/prism-bash-allowlist.sh does not exist (AC1)"
+fi
+
+# settings-example.json wiring (also implicitly checked in Cat 6)
+if grep -q "prism-bash-allowlist.sh" "$SCRIPT_DIR/settings-example.json"; then
+    pass "settings-example.json wires prism-bash-allowlist.sh"
+else
+    fail "settings-example.json missing prism-bash-allowlist.sh wiring"
+fi
+
+# prism.md Stage 5.5 content
+PRISM="$SCRIPT_DIR/commands/prism.md"
+if grep -qE "^### Stage 5\.5: Test Debt Classification" "$PRISM"; then
+    pass "prism.md has Stage 5.5: Test Debt Classification section"
+else
+    fail "prism.md missing Stage 5.5 section"
+fi
+
+# AC18 proxy: closed skip_reason enum (all 6 values present in prism.md)
+skip_reason_missing=""
+for sr in no_runner_detected opt_out_env_var runner_binary_missing polyglot_ambiguous_no_override unsupported_override hook_not_wired; do
+    if ! grep -q "$sr" "$PRISM"; then
+        skip_reason_missing="${skip_reason_missing} $sr"
+    fi
+done
+if [ -z "$skip_reason_missing" ]; then
+    pass "AC18 proxy: closed skip_reason enum documented (6 values)"
+else
+    fail "AC18 proxy: skip_reason enum values missing from prism.md:$skip_reason_missing"
+fi
+
+# AC23 proxy: hook-wiring self-probe
+if grep -qE "(hook.[wW]iring [sS]elf.[pP]robe|hook_not_wired)" "$PRISM"; then
+    pass "AC23 proxy: hook-wiring self-probe documented"
+else
+    fail "AC23 proxy: hook-wiring self-probe missing"
+fi
+
+# AC24 proxy: stale-state recovery
+if grep -qE "(stale.[sS]tate|interrupted_prior_run)" "$PRISM"; then
+    pass "AC24 proxy: stale-state recovery documented"
+else
+    fail "AC24 proxy: stale-state recovery missing"
+fi
+
+# AC11 fixture
+TDC_FIXTURE="$SCRIPT_DIR/tests/fixtures/test-debt-100-failures"
+if [ -d "$TDC_FIXTURE" ]; then
+    if [ -f "$TDC_FIXTURE/test_synthetic.py" ] && [ -f "$TDC_FIXTURE/pytest.ini" ] && [ -f "$TDC_FIXTURE/generate.sh" ]; then
+        test_count=$(grep -c "^def test_" "$TDC_FIXTURE/test_synthetic.py" 2>/dev/null || echo 0)
+        if [ "$test_count" -ge 100 ]; then
+            pass "AC11 fixture: $test_count test functions (≥100 required)"
+        else
+            fail "AC11 fixture: only $test_count test functions (expected ≥100)"
+        fi
+    else
+        fail "AC11 fixture: missing files (need test_synthetic.py + pytest.ini + generate.sh)"
+    fi
+else
+    fail "AC11 fixture directory missing: tests/fixtures/test-debt-100-failures"
+fi
+
+echo ""
 
 # Restore strict mode for the summary
 set -eo pipefail

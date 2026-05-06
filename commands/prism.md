@@ -339,6 +339,229 @@ Uses: `quality-reviewer` agent. Reads: context + paradigm + cumulative constrain
 
 **State update:** Mark step `quality` complete. Write `output_summary`: finding count, top concerns with severity. Set `current_step` to `synthesis`. Display updated stage progression header.
 
+### Stage 5.5: Test Debt Classification
+
+> **Conditional stage.** Runs after Stage 5 (Quality), before Stage 6 (Synthesis), only when ALL of the following are true: a supported test runner is detected, the runner binary is on PATH, the user has NOT opted out via `SAIL_PRISM_RUN_TESTS=0`, and the scope-guardrail hook is wired in the active settings.
+>
+> Spawns the `test-debt-classifier` subagent (see `agents/test-debt-classifier.md`) to run the project's test suite, classify pre-existing failures into 5 categories (real-issue, test-infrastructure-broken, drift, abandoned, quarantine-candidate), and feed them into Stage 6 Synthesis as another themable contributor.
+
+#### 5.5.0: Runner Detection
+
+The orchestrator detects which test runner this project uses. v1 supports two runners — `pytest` and `bash test.sh`. Other runners (`bun`, `cargo`, `go`, `npm`, `jest`, etc.) are deferred to v2.
+
+**Detection markers:**
+
+| Marker | Runner |
+|--------|--------|
+| `pytest.ini` exists | `pytest` |
+| `pyproject.toml` contains `[tool.pytest]` table | `pytest` |
+| `setup.cfg` contains `[tool:pytest]` section | `pytest` |
+| `test.sh` exists in repo root AND is executable | `bash test.sh` |
+
+**Resolution logic:**
+
+1. **Neither marker found** → skip stage with `skip_reason: no_runner_detected`. Synthesis message: "Stage skipped: no recognized test runner detected."
+2. **Exactly one marker found** → use that runner.
+3. **Both pytest config AND `test.sh` present** (polyglot project):
+   - If `SAIL_PRISM_TEST_RUNNER` is set to `pytest` or `bash test.sh` → use that.
+   - Otherwise → skip with `skip_reason: polyglot_ambiguous_no_override`. Synthesis message: "Stage skipped: both pytest config and test.sh detected. Set SAIL_PRISM_TEST_RUNNER=pytest or SAIL_PRISM_TEST_RUNNER='bash test.sh' to choose."
+
+**Override validation.** If `SAIL_PRISM_TEST_RUNNER` is set, validate against the v1-supported set:
+
+| Value | Behavior |
+|-------|----------|
+| `pytest` | Accept (use pytest if detected, error if not present) |
+| `bash test.sh` | Accept (use bash test.sh if `test.sh` present, error if not) |
+| Anything else (`bun`, `cargo`, `go`, `npm`, `jest`, etc.) | Skip with `skip_reason: unsupported_override`. Synthesis message: "Stage skipped: SAIL_PRISM_TEST_RUNNER=`<value>` not in v1's supported set (pytest, bash test.sh). Other runners deferred to v2." |
+
+**Binary-missing precheck.** Before invoking the chosen runner, run `command -v <runner>`:
+
+- For `pytest`: `command -v pytest` must succeed
+- For `bash test.sh`: `command -v bash` (always present); existence of `test.sh` was already verified by the marker check
+
+If `command -v` fails for the chosen runner → skip with `skip_reason: runner_binary_missing` and emit synthesis finding `test-infrastructure-broken: <runner> not on PATH (project declares <runner> but binary unavailable)`.
+
+The precheck is a fail-fast for the common case, not a guarantee. Runners requiring venv activation or `direnv` may resolve to a system binary that errors at runtime — in that case the runner's first invocation produces a setup-error exit code (e.g., pytest rc=4) that flows into the runner's normal exit-code handling.
+
+#### 5.5.1: Opt-out Gate (`SAIL_PRISM_RUN_TESTS`)
+
+Before any detection or probe runs, check the opt-out env var:
+
+```bash
+if [ "${SAIL_PRISM_RUN_TESTS:-1}" = "0" ]; then
+    # Skip stage with skip_reason: opt_out_env_var
+fi
+```
+
+If `SAIL_PRISM_RUN_TESTS=0` is set, skip the stage with `skip_reason: opt_out_env_var`. Synthesis message: "Stage skipped: test runs disabled via SAIL_PRISM_RUN_TESTS=0."
+
+This is the user's universal escape hatch for hostile/side-effect-heavy repos where running the test suite is not safe. It's an env var (not a flag) because env vars are inherited from the parent process and survive across stages — flag-based opt-out would have to be passed through every command invocation.
+
+**Per-project override is deferred to v2.** v1 honors only the env var (binary global). Users wanting per-project enable: shell function or `direnv` setup at the project level (`SAIL_PRISM_RUN_TESTS=1 claude` in project-specific shell config).
+
+#### 5.5.2: Hook-Wiring Self-Probe (AC23)
+
+Before dispatching the subagent, the orchestrator inspects `~/.claude/settings.json` to confirm that `prism-bash-allowlist.sh` is wired in the `PreToolUse` Bash matcher. This catches the **PM2** failure mode: install.sh deploys the hook file but does NOT auto-merge it into the user's existing settings.json — so without the probe, the agent could dispatch and run Bash without its scope guardrail in place.
+
+**Probe logic:**
+
+```bash
+settings_path="$HOME/.claude/settings.json"
+if [ ! -f "$settings_path" ]; then
+    settings_path="$HOME/.claude/settings.local.json"
+fi
+
+if [ ! -f "$settings_path" ]; then
+    # No settings.json found — skip with hook_not_wired
+fi
+
+if ! jq -e '.hooks.PreToolUse[]?.hooks[]? | select(.command | test("prism-bash-allowlist\\.sh"))' \
+       "$settings_path" >/dev/null 2>&1; then
+    # Hook file deployed but not wired — skip with hook_not_wired
+fi
+```
+
+If the probe fails, skip with `skip_reason: hook_not_wired`. Synthesis message:
+
+> "Stage skipped: prism-bash-allowlist hook is not wired in your settings.json. Either run `bash install.sh` and restart Claude Code, or add this entry to PreToolUse Bash hooks: `~/.claude/hooks/prism-bash-allowlist.sh`."
+
+Self-disabling beats silent containment failure. The agent never executes Bash without its scope guardrail.
+
+> **Settings reload caveat (known):** users with active sessions when they install the hook will not pick up the wiring until the next session restart. The probe correctly identifies the failure during the still-cached session and tells them what to do.
+
+#### 5.5.3: Stale-State Detection (AC24)
+
+Before initializing the new run, check whether a previous run was interrupted:
+
+```bash
+prior_status=$(jq -r '.steps.test_debt.status // "pending"' "$wizard_state_file")
+prior_session=$(jq -r '.steps.test_debt.session_id // empty' "$wizard_state_file")
+
+if [ "$prior_status" = "running" ] && [ -n "$prior_session" ] && [ "$prior_session" != "$current_session_id" ]; then
+    # Interrupted prior run from a different session — reset to pending
+    # but PRESERVE the prior output log (it is append-only and non-destructive)
+fi
+```
+
+This catches the **PM4** failure mode: user `Ctrl-C`'s mid-Stage-5.5; wizard state stays `status: running`; next `/prism` run could read stale findings or refuse to proceed. The reset path:
+
+1. Write `test_debt: { status: "pending", findings: [], skip_reason: null, session_id: null, output_log_path: null }`
+2. Note `interrupted_prior_run: true` in the wizard state for telemetry
+3. Continue normal flow
+
+The prior run's `test-debt-output.log` is **preserved** (log files are append-only) so the user can inspect what happened.
+
+#### 5.5.4: Subagent Dispatch
+
+Once all gates pass (opt-out, hook-wiring, stale-state, runner detected, binary present), the orchestrator dispatches the `test-debt-classifier` subagent:
+
+```
+━━━ Stage 5.5: Test Debt Classification ━━━━━━━━━━━━━
+  Detected runner: <pytest | bash test.sh>
+  Dispatching test-debt-classifier subagent...
+```
+
+**Dispatch prompt template:**
+
+```
+You are the test-debt-classifier subagent for /prism Stage 5.5.
+
+PROJECT CONTEXT:
+[Project Context Brief — ~500 tokens from Stage 0]
+
+RUNNER: <pytest | bash test.sh>
+
+INVOCATION:
+- For pytest: `pytest -v --tb=line --no-header` with timeout=300000ms
+- For bash test.sh: `bash test.sh` with timeout=300000ms
+  (override timeout via SAIL_PRISM_TEST_TIMEOUT env var, max 600000ms)
+
+YOUR TASK: Run the test suite, observe failures, classify each into one of
+five categories (real-issue, test-infrastructure-broken, drift, abandoned,
+quarantine-candidate), emit the JSON schema specified in your agent file.
+
+OUTPUT BOUND: Final return-message ≤ 2000 tokens (≈ 1500 words).
+
+CONSTRAINTS: A scope-guardrail hook (prism-bash-allowlist.sh) enforces your
+declared Bash allowlist. Do not improvise outside it.
+```
+
+**Timeout for the subagent dispatch itself:** 7 minutes (5-minute test runner + 2-minute classification headroom). On dispatch timeout, emit synthesis finding `test-infrastructure-broken: subagent dispatch timeout` and proceed to Stage 6.
+
+**Empty-findings handling:** If the subagent returns `findings: []` with `status: complete` (zero failures), do NOT contribute any finding to Synthesis. Stage 5.5 contributes ONLY when failures exist.
+
+#### 5.5.5: Output Persistence (AC14)
+
+The orchestrator persists the subagent's full Bash output (not just the classified return-message) to:
+
+```
+.claude/wizards/prism-<session_id>/test-debt-output.log
+```
+
+The log is **append-only** within a single run. If the runner produces >500 KB, the log captures the full output (no truncation at log level); the in-memory copy passed to Synthesis is truncated to last 500 KB with a `--- truncated ---` marker. Users who need the full output read the log.
+
+> **Convention departure:** wizard dirs traditionally hold only `state.json` (per `docs/WIZARD-STATE.md`). This blueprint adds artifact files to wizard dirs as a deliberate extension. The departure is documented in WIZARD-STATE.md.
+
+#### 5.5.6: Wizard State Schema
+
+The prism wizard state file gains a new `test_debt` step. **Additive — existing wizards lacking the field treat it as `pending`** (forward-compat default).
+
+```json
+{
+  "steps": {
+    ...,
+    "quality": { "status": "complete", ... },
+    "test_debt": {
+      "status": "pending | running | complete | skipped",
+      "runner_detected": "pytest | bash test.sh | null",
+      "failure_count": 0,
+      "findings": [
+        {
+          "test_id": "tests/test_foo.py::test_bar",
+          "category": "real-issue | test-infrastructure-broken | drift | abandoned | quarantine-candidate",
+          "severity": "critical | high | medium | low",
+          "reason": "≤25 word classification rationale"
+        }
+      ],
+      "output_log_path": ".claude/wizards/prism-<id>/test-debt-output.log | null",
+      "skip_reason": "<closed enum value> | null",
+      "session_id": "<current session id> | null",
+      "interrupted_prior_run": false
+    },
+    "synthesis": { "status": "pending", ... }
+  }
+}
+```
+
+**Closed `skip_reason` enum** — every code path that sets stage status to `skipped` MUST use one of these exact values. Synthesis renders skip-reason-specific messages per the table in the spec (AC18):
+
+| Value | Set when |
+|-------|----------|
+| `no_runner_detected` | Detection found no recognized runner |
+| `opt_out_env_var` | `SAIL_PRISM_RUN_TESTS=0` is set |
+| `runner_binary_missing` | Detection found runner config but `command -v <runner>` failed |
+| `polyglot_ambiguous_no_override` | Both pytest config AND `test.sh` present; `SAIL_PRISM_TEST_RUNNER` not set |
+| `unsupported_override` | `SAIL_PRISM_TEST_RUNNER` set to a value outside v1's supported set |
+| `hook_not_wired` | Stage 5.5 entry self-probe detected `prism-bash-allowlist.sh` not wired in active settings.json |
+
+Implementations consuming the wizard state MUST default-construct an absent `test_debt` field to `{status: "pending", findings: [], skip_reason: null, ...}` — this is the migration path for prism wizards that pre-date this stage.
+
+#### 5.5.7: Security & Side Effects
+
+> **Read this section before running /prism on a repo you do not own or trust.**
+
+Stage 5.5 runs the project's test suite **in-place**. The implications:
+
+- **Tests with side effects WILL execute those side effects.** If the test suite writes to a real database, sends emails, deploys infrastructure, or makes API calls, those effects happen. Test suite isolation is the project's responsibility, not /prism's.
+- **`SAIL_PRISM_RUN_TESTS=0`** is the universal opt-out for hostile or unaudited repos. Set it in your shell's startup file or via `direnv` for repos you do not trust.
+- **The scope-guardrail hook (`prism-bash-allowlist.sh`) is NOT a sandbox.** It catches agent confusion (the test-debt-classifier reaching outside its declared scope of `pytest`/`bash test.sh`/`git log`). It does not defend against:
+  - Hostile test code that runs destructive commands as child processes (PreToolUse hooks fire on Claude Code Bash tool calls, not on processes spawned by allowed commands)
+  - Shell metacharacter bypass within otherwise-allowed commands (not modeled)
+- **`dangerous-commands.sh` continues to enforce the universal destructive-pattern blocking layer** for ALL Bash calls (including the test-debt-classifier's). That's the safety floor.
+- **`SAIL_DISABLED_HOOKS=prism-bash-allowlist`** disables the scope guardrail. Useful for debugging if the allowlist drifts; not useful as a security control. Mid-session env var changes do not propagate to the running Claude Code's hook process — recovery requires session restart.
+
+**State update:** Mark step `test_debt` complete (or `skipped`). Write `output_summary`: runner detected, failure count, finding count by category, skip_reason if skipped. Set `current_step` to `synthesis`. Display updated stage progression header.
+
 ### Stage 6: Synthesis
 
 Performed by the orchestrator (this command), not a separate agent. Two explicit sub-steps: mechanical grouping (algorithmic) followed by judgment-based classification (LLM-native).
@@ -348,9 +571,25 @@ Performed by the orchestrator (this command), not a separate agent. Two explicit
   Synthesizing findings from [N] agents...
 ```
 
+#### Test Debt Findings as Synthesis Input
+
+Stage 5.5's `test_debt.findings` are consumed by Synthesis as another themable contributor (alongside paradigm summary and domain reviews). Category-to-severity mapping:
+
+| Test debt category | Severity for synthesis | Synthesis treatment |
+|--------------------|------------------------|---------------------|
+| `real-issue` | critical | Eligible for **single-source-critical bypass** (theme-equivalent priority even from a single agent source) |
+| `test-infrastructure-broken` | high | Standalone finding sorted by severity. Cross-source promotion to theme requires another agent surfacing the same issue. |
+| `drift` | medium | Standalone finding |
+| `abandoned` | medium | Standalone finding |
+| `quarantine-candidate` | low | Standalone finding |
+
+If Stage 5.5 was **skipped** (status=`skipped`, skip_reason set), Synthesis emits NO test-debt findings but DOES surface the skip-reason message in the Stage 7 report (see Domain coverage). If Stage 5.5 ran and returned **zero failures** (`findings: []`), Synthesis emits no test-debt contribution at all (no "all tests pass" finding).
+
+The agent's `test_id` field locates each finding (e.g., `tests/test_foo.py::test_bar`) — Synthesis treats this like a `[file:line]` reference for the co-location merge rule (Sub-Step A step 2).
+
 #### Sub-Step A: Mechanical Grouping
 
-1. **Collect** all findings from paradigm summary + domain reviews
+1. **Collect** all findings from paradigm summary + domain reviews + test-debt findings (Stage 5.5 if it ran)
 2. **Co-location rule** — Two merge triggers:
    - **Line proximity:** If two or more observations reference the same file:line (or overlapping line ranges within 5 lines), merge into a single grouped observation. List all contributing agents in the Sources field.
    - **Named entity (soft):** If two or more observations reference the same named entity (function name, class name, module name) in the same file but at different lines, flag as "co-located candidates" — grouped for theme consideration but not auto-merged. Review for relatedness in Sub-Step B.
@@ -469,6 +708,7 @@ Sources: [list of lens and reviewer agents that contributed]
     Security: [N findings / skipped]
     Performance: [N findings / skipped]
     Quality: [N findings / skipped]
+    Test Debt: [N findings (R real-issue, I infra, D drift, A abandoned, Q quarantine) / skipped: <skip_reason_message>]
 
   [If vault available:]
     Report saved to: Engineering/Findings/YYYY-MM-DD-HHMM-prism-[project].md

@@ -4,8 +4,8 @@
   "challenge_mode": "critique",
   "execution_preference": "auto",
   "created_at": "2026-05-01T14:30:00Z",
-  "current_stage": "execute",
-  "completed": false,
+  "current_stage": "complete",
+  "completed": true,
   "revision": 3,
   "regression_count": 1,
   "regression_log": [
@@ -21,7 +21,7 @@
   ],
   "epistemic_session_id": "e824aa27-7329-4b12-8acf-b89438f29677",
   "epistemic_preflight_complete": true,
-  "manifest_stale": true,
+  "manifest_stale": false,
   "work_graph_stale": false,
   "stages": {
     "describe": {
@@ -179,10 +179,40 @@
       "confidence_note": "30 spec-blind tests across 11 categories cover all 24 ACs + 7 preservation invariants + 5 failure modes. Helper functions (simulate_* family) need to be implemented as part of WU9; documented in tests.md. Tests should fail initially (no impl) and pass when impl matches spec — that's the contract. AC10 noted as manual smoke check (can't fully automate without Claude Code subprocess)."
     },
     "execute": {
-      "status": "pending"
+      "status": "complete",
+      "started": "2026-05-06T09:30:00Z",
+      "completed": "2026-05-06T10:30:00Z",
+      "confidence": 0.85,
+      "confidence_note": "All 14 WUs landed; test.sh 132 passed/0 failed/3 warnings; behavioral-smoke.sh extension lands hook-exec mode and 7 hook fixtures pass; hook smoke-tested across 8 stdin shapes; one inline test-grep fix needed (table-format vs rc= notation); WU12 behavioral subagent verification deferred to user post-restart per wu12-verification.md"
     },
     "debrief": {
-      "status": "pending"
+      "status": "complete",
+      "started": "2026-05-06T10:30:00Z",
+      "completed": "2026-05-06T10:45:00Z",
+      "skippable": false,
+      "confidence": 0.88,
+      "ship_commits": [],
+      "spec_delta_summary": "1 formal regression (rev1→rev2 via CF-1 threat-model reframe) + 2 inline polish passes (rev2-polish, rev3 /overcomplicated trim). 14 WUs, 24 ACs, PASS verdict.",
+      "deferred_items": [
+        "WU12 behavioral subagent-dispatch verification — see wu12-verification.md",
+        "AC11 behavioral word-count measurement — same constraint as WU12",
+        "agents/README.md row for test-debt-classifier — file does not exist (spec drift)",
+        "v2 deferred runners: bun, cargo, go, npm, jest",
+        "Per-project SAIL_PRISM_RUN_TESTS override (Q5)",
+        "Subagent abandoned-mid-run state recovery beyond AC24 (M1 partial)",
+        "Log file rotation in wizard dirs (v2)",
+        "Tag-based pytest filter parsing as classification hints (v2)"
+      ],
+      "discoveries": [
+        "evals.json schema mismatch resolved via Option A: extended behavioral-smoke.sh with hook-execution mode (~75 lines) preserving existing fixture mode",
+        "README.md hook count was already 20 (one ahead of .claude/CLAUDE.md stale claim of 19); WU11 update math had to handle stale baseline + new addition",
+        "agents/README.md does not exist; spec WU11 referenced nonexistent target; surfaced in preflight, skipped",
+        "install.sh has no hardcoded count claims; spec WU11 12→13/18→19 update was unnecessary",
+        "PM2 condition reachable on real install: ~/.claude/settings.json does not auto-merge new hook entry; validates AC23 motivation",
+        "Spec inconsistency: per-runner exit-code prose uses rc=1 notation but WU1 table uses bare numbers (| 1 |); test.sh structural check tightened to match table-row format",
+        "commands/prism.md grew ~210 lines from Stage 5.5 insertion; future cross-references should re-verify line numbers",
+        "Spec rev3 trim renumbered WUs but kept the WU13 ID for different content; cross-references say former-WU13 vs current-WU13 — confusing"
+      ]
     }
   },
   "prior_art_gate": {
@@ -208,5 +238,7 @@
       "threat_model_reframe": "User reframed 'containment' (security boundary) as 'scope guardrail' (catches agent confusion). Recorded as feedback memory; applies to first-party tooling generally. Dissolved CF-1 critical finding from rev1 critique."
     }
   },
-  "research_brief_status": "no-formal-research.md; equivalent context provided by (a) prior-session brief in memory project_test_debt_design.md, (b) prior-art.md generated this session with empirical hook-feasibility verdict, (c) vault notes consulted above"
+  "research_brief_status": "no-formal-research.md; equivalent context provided by (a) prior-session brief in memory project_test_debt_design.md, (b) prior-art.md generated this session with empirical hook-feasibility verdict, (c) vault notes consulted above",
+  "updated": "2026-05-06T10:45:00Z",
+  "completed_at": "2026-05-06T10:45:00Z"
 }

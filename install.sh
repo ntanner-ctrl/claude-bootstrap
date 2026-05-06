@@ -355,6 +355,7 @@ echo "  ~/.claude/hooks/notify.sh             - Desktop notifications"
 echo "  ~/.claude/hooks/after-edit.sh         - Auto-format after edits"
 echo "  ~/.claude/hooks/dangerous-commands.sh - Block dangerous commands"
 echo "  ~/.claude/hooks/secret-scanner.sh     - Scan for secrets before commits"
+echo "  ~/.claude/hooks/prism-bash-allowlist.sh - Prism Stage 5.5 scope guardrail (test-debt-classifier)"
 echo "  ~/.claude/hooks/protect-claude-md.sh  - Protect CLAUDE.md from edits"
 echo "  ~/.claude/hooks/tdd-guardian.sh       - Block impl edits during TDD RED phase"
 echo "  ~/.claude/hooks/state-index-update.sh - Maintain active work state index"
@@ -424,7 +425,8 @@ echo '    "PreToolUse": [{'
 echo '      "matcher": "Bash",'
 echo '      "hooks": ['
 echo '        { "type": "command", "command": "~/.claude/hooks/dangerous-commands.sh" },'
-echo '        { "type": "command", "command": "~/.claude/hooks/secret-scanner.sh" }'
+echo '        { "type": "command", "command": "~/.claude/hooks/secret-scanner.sh" },'
+echo '        { "type": "command", "command": "~/.claude/hooks/prism-bash-allowlist.sh" }'
 echo '      ]'
 echo '    }, {'
 echo '      "matcher": "Edit|Write",'
@@ -459,6 +461,38 @@ echo "  surgical-rm, force-push-protection, chmod-777,"
 echo "  remote-exec-protection, disk-ops-protection,"
 echo "  exfiltration-protection, env-exposure-protection"
 echo ""
+# ─── PM2 detection: prism-bash-allowlist.sh wired in user settings? ─────────────
+# The hook file is deployed but we do NOT auto-merge into user's settings.json.
+# Surface a loud warning if the user has a settings.json and it lacks the wiring.
+USER_SETTINGS=""
+if [ -f "$HOME/.claude/settings.json" ]; then
+    USER_SETTINGS="$HOME/.claude/settings.json"
+elif [ -f "$HOME/.claude/settings.local.json" ]; then
+    USER_SETTINGS="$HOME/.claude/settings.local.json"
+fi
+
+if [ -n "$USER_SETTINGS" ] && command -v jq >/dev/null 2>&1; then
+    if ! jq -e '.hooks.PreToolUse[]?.hooks[]? | select(.command | test("prism-bash-allowlist\\.sh"))' \
+           "$USER_SETTINGS" >/dev/null 2>&1; then
+        echo ""
+        echo -e "${YELLOW}⚠  Action required — prism-bash-allowlist hook not wired:${NC}"
+        echo ""
+        echo "  Your $USER_SETTINGS exists but does NOT reference"
+        echo "  ~/.claude/hooks/prism-bash-allowlist.sh."
+        echo ""
+        echo "  This is the scope guardrail for /prism Stage 5.5 (test-debt classifier)."
+        echo "  Without it wired, the stage will self-skip with skip_reason: hook_not_wired"
+        echo "  to prevent the agent from running Bash without its guardrail."
+        echo ""
+        echo "  Add this entry to your existing PreToolUse Bash matcher hooks array:"
+        echo ""
+        echo '    { "type": "command", "command": "~/.claude/hooks/prism-bash-allowlist.sh" }'
+        echo ""
+        echo "  Then restart Claude Code (settings are session-cached)."
+        echo ""
+    fi
+fi
+
 echo "Try it now in any project:"
 echo "  cd /path/to/your/project"
 echo "  claude"

@@ -140,5 +140,104 @@
         "description": "Substantive output"
       }
     ]
+  },
+  {
+    "id": 6,
+    "name": "prism-bash-allowlist-T8.1-blocks-non-allowlisted",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "test-debt-classifier",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "kubectl get pods"
+      }
+    },
+    "expected_exit": 2,
+    "expected_stderr_contains": "outside declared scope",
+    "note": "AC2: hook blocks non-allowlisted commands when agent_type=test-debt-classifier"
+  },
+  {
+    "id": 7,
+    "name": "prism-bash-allowlist-T8.2-allows-pytest",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "test-debt-classifier",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "pytest -v --tb=line"
+      }
+    },
+    "expected_exit": 0,
+    "note": "AC3: hook allows pytest invocation"
+  },
+  {
+    "id": 8,
+    "name": "prism-bash-allowlist-T8.2b-allows-bash-test-sh",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "test-debt-classifier",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "bash test.sh"
+      }
+    },
+    "expected_exit": 0,
+    "note": "AC3: hook allows bash test.sh invocation"
+  },
+  {
+    "id": 9,
+    "name": "prism-bash-allowlist-T8.3-noop-main-session",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "kubectl get pods"
+      }
+    },
+    "expected_exit": 0,
+    "note": "AC4: hook is no-op when agent_type is absent (main session)"
+  },
+  {
+    "id": 10,
+    "name": "prism-bash-allowlist-T8.4-noop-different-agent",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "general-purpose",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "kubectl get pods"
+      }
+    },
+    "expected_exit": 0,
+    "note": "AC5: hook is no-op when agent_type is set to a different agent"
+  },
+  {
+    "id": 11,
+    "name": "prism-bash-allowlist-T8.5-allows-git-log",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "test-debt-classifier",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git log --oneline -n 5 -- foo.py"
+      }
+    },
+    "expected_exit": 0,
+    "note": "AC3: hook allows git log invocation (drift/abandoned classification support)"
+  },
+  {
+    "id": 12,
+    "name": "prism-bash-allowlist-T8.6-disabled-via-env",
+    "hook": "prism-bash-allowlist.sh",
+    "stdin": {
+      "agent_type": "test-debt-classifier",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "kubectl get pods"
+      }
+    },
+    "command_env": "SAIL_DISABLED_HOOKS=prism-bash-allowlist",
+    "expected_exit": 0,
+    "note": "AC: SAIL_DISABLED_HOOKS toggle bypasses the hook (recovery mechanism)"
   }
 ]

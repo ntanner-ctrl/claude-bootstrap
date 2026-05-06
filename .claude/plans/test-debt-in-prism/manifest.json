@@ -1,0 +1,471 @@
+{
+  "v": 1,
+  "name": "test-debt-in-prism",
+  "summary": "Add conditional Stage 5.5 to /prism — test-debt-classifier subagent runs project test suite (pytest or bash test.sh in v1), classifies failures into 5 categories, feeds into Stage 6 Synthesis. Includes new prism-bash-allowlist.sh hook as scope guardrail (not security boundary) for the classifier agent.",
+  "scope": {
+    "files_touched": [
+      "agents/test-debt-classifier.md",
+      "hooks/prism-bash-allowlist.sh",
+      "commands/prism.md",
+      "settings-example.json",
+      "install.sh",
+      "README.md",
+      ".claude/CLAUDE.md",
+      "test.sh",
+      "evals/evals.json",
+      "tests/fixtures/test-debt-100-failures/"
+    ],
+    "risk_flags": [
+      "security-sensitive (Bash hook)",
+      "modifies prism workflow"
+    ],
+    "path": "full",
+    "challenge_mode": "critique",
+    "execution_preference": "auto"
+  },
+  "spec_digest": {
+    "changes": [
+      {
+        "action": "create",
+        "target": "agents/test-debt-classifier.md",
+        "desc": "5-category classifier subagent (Bash+Read+Glob+Grep), 2K-token output cap, per-runner exit-code table, multi-class tiebreak, zero-failures behavior, timeout-parameter required, partial-output-on-timeout, textual false-pass scan"
+      },
+      {
+        "action": "create",
+        "target": "hooks/prism-bash-allowlist.sh",
+        "desc": "PreToolUse Bash hook; substring-prefix allowlist match for test-debt-classifier agent_type; scope-guardrail framing; fail-open"
+      },
+      {
+        "action": "modify",
+        "target": "commands/prism.md",
+        "desc": "Add Stage 5.5 wiring (runner detection, hook-wiring self-probe AC23, stale-state detection AC24, opt-out gate, subagent dispatch, Synthesis integration, wizard state schema, Security subsection)"
+      },
+      {
+        "action": "modify",
+        "target": "settings-example.json",
+        "desc": "Add prism-bash-allowlist.sh to PreToolUse Bash matcher"
+      },
+      {
+        "action": "modify",
+        "target": "install.sh",
+        "desc": "Detect existing user settings.json missing the new hook entry; print loud warning with JSON snippet to merge"
+      },
+      {
+        "action": "modify",
+        "target": "README.md",
+        "desc": "Hook count update (20→21 shell files; 19→20 hooks)"
+      },
+      {
+        "action": "modify",
+        "target": ".claude/CLAUDE.md",
+        "desc": "Hook count update (19→21 shell files; 18→20 hooks — catches stale baseline + adds new)"
+      },
+      {
+        "action": "modify",
+        "target": "test.sh",
+        "desc": "Cat 3-8 cover new files + behavioral evals (AC1, AC11, AC15-AC22)"
+      },
+      {
+        "action": "modify",
+        "target": "evals/evals.json",
+        "desc": "Add 7 fixtures for hook behavior + classification edge cases"
+      },
+      {
+        "action": "create",
+        "target": "tests/fixtures/test-debt-100-failures/",
+        "desc": "100 synthetic failing tests + generate.sh — used to verify subagent return-message ≤2K-token bound"
+      }
+    ],
+    "preserve": [
+      "All 6 lens agents remain read-only (Read/Glob/Grep only)",
+      "All 6 reviewer agents declare Bash but do not actively use it (effectively read-only by prompt discipline)",
+      "dangerous-commands.sh byte-identical post-change",
+      "Other PreToolUse hooks (secret-scanner, protect-claude-md, etc.) continue to fire",
+      "Main-session Bash calls behave exactly as today (new hook is no-op when agent_type absent or non-matching)",
+      "Synthesis backward compat: test-debt findings ADD to inputs, do NOT replace existing finding shapes",
+      "bash test.sh continues to pass on this repo with new files in place",
+      "Hook ≤100ms no-op fast path; ≤500ms enforcement path",
+      "Subagent return-message ≤2K tokens regardless of test suite size"
+    ],
+    "success_criteria": [
+      "AC1: Install dry run produces expected file layout w/ valid syntax/JSON",
+      "AC2-AC5: Hook block/allow/no-op behaviors per agent_type",
+      "AC6-AC7: Runner detection for pytest + bash test.sh",
+      "AC8-AC9: Skip behavior for no_runner_detected + opt_out_env_var",
+      "AC10: Ambient PreToolUse fires for subagents (verified 2026-05-01 via prior-art)",
+      "AC11: Subagent return ≤2K tokens (1500-word proxy via WU13 fixture)",
+      "AC12-AC13: bash test.sh still passes; dangerous-commands.sh byte-identical",
+      "AC14: Stage 5.5 raw output persisted to wizard log",
+      "AC15: pytest exit codes (rc=1/2/3/4/5) handled per spec",
+      "AC16: Binary-missing → runner_binary_missing skip",
+      "AC17: False-pass detection (rc=0 + failure markers) → test-infrastructure-broken",
+      "AC18: Skip-reason synthesis messages render specific message per closed enum value",
+      "AC19: Multi-class tiebreak (highest severity wins, secondary in reasoning)",
+      "AC20: Zero-failures → findings:[] + status:complete + no synthesis contribution",
+      "AC21: Migration forward-compat (absent test_debt field treated as pending)",
+      "AC22: Unsupported override → unsupported_override skip + named v1 set",
+      "AC23: Hook-wiring self-probe (PM2 fix) — abort to hook_not_wired if hook unwired in user settings",
+      "AC24: Stale-state recovery (PM4 fix) — reset status:running from prior session_id"
+    ],
+    "failure_modes": [
+      "Test runner takes >5min → Bash timeout → test-infrastructure-broken",
+      "Output >500 KB → truncate to last 500KB with marker",
+      "Hook blocks legitimate cmd → SAIL_DISABLED_HOOKS escape; clear error msg",
+      "Hook does not fire on subagent Bash → WU12 empirical gate verifies; halt blueprint if regressed",
+      "Settings cache → users restart Claude Code session after install (accepted, called out in install msg)",
+      "PM2 (install doesn't auto-merge hook into user settings) → AC23 self-probe + WU14 install detection",
+      "PM4 (Ctrl-C mid-run leaves status:running stale) → AC24 stale-state recovery on next entry",
+      "Pytest exit 0 but tests failed → false-pass textual scan",
+      "Runner binary missing → command -v precheck + runner_binary_missing skip",
+      "User sets v2-runner override → unsupported_override skip + v1 set named",
+      "Project has both pytest config + test.sh → SAIL_PRISM_TEST_RUNNER override or polyglot_ambiguous_no_override skip",
+      "Hostile test code in unaudited repos → SAIL_PRISM_RUN_TESTS=0 opt-out (accepted v1 limitation)"
+    ]
+  },
+  "adversarial_digest": {
+    "critical": [
+      {
+        "finding": "CF-1 'containment is theater' — dissolved + polished via threat-model reframe (containment → scope guardrail)",
+        "source": "synthesizer",
+        "convergence": "both-agreed",
+        "stage": "challenge"
+      },
+      {
+        "finding": "H1 'first Bash-using premise false' — dissolved via Preservation Contract correction",
+        "source": "correctness",
+        "convergence": "newly-identified",
+        "stage": "challenge"
+      }
+    ],
+    "high": [
+      {
+        "finding": "CF-2 'token budget hand-waved' — polished: single 2K bound, AC15 measurable via fixture, WU1 prompt cap explicit",
+        "source": "synthesizer",
+        "convergence": "both-agreed",
+        "stage": "challenge"
+      },
+      {
+        "finding": "CF-3 'runner exit-code interpretation wrong' — polished: per-runner exit-code section, pytest codes corrected, multi-format false-pass detection",
+        "source": "synthesizer",
+        "convergence": "both-agreed",
+        "stage": "challenge"
+      },
+      {
+        "finding": "CF-4 'liveness wishful' — polished: Bash-tool built-in timeout, explicit timeout-parameter on every invocation, partial-output handling",
+        "source": "synthesizer",
+        "convergence": "both-agreed",
+        "stage": "challenge"
+      },
+      {
+        "finding": "CF-5 'detection wrong' — polished: 2-runner check, binary-missing handling, SAIL_PRISM_TEST_RUNNER constrained with unsupported_override",
+        "source": "synthesizer",
+        "convergence": "both-agreed",
+        "stage": "challenge"
+      }
+    ],
+    "medium": [
+      {
+        "finding": "C7 silent failures — polished: multi-format false-pass scan",
+        "source": "completeness",
+        "convergence": "newly-identified",
+        "stage": "challenge"
+      },
+      {
+        "finding": "M1 migration path — partial: section added, abandoned-mid-run case deferred to v2",
+        "source": "completeness",
+        "convergence": "newly-identified",
+        "stage": "challenge"
+      }
+    ],
+    "low": [
+      {
+        "finding": "C1 metacharacter bypass — dropped to low under threat-model reframe",
+        "source": "correctness",
+        "convergence": "newly-identified",
+        "stage": "challenge"
+      }
+    ],
+    "regressions_triggered": 1
+  },
+  "premortem_digest": {
+    "top_failure": "PM2: install.sh doesn't auto-merge hook into user settings; agent dispatches without scope guardrail",
+    "contributing_factors": [
+      "PM4: Ctrl-C leaves status:running stale; next run reads stale findings",
+      "Settings cache requires session restart after install"
+    ],
+    "new_findings_count": 2,
+    "covered_count": 8
+  },
+  "work_units": [
+    {
+      "id": "WU1",
+      "desc": "Create agents/test-debt-classifier.md (5-category classifier; allowlist; per-runner exit-code table; 2K-token cap; multi-class tiebreak; zero-failures; timeout-parameter required; partial-output on timeout; textual false-pass scan)",
+      "files": [
+        "agents/test-debt-classifier.md"
+      ],
+      "deps": [],
+      "complexity": "medium",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU2",
+      "desc": "Create hooks/prism-bash-allowlist.sh (substring-prefix match; case-statement on agent_type; scope-guardrail framing; fail-open)",
+      "files": [
+        "hooks/prism-bash-allowlist.sh"
+      ],
+      "deps": [],
+      "complexity": "medium",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU3",
+      "desc": "Implement test runner detection in prism.md (2-runner check; command -v precheck; SAIL_PRISM_TEST_RUNNER validation)",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU4",
+      "desc": "Wire Stage 5.5 (conditional dispatch + AC23 self-probe + AC24 stale-state recovery + raw-output persistence + default-construct)",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [
+        "WU3",
+        "WU12"
+      ],
+      "complexity": "high",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU5",
+      "desc": "SAIL_PRISM_RUN_TESTS=0 opt-out gate (skip with opt_out_env_var)",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [
+        "WU4"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU6",
+      "desc": "Update Synthesis stage — consume test-debt findings as themable contributor; surface skip-reason from closed enum",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [
+        "WU4"
+      ],
+      "complexity": "medium",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU7",
+      "desc": "Update prism wizard state schema — add test_debt step; document closed skip_reason enum",
+      "files": [
+        "commands/prism.md"
+      ],
+      "deps": [
+        "WU4"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU8",
+      "desc": "Update settings-example.json — add prism-bash-allowlist.sh to PreToolUse Bash matcher",
+      "files": [
+        "settings-example.json"
+      ],
+      "deps": [
+        "WU2"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU9",
+      "desc": "Update test.sh — Cat 3-8 cover new files + behavioral evals",
+      "files": [
+        "test.sh"
+      ],
+      "deps": [
+        "WU1",
+        "WU2",
+        "WU8",
+        "WU10",
+        "WU13"
+      ],
+      "complexity": "medium",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU10",
+      "desc": "Add behavioral eval fixtures (7 cases: allowed, blocked, main-session, different-agent, binary-missing, false-pass textual, unsupported_override)",
+      "files": [
+        "evals/evals.json"
+      ],
+      "deps": [
+        "WU2"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU11",
+      "desc": "Refresh metadata (install.sh / README.md / agents/README.md / .claude/CLAUDE.md count updates) — see spec-drift discoveries in execution log",
+      "files": [
+        "install.sh",
+        "README.md",
+        "agents/README.md",
+        ".claude/CLAUDE.md"
+      ],
+      "deps": [
+        "WU1"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU12",
+      "desc": "Pre-impl empirical gate — verify the NEW prism-bash-allowlist.sh hook fires for actual test-debt-classifier subagent dispatch (distinct from AC10)",
+      "files": [
+        "wu12-verification.md"
+      ],
+      "deps": [
+        "WU2",
+        "WU8"
+      ],
+      "complexity": "medium",
+      "status": "pending",
+      "tdd": false
+    },
+    {
+      "id": "WU13",
+      "desc": "Create test fixture tests/fixtures/test-debt-100-failures/ — 100 synthetic failing tests + generate.sh (verifies AC11 word-count proxy)",
+      "files": [
+        "tests/fixtures/test-debt-100-failures/"
+      ],
+      "deps": [],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": true
+    },
+    {
+      "id": "WU14",
+      "desc": "User-facing threat-model docs (Security & Side Effects subsection) + install.sh detection (warn if hook unwired in user settings)",
+      "files": [
+        "commands/prism.md",
+        "install.sh"
+      ],
+      "deps": [
+        "WU4"
+      ],
+      "complexity": "low",
+      "status": "pending",
+      "tdd": false
+    }
+  ],
+  "parallel_score": {
+    "width": 4,
+    "critical_path": 6,
+    "file_conflicts": [
+      "commands/prism.md"
+    ]
+  },
+  "decisions": [
+    {
+      "topic": "Hook architecture",
+      "chosen": "NEW separate hook (prism-bash-allowlist.sh)",
+      "reason": "Defense-in-depth pattern; smaller blast radius; secret-scanner + dangerous-commands coexistence precedent",
+      "alternatives_rejected": [
+        "Modify dangerous-commands.sh"
+      ]
+    },
+    {
+      "topic": "Hook role",
+      "chosen": "Scope guardrail (catches agent confusion via visible error)",
+      "reason": "Threat-model reframe per feedback_threat_model_first_party_tooling memory; first-party tooling on user's own code has no adversary",
+      "alternatives_rejected": [
+        "Security containment"
+      ]
+    },
+    {
+      "topic": "Token budget bound",
+      "chosen": "2K tokens on subagent return-message (single bound)",
+      "reason": "AC15 verifies via fixture; agent prompt enforces; settles rev1 1K-vs-3K contradiction",
+      "alternatives_rejected": [
+        "1K",
+        "3K",
+        "varied per stage"
+      ]
+    },
+    {
+      "topic": "Liveness mechanism",
+      "chosen": "Bash tool built-in timeout (no heartbeat)",
+      "reason": "Architecturally simpler; subagent return naturally surfaces timeout; replaces wishful heartbeat from rev1",
+      "alternatives_rejected": [
+        "Custom heartbeat"
+      ]
+    },
+    {
+      "topic": "Detection (v1)",
+      "chosen": "2 runners — pytest + bash test.sh",
+      "reason": "Trim per /overcomplicated; v2 deferred for bun/cargo/go/npm/jest",
+      "alternatives_rejected": [
+        "6 runners (rev2)",
+        "Language-primary file-counting heuristic"
+      ]
+    },
+    {
+      "topic": "Skip reason vocabulary",
+      "chosen": "Closed enum (no_runner_detected, opt_out_env_var, runner_binary_missing, polyglot_ambiguous_no_override, unsupported_override, hook_not_wired)",
+      "reason": "Prevents implementation invention; AC18 verifies specific message per value",
+      "alternatives_rejected": [
+        "Free-form reasons"
+      ]
+    }
+  ],
+  "confidence": {
+    "describe": 0.85,
+    "specify": 0.82,
+    "challenge": 0.45,
+    "edge_cases": 0.78,
+    "premortem": 0.80,
+    "review": null,
+    "test": 0.82
+  },
+  "revision": 3,
+  "last_regression": {
+    "from_stage": "challenge",
+    "to_stage": "specify",
+    "reason": "Stage 3 critique returned REWORK with 4 critical compound findings (CF-1 through CF-5) and load-bearing solo H1 — most severe was CF-1 (containment-is-theater) requiring threat-model reframe + Preservation Contract correction. Rev2 spec re-grounded; rev2-polish + rev3 trim followed inline.",
+    "timestamp": "2026-05-01T15:30:00Z"
+  },
+  "epistemic_session_id": "e824aa27-7329-4b12-8acf-b89438f29677",
+  "spec_revision": "3-polish",
+  "artifact_timestamps": {
+    "describe.md": "2026-05-01T14:35:00Z",
+    "spec.md": "2026-05-01T16:45:00Z",
+    "adversarial.md": "2026-05-01T16:30:00Z",
+    "premortem.md": "2026-05-01T17:15:00Z",
+    "tests.md": "2026-05-01T17:35:00Z",
+    "work-graph.json": "2026-05-01T17:15:00Z"
+  }
+}

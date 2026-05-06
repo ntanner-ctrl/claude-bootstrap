@@ -27,10 +27,10 @@ claude
 | Component | Purpose |
 |-----------|---------|
 | [**Commands**](commands/README.md) | 65 workflow commands for planning, review, testing, execution, vault integration + plugin integration |
-| [**Agents**](agents/) | 12 agents: 6 specialized review agents + 6 paradigm lens agents for `/prism` |
+| [**Agents**](agents/) | 13 agents: 6 specialized review agents + 6 paradigm lens agents + 1 test-debt classifier (used by `/prism` Stage 5.5) |
 | [**Planning Infrastructure**](docs/PLANNING-STORAGE.md) | Staged planning with triage, specs, and adversarial challenge |
 | [**Wizard State**](docs/WIZARD-STATE.md) | Persistent state for workflow wizards — resume-on-compaction, content contracts, vault checkpoints |
-| [**Shell Hooks**](hooks/) | 20 shell files (19 hooks + 1 audit utility) for safety, session lifecycle, epistemic tracking, toolkit hardening |
+| [**Shell Hooks**](hooks/) | 21 shell files (20 hooks + 1 audit utility) for safety, session lifecycle, epistemic tracking, toolkit hardening |
 | [**Hookify Rules**](hookify-rules/) | 7 YAML-based security rules |
 | [**Stock Elements**](commands/templates/) | 12 stock elements (6 hooks, 3 agents, 3 commands) installed into target projects |
 | [**Anti-Pattern Catalog**](.claude/anti-patterns/) | Project-local catalog of language-specific anti-patterns with derived counters from session-end sweeps |

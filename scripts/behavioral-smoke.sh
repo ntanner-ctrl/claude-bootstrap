@@ -75,6 +75,90 @@ while [ "$i" -lt "$eval_count" ]; do
         continue
     fi
 
+    # ─── Hook execution mode ────────────────────────────────────────
+    # Entries with a `hook` field run the hook with provided stdin and assert
+    # against expected_exit + (optional) expected_stderr_contains. Distinct
+    # from the fixture-based text-assertion mode below — used for behavioral
+    # tests of PreToolUse hooks (where the hook code IS the fixture).
+
+    entry_hook=$(jq -r ".[$i].hook // empty" "$EVALS_JSON" 2>/dev/null)
+
+    if [ -n "$entry_hook" ]; then
+        hook_path="$SCRIPT_DIR/../hooks/$entry_hook"
+
+        if [ ! -f "$hook_path" ]; then
+            warn "$entry_name: SKIP — hook file not found: $entry_hook"
+            i=$((i + 1))
+            continue
+        fi
+
+        # Build stdin JSON (compact form)
+        entry_stdin=$(jq -c ".[$i].stdin // empty" "$EVALS_JSON" 2>/dev/null)
+        if [ -z "$entry_stdin" ] || [ "$entry_stdin" = "null" ]; then
+            fail "$entry_name — INVALID (hook entry missing stdin field)"
+            i=$((i + 1))
+            continue
+        fi
+
+        expected_exit=$(jq -r ".[$i].expected_exit // empty" "$EVALS_JSON" 2>/dev/null)
+        expected_stderr=$(jq -r ".[$i].expected_stderr_contains // empty" "$EVALS_JSON" 2>/dev/null)
+
+        if [ -z "$expected_exit" ]; then
+            fail "$entry_name — INVALID (hook entry missing expected_exit)"
+            i=$((i + 1))
+            continue
+        fi
+
+        # Run the hook. Note: command_env field allows test-specific env vars
+        # (e.g., SAIL_DISABLED_HOOKS) without bleeding into other tests.
+        entry_env=$(jq -r ".[$i].command_env // empty" "$EVALS_JSON" 2>/dev/null)
+        actual_stderr_file=$(mktemp)
+        actual_exit=0
+        if [ -n "$entry_env" ]; then
+            env $entry_env bash "$hook_path" >/dev/null 2>"$actual_stderr_file" <<<"$entry_stdin" || actual_exit=$?
+        else
+            bash "$hook_path" >/dev/null 2>"$actual_stderr_file" <<<"$entry_stdin" || actual_exit=$?
+        fi
+        actual_stderr=$(cat "$actual_stderr_file")
+        rm -f "$actual_stderr_file"
+
+        entry_pass=0
+        entry_fail=0
+        entry_fail_desc=""
+
+        # Assertion 1: exit code
+        if [ "$actual_exit" = "$expected_exit" ]; then
+            entry_pass=$((entry_pass + 1))
+        else
+            entry_fail=$((entry_fail + 1))
+            entry_fail_desc="exit code mismatch (expected $expected_exit, got $actual_exit)"
+        fi
+
+        # Assertion 2: stderr substring (optional)
+        if [ -n "$expected_stderr" ]; then
+            if grep -qF -- "$expected_stderr" <<<"$actual_stderr"; then
+                entry_pass=$((entry_pass + 1))
+            else
+                entry_fail=$((entry_fail + 1))
+                if [ -z "$entry_fail_desc" ]; then
+                    entry_fail_desc="stderr does not contain '$expected_stderr' (got: ${actual_stderr:0:120})"
+                fi
+            fi
+        fi
+
+        total_assertions=$((entry_pass + entry_fail))
+        if [ "$entry_fail" -eq 0 ]; then
+            pass "$entry_name: $entry_pass/$total_assertions assertions passed (hook-exec)"
+        else
+            fail "$entry_name: FAIL — $entry_fail_desc"
+        fi
+
+        i=$((i + 1))
+        continue
+    fi
+
+    # ─── Fixture-based text assertion mode (existing) ──────────────
+
     # Vacuous pass guard: assertions must be non-null and have >= 1 entry
     if [ -z "$assertion_count" ] || [ "$assertion_count" -lt 1 ]; then
         fail "$entry_name — INVALID (assertions array is null, empty, or missing)"

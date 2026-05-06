@@ -74,6 +74,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/secret-scanner.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/prism-bash-allowlist.sh"
           }
         ]
       },

@@ -25,8 +25,8 @@ claude-sail/
 │   │   ├── prompts/          # Shared prompt templates (dispatch/delegate review lenses)
 │   │   └── documentation/    # Diataxis doc templates
 │   └── *.md           # The actual toolkit commands
-├── agents/            # 12 agents: 6 review agents + 6 paradigm lens agents for /prism
-├── hooks/             # 19 shell files: 18 hooks + 1 utility (_audit-log.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
+├── agents/            # 13 agents: 6 review agents + 6 paradigm lens agents + 1 test-debt classifier (used by /prism Stage 5.5)
+├── hooks/             # 21 shell files: 20 hooks + 1 utility (_audit-log.sh) for SessionStart, PreToolUse, PostToolUse, SessionEnd, etc.
 ├── hookify-rules/     # 7 YAML-based safety rules (*.local.md)
 ├── plugins/           # Session-start plugin (sail-toolkit)
 ├── evals/             # Behavioral eval fixtures (evals.json) — used by test.sh Category 8
